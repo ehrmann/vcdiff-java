@@ -7,11 +7,12 @@ import junit.framework.Assert;
 
 import org.junit.Test;
 
+import com.googlecode.jvcdiff.VarInt.VarIntEndOfBufferException;
 import com.googlecode.jvcdiff.VarInt.VarIntParseException;
 
 public class VarIntTest {
 	@Test
-	public void basicIntTest() throws VarIntParseException {
+	public void basicIntTest() throws VarIntParseException, VarIntEndOfBufferException {
 		ByteBuffer buffer = ByteBuffer.allocate(64);
 		
 		buffer.clear();
@@ -41,7 +42,7 @@ public class VarIntTest {
 	}
 	
 	@Test
-	public void randomIntTest() throws VarIntParseException {
+	public void randomIntTest() throws VarIntParseException, VarIntEndOfBufferException {
 		Random random = new Random(0x42);
 		
 		ByteBuffer buffer = ByteBuffer.allocate(8192);

@@ -33,6 +33,7 @@ import java.nio.ByteBuffer;
 import java.util.Arrays;
 import java.util.concurrent.atomic.AtomicInteger;
 
+import com.googlecode.jvcdiff.VarInt.VarIntEndOfBufferException;
 import com.googlecode.jvcdiff.VarInt.VarIntParseException;
 
 
@@ -236,27 +237,31 @@ public class VCDiffAddressCacheImpl extends VCDiffAddressCache {
 	//	     for more data before continuing to decode.  If no more data is expected,
 	//	     this return value signals an error condition.
 	@Override
-	public int DecodeAddress(int here_address, short vcDiffMode, ByteBuffer address_stream) {
+	public int DecodeAddress(int here_address, short vcDiffMode, ByteBuffer addressStream) {
 		if (here_address < 0) {
 			throw new IllegalArgumentException("DecodeAddress was passed a negative value for here_address: " + here_address);
 		}
 
-		if (address_stream.remaining() == 0) {
+		if (addressStream.remaining() == 0) {
 			return RESULT_END_OF_DATA;
 		}
 
+		ByteBuffer duplicateAddressStream = addressStream.duplicate();
+
 		int decoded_address;
 		if (IsSameMode(vcDiffMode)) {
-			// SAME mode expects a byte value as the encoded address
-			byte encoded_address = address_stream.get();
+			// SAME mode expects an unsigned byte value as the encoded address
+			short encoded_address = (short)(duplicateAddressStream.get() & 0xff);
 			decoded_address = DecodeSameAddress(vcDiffMode, encoded_address);
 		} else {
 			// All modes except SAME mode expect a VarintBE as the encoded address
 			int encoded_address;
 			try {
-				encoded_address = VarInt.getInt(address_stream);
+				encoded_address = VarInt.getInt(duplicateAddressStream);
 			} catch (VarIntParseException e) {
 				return RESULT_ERROR;
+			} catch (VarIntEndOfBufferException e) {
+				return RESULT_END_OF_DATA;
 			}
 			//VarintBE<int32_t>::Parse(address_stream_end, &new_address_pos);
 			switch (encoded_address) {
@@ -288,6 +293,9 @@ public class VCDiffAddressCacheImpl extends VCDiffAddressCache {
 		}
 
 		UpdateCache(decoded_address);
+
+		// Update the paramater address stream's position
+		addressStream.position(duplicateAddressStream.position());
 		return decoded_address;
 	}
 }

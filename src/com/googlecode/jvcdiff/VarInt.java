@@ -4,13 +4,13 @@ import java.nio.ByteBuffer;
 
 public class VarInt {
 
-	public static int getInt(ByteBuffer buffer) throws VarIntParseException {
+	public static int getInt(ByteBuffer buffer) throws VarIntParseException, VarIntEndOfBufferException {
 		final int startPosition = buffer.position();
 		int result = 0;
 
 		while (true) {
 			if (!buffer.hasRemaining()) {
-				throw new VarIntParseException("No more bytes in buffer");
+				throw new VarIntEndOfBufferException();
 			}
 			if (buffer.position() - startPosition >= 5) {
 				throw new VarIntParseException("Data too long for a 32-bit int");
@@ -27,13 +27,13 @@ public class VarInt {
 		}
 	}
 
-	public static long getLong(ByteBuffer buffer) throws VarIntParseException {
+	public static long getLong(ByteBuffer buffer) throws VarIntParseException, VarIntEndOfBufferException {
 		final int startPosition = buffer.position();
 		long result = 0;
 
 		while (true) {
 			if (!buffer.hasRemaining()) {
-				throw new VarIntParseException("No more bytes in buffer");
+				throw new VarIntEndOfBufferException();
 			}
 			if (buffer.position() - startPosition >= 9) {
 				throw new VarIntParseException("Data too long for a 64-bit int");
@@ -69,5 +69,10 @@ public class VarInt {
 				throw new NullPointerException();
 			}
 		}
+	}
+	
+	public static class VarIntEndOfBufferException extends Exception {
+		private static final long serialVersionUID = -2989212562402509511L;
+		protected VarIntEndOfBufferException() { };
 	}
 }

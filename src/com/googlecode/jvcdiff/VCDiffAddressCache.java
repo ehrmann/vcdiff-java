@@ -133,9 +133,8 @@ public abstract class VCDiffAddressCache {
 		return near_addresses_[mode - VCD_FIRST_NEAR_MODE] + encoded_address;
 	}
 
-	public final int DecodeSameAddress(short mode,
-			short encoded_address) {
-		return same_addresses_[(mode - FirstSameMode()) * 256] + encoded_address;
+	public final int DecodeSameAddress(short mode, short encoded_address) {
+		return same_addresses_[(mode - FirstSameMode()) * 256 + encoded_address];
 	}
 
 	// Returns true if, when using the given mode, an encoded address

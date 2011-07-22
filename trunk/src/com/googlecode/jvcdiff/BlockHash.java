@@ -98,6 +98,8 @@ public class BlockHash {
 	// to find the next matching entry in the hash chain.
 	protected static final int kMaxProbes = 16;
 
+	protected static final RollingHash rollingHash = new RollingHash(kBlockSize);
+	
 	private final byte[] source_data;
 
 	// The size of this array is determined using CalcTableSize().  It has at
@@ -148,7 +150,7 @@ public class BlockHash {
 	// for successive calls to AddBlock(), and is also
 	// used to determine the starting block for AddAllBlocksThroughIndex().
 	private int last_block_added;
-
+	
 	// This class is used to store the best match found by FindBestMatch()
 	// and return it to the caller.
 	public static class Match {
@@ -307,7 +309,7 @@ public class BlockHash {
 		int block_ptr = NextIndexToAdd();
 		final int end_ptr = end_limit;
 		while (block_ptr < end_ptr) {
-			AddBlock(RollingHash.Hash(this.source_data, block_ptr, kBlockSize));
+			AddBlock(rollingHash.Hash(this.source_data, block_ptr, kBlockSize));
 			block_ptr += kBlockSize;
 		}
 	}

@@ -38,10 +38,10 @@ public class RollingHashTest {
 		RollingHash hasher = new RollingHash(kBlockSize);
 		for (int x = 0; x < kUpdateHashTestIterations; ++x) {
 			int random_buffer_size = random.nextInt(kUpdateHashBlocks) + kBlockSize;
-			
+
 			byte[] buffer_ = new byte[random_buffer_size];
 			random.nextBytes(buffer_);
-			
+
 			long running_hash = hasher.Hash(buffer_, 0, buffer_.length);
 			for (int i = kBlockSize; i < random_buffer_size; ++i) {
 				// UpdateHash() calculates the hash value incrementally.
@@ -51,6 +51,75 @@ public class RollingHashTest {
 				// Hash() calculates the hash value from scratch.  Verify that both
 				// methods return the same hash value.
 				Assert.assertEquals(running_hash, hasher.Hash(buffer_, i + 1 - kBlockSize, buffer_.length - (i + 1 - kBlockSize)));
+			}
+		}
+	}
+
+	private void RunTimingTestForBlockSize(int kBlockSize, Random random) {
+		byte[] buffer = new byte[kUpdateHashBlocks + kLargestBlockSize];
+		random.nextBytes(buffer);
+
+		final double time_for_default_hash = DefaultHashTimingTest(kBlockSize, buffer);
+		final double time_for_rolling_hash = RollingTimingTest(kBlockSize, buffer);
+		System.out.printf("%d\t%f\t%f (%f%%)\n",
+				kBlockSize,
+				time_for_default_hash,
+				time_for_rolling_hash,
+				FindPercentage(time_for_default_hash, time_for_rolling_hash));
+
+		Assert.assertTrue(time_for_default_hash > 0.0);
+		Assert.assertTrue(time_for_rolling_hash > 0.0);
+	}
+
+	private double DefaultHashTimingTest(int kBlockSize, byte[] buffer_) {
+		// Execution time is expected to be O(kBlockSize) per hash operation,
+		// so scale the number of iterations accordingly
+		final int kTimingTestIterations = kTimingTestSize / kBlockSize;
+		long time = System.nanoTime();
+		BM_DefaultHash(kBlockSize, kTimingTestIterations, buffer_);
+		time = System.nanoTime() - time;
+
+		return time / 1000.0;
+	}
+
+	private double RollingTimingTest(int kBlockSize, byte[] buffer_) {
+		// Execution time is expected to be O(1) per hash operation,
+		// so leave the number of iterations constant
+		final int kTimingTestIterations = kTimingTestSize;
+		long time = System.nanoTime();
+		BM_UpdateHash(kBlockSize, kTimingTestIterations, buffer_);
+		time = System.nanoTime() - time;
+
+		return time / 1000.0;
+	}
+
+	private double FindPercentage(double original, double modified) {
+		if (original < 0.0001) {
+			return 0.0;
+		} else {
+			return ((modified - original) / original) * 100.0;
+		}
+	}
+
+	private void BM_DefaultHash(int kBlockSize, int iterations, byte[] buffer) {
+		RollingHash hasher = new RollingHash(kBlockSize);
+		long result_array[] = new long[kUpdateHashBlocks];
+		for (int iter = 0; iter < iterations; ++iter) {
+			for (int i = 0; i < kUpdateHashBlocks; ++i) {
+				result_array[i] = hasher.Hash(buffer, i, buffer.length - i);
+			}
+		}
+	}
+
+	private void BM_UpdateHash(int kBlockSize, int iterations, byte[] buffer) {
+		RollingHash hasher = new RollingHash(kBlockSize);
+
+		long[] result_array = new long[kUpdateHashBlocks];
+		for (int iter = 0; iter < iterations; ++iter) {
+			long running_hash = hasher.Hash(buffer, 0, buffer.length);
+			for (int i = 0; i < kUpdateHashBlocks; ++i) {
+				running_hash = hasher.UpdateHash(running_hash, buffer[i], buffer[i + kBlockSize]);
+				result_array[i] = running_hash;
 			}
 		}
 	}
@@ -98,22 +167,16 @@ public class RollingHashTest {
 		UpdateHashMatchesHashForBlockSize(128, random);
 	}
 
-	/*
+
 	@Test
-	public void intVsLongMod() {
-		int i = 0xc1841943;
-		long l = 0xc1841943L;
+	public void TimingTests() {
+		Random random = new Random(1);
 
-		Assert.assertTrue(i < 0);
-		Assert.assertTrue(l > 0L);
-
-		int ii = i % 7393;
-		long ll = l % 7393;
-
-		System.out.println("int mod = " + ii);
-		System.out.println("long mod = " + ll);
-
-
+		RunTimingTestForBlockSize(4, random);
+		RunTimingTestForBlockSize(8, random);
+		RunTimingTestForBlockSize(16, random);
+		RunTimingTestForBlockSize(32, random);
+		RunTimingTestForBlockSize(64, random);
+		RunTimingTestForBlockSize(128, random);
 	}
-	 */
 }

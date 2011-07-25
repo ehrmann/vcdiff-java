@@ -5,7 +5,7 @@ public class RollingHash {
 
 	// We keep a table that maps from any byte "b" to
 	//    (- b * pow(kMult, window_size - 1)) % kBase
-	private final int[] remove_table;
+	private final long[] remove_table;
 
 
 	public RollingHash(int window_size) {
@@ -18,8 +18,8 @@ public class RollingHash {
 	}
 
 	// Compute a hash of the window "ptr[0, window_size - 1]".
-	public int Hash(byte[] data, int offset, int length) {
-		int h = RollingHashUtil.HashFirstTwoBytes(data, offset);
+	public long Hash(byte[] data, int offset, int length) {
+		long h = RollingHashUtil.HashFirstTwoBytes(data, offset);
 		for (int i = 2; i < window_size; ++i) {
 			h = RollingHashUtil.HashStep(h, data[offset + i]);
 		}
@@ -39,8 +39,8 @@ public class RollingHash {
 	// Each time window_size doubles, the time to execute Hash() also doubles,
 	// while the time to execute UpdateHash() remains constant.  Empirical tests
 	// have borne out this statement.
-	public int UpdateHash(int old_hash, byte old_first_byte, byte new_last_byte) {
-		int partial_hash = RemoveFirstByteFromHash(old_hash, old_first_byte);
+	public long UpdateHash(long old_hash, byte old_first_byte, byte new_last_byte) {
+		long partial_hash = RemoveFirstByteFromHash(old_hash, old_first_byte);
 		return RollingHashUtil.HashStep(partial_hash, new_last_byte);
 	}
 
@@ -49,8 +49,8 @@ public class RollingHash {
 	// value for buffer[1] ... buffer[window_size -1].  See the comments in
 	// Init(), below, for a description of how the contents of remove_table_ are
 	// computed.
-	protected int RemoveFirstByteFromHash(int full_hash, byte first_byte) {
-		return RollingHashUtil.ModBase(full_hash + remove_table[first_byte]);
+	protected long RemoveFirstByteFromHash(long full_hash, byte first_byte) {
+		return RollingHashUtil.ModBase(full_hash + remove_table[first_byte & 0xff]);
 	}
 
 	protected static class RollingHashUtil {
@@ -64,7 +64,7 @@ public class RollingHash {
 		public static final int kBase = (1 << 23);
 
 		// Returns operand % kBase, assuming that kBase is a power of two.
-		public static int ModBase(int operand) {
+		public static long ModBase(long operand) {
 			return operand & (kBase - 1);
 		}
 
@@ -73,7 +73,7 @@ public class RollingHash {
 		//     result < kBase
 		// and
 		//     ModBase(operand + result) == 0
-		public static int FindModBaseInverse(int operand) {
+		public static long FindModBaseInverse(long operand) {
 			// The subtraction (0 - operand) produces an unsigned underflow for any
 			// operand except 0.  The underflow results in a (very large) unsigned
 			// number.  Binary subtraction is used instead of unary negation because
@@ -84,15 +84,15 @@ public class RollingHash {
 			// different compilers if operand is negative.  That is not a problem in
 			// this case, since all numbers used are unsigned, and ModBase does its work
 			// using bitwise arithmetic rather than the % operator.
-			return ModBase(-operand);
+			return (0x100000000L - ModBase(operand)) & 0xFFFFFFFFL;
 		}
 
 		// Here's the heart of the hash algorithm.  Start with a partial_hash value of
 		// 0, and run this HashStep once against each byte in the data window to be
 		// hashed.  The result will be the hash value for the entire data window.  The
 		// Hash() function, below, does exactly this, albeit with some refinements.
-		public static int HashStep(int partial_hash, byte next_byte) {
-			return ModBase((partial_hash * kMult) + next_byte);
+		public static long HashStep(long partial_hash, byte next_byte) {
+			return ModBase((partial_hash * kMult) + (next_byte & 0xff));
 		}
 
 		// Use this function to start computing a new hash value based on the first
@@ -101,11 +101,11 @@ public class RollingHash {
 		// but takes advantage of the fact that the maximum value of
 		// (ptr[0] * kMult) + ptr[1] is not large enough to exceed kBase, thus
 		// avoiding an unnecessary ModBase operation.
-		public static int HashFirstTwoBytes(byte[] ptr, int offset) {
-			return ((ptr[offset]) * kMult) + ptr[offset + 1];
+		public static long HashFirstTwoBytes(byte[] ptr, int offset) {
+			return ((ptr[offset] & 0xff) * kMult) + (ptr[offset + 1] & 0xff);
 		}
 
-		public static int[] BuildRemoveTable(int window_size) {
+		public static long[] BuildRemoveTable(int window_size) {
 			if (window_size < 2) {
 				throw new IllegalArgumentException();
 			}
@@ -120,11 +120,11 @@ public class RollingHash {
 			//      at the same time, two tables with the same contents may be created
 			//      (causing a memory leak), but the results will be consistent
 			//      no matter which of the two tables is used.
-			int[] remove_table = new int[256];
+			long[] remove_table = new long[256];
 			// Compute multiplier.  Concisely, it is:
 			//     pow(kMult, (window_size - 1)) % kBase,
 			// but we compute the power in integer form.
-			int multiplier = 1;
+			long multiplier = 1;
 			for (int i = 0; i < window_size - 1; ++i) {
 				multiplier = RollingHashUtil.ModBase(multiplier * RollingHashUtil.kMult);
 			}
@@ -145,7 +145,7 @@ public class RollingHash {
 			// has advanced by one byte, to
 			//     buffer[1] ... buffer[window_size]
 			// In fact, that is precisely what happens in UpdateHash, above.
-			int byte_times_multiplier = 0;
+			long byte_times_multiplier = 0;
 			for (int removed_byte = 0; removed_byte < 256; ++removed_byte) {
 				remove_table[removed_byte] = RollingHashUtil.FindModBaseInverse(byte_times_multiplier);
 				// Iteratively adding the multiplier in this loop is equivalent to

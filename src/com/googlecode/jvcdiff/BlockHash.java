@@ -309,7 +309,7 @@ public class BlockHash {
 		int block_ptr = NextIndexToAdd();
 		final int end_ptr = end_limit;
 		while (block_ptr < end_ptr) {
-			AddBlock(rollingHash.Hash(this.source_data, block_ptr, kBlockSize));
+			AddBlock((int)rollingHash.Hash(this.source_data, block_ptr, kBlockSize));
 			block_ptr += kBlockSize;
 		}
 	}

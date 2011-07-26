@@ -1,6 +1,7 @@
 package com.googlecode.jvcdiff;
 
 import java.util.Random;
+import java.util.zip.CRC32;
 
 import junit.framework.Assert;
 
@@ -178,5 +179,34 @@ public class RollingHashTest {
 		RunTimingTestForBlockSize(32, random);
 		RunTimingTestForBlockSize(64, random);
 		RunTimingTestForBlockSize(128, random);
+	}
+
+	@Test
+	public void testAgainstCppResults() {
+		// This code was used to generate a file that was run through the C++ version of this code
+		Random random = new Random(1);
+		byte[] buffer = new byte[4096];
+		random.nextBytes(buffer);
+
+		CRC32 crc32 = new CRC32();
+		crc32.update(buffer);
+		Assert.assertEquals(0x83402f90, (int)crc32.getValue());
+
+		// These are the results the C++ code produced.
+		int[] expectedHashes = new int[] {
+				0xefa82,
+				0x546aae,
+				0x44eaf,
+				0x6b4d62,
+				0x5c9691,
+				0x546486,
+				0x3dc508,
+				0x45123c,
+		};
+		
+		for (int windowSize = 16, i = 0; i < expectedHashes.length; i++, windowSize <<= 1) {
+			RollingHash hasher = new RollingHash(windowSize);
+			Assert.assertEquals(expectedHashes[i], hasher.Hash(buffer, 0, buffer.length));
+		}
 	}
 }

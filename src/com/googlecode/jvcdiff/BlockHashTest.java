@@ -145,6 +145,100 @@ public class BlockHashTest {
 				1));
 	}
 
+	@Test
+	public void LeftLimitedByMaxBytes() throws UnsupportedEncodingException {
+		// The number of bytes that match between the original "we hear is fearsome"
+		// and the altered "ve hear is fearsome".
+		final int expected_length = kBlockSize * "e hear is ".getBytes("US-ASCII").length;
+		final int max_bytes = expected_length - 1;
+		Assert.assertEquals(max_bytes, BlockHash.MatchingBytesToLeft(
+				search_string, index_of_f_in_fearsome,
+				search_string_altered, index_of_f_in_fearsome,
+				max_bytes));
+	}
+
+	@Test
+	public void LeftNotLimited() throws UnsupportedEncodingException {
+		// The number of bytes that match between the original "we hear is fearsome"
+		// and the altered "ve hear is fearsome".
+		final int expected_length = kBlockSize * "e hear is ".getBytes("US-ASCII").length;
+		final int max_bytes = expected_length + 1;
+		Assert.assertEquals(expected_length, BlockHash.MatchingBytesToLeft(
+				search_string, index_of_f_in_fearsome,
+				search_string_altered, index_of_f_in_fearsome,
+				max_bytes));
+		Assert.assertEquals(expected_length, BlockHash.MatchingBytesToLeft(
+				search_string, index_of_f_in_fearsome,
+				search_string_altered, index_of_f_in_fearsome,
+				Integer.MAX_VALUE));
+	}
+
+	@Test
+	public void RightLimitedByMaxBytes() throws UnsupportedEncodingException {
+		// The number of bytes that match between the original "fearsome"
+		// and the altered "fearsomm".
+		final int expected_length = (kBlockSize * "fearsom".getBytes("US-ASCII").length) + (kBlockSize - 1);  // spacing between letters
+		final int max_bytes = expected_length - 1;
+		Assert.assertEquals(max_bytes, BlockHash.MatchingBytesToRight(
+				search_string, index_of_f_in_fearsome,
+				search_string_altered, index_of_f_in_fearsome,
+				max_bytes));
+	}
+
+	@Test
+	public void RightNotLimited() throws UnsupportedEncodingException {
+		// The number of bytes that match between the original "we hear is fearsome"
+		// and the altered "ve hear is fearsome".
+		final int expected_length = (kBlockSize * "fearsom".getBytes("US-ASCII").length) + (kBlockSize - 1);  // spacing between letters
+		final int max_bytes = expected_length + 1;
+		Assert.assertEquals(expected_length, BlockHash.MatchingBytesToRight(
+				search_string, index_of_f_in_fearsome,
+				search_string_altered, index_of_f_in_fearsome,
+				max_bytes));
+		Assert.assertEquals(expected_length, BlockHash.MatchingBytesToRight(
+				search_string, index_of_f_in_fearsome,
+				search_string_altered, index_of_f_in_fearsome,
+				Integer.MAX_VALUE));
+	}
+
+	private static void TestAndPrintTimesForCompareFunctions(boolean should_be_identical, byte[] compare_buffer_1_, byte[] compare_buffer_2_) {
+		// Prime the memory cache.
+		int prime_result_ = 0;
+		for (int i = 0; i < kTimingTestSize && prime_result_ == 0; i++) {
+			prime_result_ = (compare_buffer_1_[i] & 0xff) - (compare_buffer_2_[i] & 0xff);
+		}
+
+		final int block1_limit = kTimingTestSize - kBlockSize;
+
+		int block_contents_match_result = 0;
+
+		long block_contents_time = System.nanoTime();
+
+		for (int i = 0; i < kTimingTestIterations; ++i) {
+			int block1 = 0;
+			int block2 = 0;
+			while (block1 < block1_limit) {
+				if (!BlockHash.BlockContentsMatch(compare_buffer_1_, block1, compare_buffer_2_, block2)) {
+					++block_contents_match_result;
+				}
+				block1 += kBlockSize;
+				block2 += kBlockSize;
+			}
+		}
+
+		block_contents_time = System.nanoTime() - block_contents_time;
+
+		double time_for_block_contents_match = (double)block_contents_time / 1000.0 / ((kTimingTestSize / kBlockSize) * kTimingTestIterations);
+
+		if (should_be_identical) {
+			Assert.assertEquals(0, block_contents_match_result);
+		} else {
+			Assert.assertTrue(block_contents_match_result > 0);
+		}
+
+		System.out.println( "BlockHash.BlockContentsMatch: " + time_for_block_contents_match + " us per operation");
+	}
+
 	// Copy sample_text_without_spaces and search_string_without_spaces
 	// into newly allocated sample_text and search_string buffers,
 	// but pad them with space characters so that every character

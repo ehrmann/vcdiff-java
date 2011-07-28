@@ -201,6 +201,98 @@ public class BlockHashTest {
 				Integer.MAX_VALUE));
 	}
 
+	@Test
+	public void BlockContentsMatchIsAsFastAsBlockCompareWords() {
+		byte[] compare_buffer_1_ = new byte[kTimingTestSize];
+		byte[] compare_buffer_2_ = new byte[kTimingTestSize];
+
+		// The value 0xBE is arbitrarily chosen.  First test with identical contents
+		// in the buffers, so that the comparison functions cannot short-circuit
+		// and will return true.
+		Arrays.fill(compare_buffer_1_, (byte)0xBE);
+		Arrays.fill(compare_buffer_2_, (byte)0xBE);
+
+		System.out.printf("Comparing %d identical values:\n", (kTimingTestSize / kBlockSize));
+
+		TestAndPrintTimesForCompareFunctions(true, compare_buffer_1_, compare_buffer_2_);
+
+		// Now change one value in the middle of one buffer, so that the contents
+		// are no longer the same.
+		compare_buffer_1_[kTimingTestSize / 2] = 0x00;
+		System.out.printf("Comparing %d identical values and one mismatch\n", ((kTimingTestSize / kBlockSize) - 1));
+
+		TestAndPrintTimesForCompareFunctions(false, compare_buffer_1_, compare_buffer_2_);
+
+		// Set one of the bytes of each block to differ so that
+		// none of the compare operations will return true, and run timing tests.
+		// In practice, BlockHash::BlockContentsMatch will only be called
+		// for two blocks whose hash values match, and the two most important
+		// cases are: (1) the blocks are identical, or (2) none of their bytes match.
+		TimingTestForBlocksThatDifferAtByte(0);
+		TimingTestForBlocksThatDifferAtByte(1);
+		TimingTestForBlocksThatDifferAtByte(kBlockSize / 2);
+		TimingTestForBlocksThatDifferAtByte(kBlockSize - 1);
+	}
+
+	@Test
+	public void FindFailsBeforeHashing() {
+		BlockHash th_ = BlockHash.CreateTargetHash(sample_text, 0);
+		Assert.assertEquals(-1, th_.FirstMatchingBlock((int)hashed_y, test_string_y, 0));
+	}
+
+	@Test
+	public void HashOneFindOne() {
+		RollingHash rollingHash = new RollingHash(kBlockSize);
+		BlockHash th_ = BlockHash.CreateTargetHash(sample_text, 0);
+		for (int i = 0; i <= index_of_y_in_only; ++i) {
+			th_.AddOneIndexHash(i, (int)rollingHash.Hash(sample_text, i, sample_text.length - i));
+		}
+		Assert.assertEquals(block_of_y_in_only, th_.FirstMatchingBlock((int)hashed_y, test_string_y, 0));
+		Assert.assertEquals(-1, th_.NextMatchingBlock(block_of_y_in_only, test_string_y, 0));
+	}
+
+	@Test
+	public void HashAllFindOne() {
+		BlockHash dh_ = BlockHash.CreateDictionaryHash(sample_text);
+		Assert.assertEquals(block_of_y_in_only, dh_.FirstMatchingBlock((int)hashed_y, test_string_y, 0));
+		Assert.assertEquals(-1, dh_.NextMatchingBlock(block_of_y_in_only, test_string_y, 0));
+	}
+
+	@Test
+	public void NonMatchingTextNotFound() {
+		BlockHash dh_ = BlockHash.CreateDictionaryHash(sample_text);
+		Assert.assertEquals(-1, dh_.FirstMatchingBlock((int)hashed_all_Qs, test_string_all_Qs, 0));
+	}
+
+	// Search for unaligned text.  The test string is contained in the
+	// sample text (unlike the non-matching string in NonMatchingTextNotFound,
+	// above), but it is not aligned on a block boundary.  FindMatchingBlock
+	// will only work if the test string is aligned on a block boundary.
+	//
+	//	    "   T   h   e       o   n   l   y"
+	//	              ^^^^ Here is the test string
+	@Test
+	public void UnalignedTextNotFound() {
+		BlockHash dh_ = BlockHash.CreateDictionaryHash(sample_text);
+		Assert.assertEquals(-1, dh_.FirstMatchingBlock((int)hashed_unaligned_e, test_string_unaligned_e, 0));
+	}
+
+	@Test
+	public void FindSixMatches() {
+		BlockHash dh_ = BlockHash.CreateDictionaryHash(sample_text);
+
+		Assert.assertEquals(block_of_first_e, dh_.FirstMatchingBlock((int)hashed_e, test_string_e, 0));
+		Assert.assertEquals(block_of_second_e, dh_.NextMatchingBlock(block_of_first_e, test_string_e, 0));
+		Assert.assertEquals(block_of_third_e, dh_.NextMatchingBlock(block_of_second_e, test_string_e, 0));
+		Assert.assertEquals(block_of_fourth_e, dh_.NextMatchingBlock(block_of_third_e, test_string_e, 0));
+		Assert.assertEquals(block_of_fifth_e, dh_.NextMatchingBlock(block_of_fourth_e, test_string_e, 0));
+		Assert.assertEquals(block_of_sixth_e, dh_.NextMatchingBlock(block_of_fifth_e, test_string_e, 0));
+		Assert.assertEquals(-1, dh_.NextMatchingBlock(block_of_sixth_e, test_string_e, 0));
+
+		// Starting over gives same result
+		Assert.assertEquals(block_of_first_e, dh_.FirstMatchingBlock((int)hashed_e, test_string_e, 0));
+	}
+
 	private static void TestAndPrintTimesForCompareFunctions(boolean should_be_identical, byte[] compare_buffer_1_, byte[] compare_buffer_2_) {
 		// Prime the memory cache.
 		int prime_result_ = 0;
@@ -237,6 +329,22 @@ public class BlockHashTest {
 		}
 
 		System.out.println( "BlockHash.BlockContentsMatch: " + time_for_block_contents_match + " us per operation");
+	}
+
+	void TimingTestForBlocksThatDifferAtByte(int n) {
+		byte[] compare_buffer_1_ = new byte[kTimingTestSize];
+		byte[] compare_buffer_2_ = new byte[kTimingTestSize];
+
+		Arrays.fill(compare_buffer_1_, (byte)0xBE);
+		Arrays.fill(compare_buffer_2_, (byte)0xBE);
+
+		for (int index = n; index < kTimingTestSize; index += kBlockSize) {
+			compare_buffer_1_[index] = 0x00;
+			compare_buffer_2_[index] = 0x01;
+		}
+
+		System.out.printf("Comparing blocks that differ at byte %d\n", n);
+		TestAndPrintTimesForCompareFunctions(false, compare_buffer_1_, compare_buffer_2_);
 	}
 
 	// Copy sample_text_without_spaces and search_string_without_spaces

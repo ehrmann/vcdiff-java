@@ -293,6 +293,61 @@ public class BlockHashTest {
 		Assert.assertEquals(block_of_first_e, dh_.FirstMatchingBlock((int)hashed_e, test_string_e, 0));
 	}
 
+	@Test
+	public void AddRangeFindThreeMatches() {
+		BlockHash th_ = BlockHash.CreateTargetHash(sample_text, 0);
+
+		// Add hash values only for those characters before the fourth instance
+		// of "e" in the sample text.  Tests that the ending index
+		// of AddAllBlocksThroughIndex() is not inclusive: only three matches
+		// for "e" should be found.
+		th_.AddAllBlocksThroughIndex(index_of_fourth_e);
+		Assert.assertEquals(block_of_first_e, th_.FirstMatchingBlock((int)hashed_e, test_string_e, 0));
+		Assert.assertEquals(block_of_second_e, th_.NextMatchingBlock(block_of_first_e, test_string_e, 0));
+		Assert.assertEquals(block_of_third_e, th_.NextMatchingBlock(block_of_second_e, test_string_e, 0));
+		Assert.assertEquals(-1, th_.NextMatchingBlock(block_of_third_e, test_string_e, 0));
+
+		// Starting over gives same result
+		Assert.assertEquals(block_of_first_e, th_.FirstMatchingBlock((int)hashed_e, test_string_e, 0));
+	}
+
+	// Try indices that are not even multiples of the block size.
+	// Add three ranges and verify the results after each
+	// call to AddAllBlocksThroughIndex().
+	@Test
+	public void AddRangeWithUnalignedIndices() {
+		BlockHash th_ = BlockHash.CreateTargetHash(sample_text, 0);
+
+		th_.AddAllBlocksThroughIndex(index_of_first_e + 1);
+		Assert.assertEquals(block_of_first_e, th_.FirstMatchingBlock((int)hashed_e, test_string_e, 0));
+		Assert.assertEquals(-1, th_.NextMatchingBlock(block_of_first_e, test_string_e, 0));
+
+		// Starting over gives same result
+		Assert.assertEquals(block_of_first_e, th_.FirstMatchingBlock((int)hashed_e, test_string_e, 0));
+
+		// Add the second range to expand the result set
+		th_.AddAllBlocksThroughIndex(index_of_fourth_e - 3);
+		Assert.assertEquals(block_of_first_e, th_.FirstMatchingBlock((int)hashed_e, test_string_e, 0));
+		Assert.assertEquals(block_of_second_e, th_.NextMatchingBlock(block_of_first_e, test_string_e, 0));
+		Assert.assertEquals(block_of_third_e, th_.NextMatchingBlock(block_of_second_e, test_string_e, 0));
+		Assert.assertEquals(-1, th_.NextMatchingBlock(block_of_third_e, test_string_e, 0));
+
+		// Starting over gives same result
+		Assert.assertEquals(block_of_first_e, th_.FirstMatchingBlock((int)hashed_e, test_string_e, 0));
+
+		// Add the third range to expand the result set
+		th_.AddAllBlocksThroughIndex(index_of_fourth_e + 1);
+
+		Assert.assertEquals(block_of_first_e, th_.FirstMatchingBlock((int)hashed_e, test_string_e, 0));
+		Assert.assertEquals(block_of_second_e, th_.NextMatchingBlock(block_of_first_e, test_string_e, 0));
+		Assert.assertEquals(block_of_third_e, th_.NextMatchingBlock(block_of_second_e, test_string_e, 0));
+		Assert.assertEquals(block_of_fourth_e, th_.NextMatchingBlock(block_of_third_e, test_string_e, 0));
+		Assert.assertEquals(-1, th_.NextMatchingBlock(block_of_fourth_e, test_string_e, 0));
+
+		// Starting over gives same result
+		Assert.assertEquals(block_of_first_e, th_.FirstMatchingBlock((int)hashed_e, test_string_e, 0));
+	}
+
 	private static void TestAndPrintTimesForCompareFunctions(boolean should_be_identical, byte[] compare_buffer_1_, byte[] compare_buffer_2_) {
 		// Prime the memory cache.
 		int prime_result_ = 0;

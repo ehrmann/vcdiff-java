@@ -193,7 +193,7 @@ public class BlockHash {
 	// starting_offset_ will be zero; for a hash of previously encoded
 	// target data, starting_offset_ will be equal to the dictionary size.
 	public BlockHash(byte[] source_data, int starting_offset, boolean populate_hash_table) {
-		if (starting_offset < 0 || starting_offset >= source_data.length) {
+		if (starting_offset < 0) {
 			throw new IllegalArgumentException();
 		}
 

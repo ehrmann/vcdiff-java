@@ -414,13 +414,218 @@ public class BlockHashTest {
 		BlockHash dh_ = BlockHash.CreateDictionaryHash(sample_text);
 		dh_.NextMatchingBlock(0xFFFFFFFE, "    ".getBytes("US-ASCII"), 0);
 	}
-	
+
 	@Test(expected = IllegalArgumentException.class)
 	public void AddAllBlocksThroughIndexOutOfRange() {
 		BlockHash th_ = BlockHash.CreateTargetHash(sample_text, 0);
 		th_.AddAllBlocksThroughIndex(sample_text.length + 1);
 	}
-	
+
+	@Test
+	public void UnknownFingerprintReturnsNoMatch() throws UnsupportedEncodingException {
+		BlockHash dh_ = BlockHash.CreateDictionaryHash(sample_text);
+		Assert.assertEquals(-1, dh_.FirstMatchingBlock(0xFAFAFAFA, "FAFA".getBytes("US-ASCII"), 0));
+	}
+
+	@Test
+	public void FindBestMatch() throws UnsupportedEncodingException {
+		BlockHash dh_ = BlockHash.CreateDictionaryHash(sample_text);
+
+		BlockHash.Match best_match = new BlockHash.Match();
+		dh_.FindBestMatch(
+				(int)hashed_f,
+				search_string, index_of_f_in_fearsome,
+				search_string, 0,
+				best_match);
+
+		Assert.assertEquals(index_of_longest_match_ear_is_fear, best_match.source_offset());
+		Assert.assertEquals(index_of_second_e_in_what_we_hear, best_match.target_offset());
+		// The match includes the spaces after the final character,
+
+		// which is why (kBlockSize - 1) is added to the expected best size.
+		Assert.assertEquals(("ear is fear".getBytes("US-ASCII").length * kBlockSize) + (kBlockSize - 1), best_match.size());
+	}
+
+	@Test
+	public void FindBestMatchWithStartingOffset() throws UnsupportedEncodingException {
+		BlockHash th2 = new BlockHash(sample_text, 0x10000, true);
+
+		BlockHash.Match best_match = new BlockHash.Match();
+		th2.FindBestMatch((int)hashed_f,
+				search_string, index_of_f_in_fearsome,
+				search_string, 0,
+				best_match);
+
+		// Offset should begin with dictionary_size
+		Assert.assertEquals(0x10000 + (index_of_longest_match_ear_is_fear), best_match.source_offset());
+		Assert.assertEquals(index_of_second_e_in_what_we_hear, best_match.target_offset());
+		// The match includes the spaces after the final character,
+		// which is why (kBlockSize - 1) is added to the expected best size.
+		Assert.assertEquals(("ear is fear".getBytes("US-ASCII").length * kBlockSize) + (kBlockSize - 1), best_match.size());
+	}
+
+	@Test
+	public void BestMatchReachesEndOfDictionary() throws UnsupportedEncodingException {
+		BlockHash dh_ = BlockHash.CreateDictionaryHash(sample_text);
+		RollingHash rollingHash = new RollingHash(kBlockSize);
+
+		// Hash the "i" in "fear itself"
+		long hash_value = rollingHash.Hash(search_to_end_string, index_of_i_in_itself, search_to_end_string.length);
+
+		BlockHash.Match best_match = new BlockHash.Match();
+		dh_.FindBestMatch((int)hash_value,
+				search_to_end_string, index_of_i_in_itself,
+				search_to_end_string, 0,
+				best_match);
+
+		Assert.assertEquals(index_of_space_before_itself, best_match.source_offset());
+		Assert.assertEquals(index_of_space_in_eat_itself, best_match.target_offset());
+		Assert.assertEquals(" itself".getBytes("US-ASCII").length * kBlockSize, best_match.size());
+	}
+
+	@Test
+	public void BestMatchReachesStartOfDictionary() throws UnsupportedEncodingException {
+		BlockHash dh_ = BlockHash.CreateDictionaryHash(sample_text);
+		RollingHash rollingHash = new RollingHash(kBlockSize);
+		BlockHash.Match best_match = new BlockHash.Match();
+
+		// Hash the "i" in "fear itself"
+		long hash_value = rollingHash.Hash(search_to_beginning_string, index_of_o_in_online, search_to_beginning_string.length);
+		dh_.FindBestMatch((int)hash_value,
+				search_to_beginning_string, index_of_o_in_online,
+				search_to_beginning_string, 0,
+				best_match);
+
+		Assert.assertEquals(0, best_match.source_offset());  // beginning of dictionary
+		Assert.assertEquals(index_of_t_in_use_the, best_match.target_offset());
+		// The match includes the spaces after the final character,
+		// which is why (kBlockSize - 1) is added to the expected best size.
+		Assert.assertEquals(("The onl".getBytes("US-ASCII").length * kBlockSize) + (kBlockSize - 1), best_match.size());
+	}
+
+	@Test
+	public void BestMatchWithManyMatches() {
+		RollingHash rollingHash = new RollingHash(kBlockSize);
+		BlockHash.Match best_match = new BlockHash.Match();		
+		BlockHash many_matches_hash = new BlockHash(sample_text_many_matches, 0, true);
+
+		// Hash the "   a" at the beginning of the search string "ababc"
+		long hash_value = rollingHash.Hash(search_string_many_matches, 0, search_string_many_matches.length);
+		many_matches_hash.FindBestMatch((int)hash_value,
+				search_string_many_matches, 0,
+				search_string_many_matches, 0,
+				best_match);
+
+		Assert.assertEquals(index_of_ababc, best_match.source_offset());
+		Assert.assertEquals(0, best_match.target_offset());
+		Assert.assertEquals(search_string_many_matches.length, best_match.size());
+	}
+
+	@Test
+	public void HashCollisionFindsNoMatch() {
+		RollingHash rollingHash = new RollingHash(kBlockSize);
+
+		byte[] collision_search_string = search_string.clone();
+		int fearsome_location = index_of_f_in_fearsome;
+
+		// Tweak the collision string so that it has the same hash value
+		// but different text.  The last four characters of the search string
+		// should be "   f", and the bytes given below have the same hash value
+		// as those characters.
+		Assert.assertTrue(kBlockSize > 4);
+		collision_search_string[index_of_f_in_fearsome + kBlockSize - 4] = (byte)0x84;
+		collision_search_string[index_of_f_in_fearsome + kBlockSize - 3] = (byte)0xF1;
+		collision_search_string[index_of_f_in_fearsome + kBlockSize - 2] = 0x51;
+		collision_search_string[index_of_f_in_fearsome + kBlockSize - 1] = 0x00;
+		Assert.assertEquals(hashed_f, rollingHash.Hash(collision_search_string, index_of_f_in_fearsome, collision_search_string.length - index_of_f_in_fearsome));
+
+		Assert.assertNotSame(
+				Arrays.copyOfRange(search_string, index_of_f_in_fearsome, index_of_f_in_fearsome + kBlockSize),
+				Arrays.copyOfRange(collision_search_string, index_of_f_in_fearsome, index_of_f_in_fearsome + kBlockSize));
+
+		// No match should be found this time.
+		BlockHash dh_ = BlockHash.CreateDictionaryHash(sample_text);
+		BlockHash.Match best_match = new BlockHash.Match();
+		dh_.FindBestMatch((int)hashed_f,
+				collision_search_string, fearsome_location,
+				collision_search_string, 0,
+				best_match);
+
+		Assert.assertEquals(-1, best_match.source_offset());
+		Assert.assertEquals(-1, best_match.target_offset());
+		Assert.assertEquals(0, best_match.size());
+	}
+
+	// If the footprint passed to FindBestMatch does not actually match
+	// the search string, it should not find any matches.
+	@Test
+	public void WrongFootprintFindsNoMatch() {
+		BlockHash dh_ = BlockHash.CreateDictionaryHash(sample_text);
+		BlockHash.Match best_match = new BlockHash.Match();
+		dh_.FindBestMatch((int)hashed_e,  // Using hashed value of "e" instead of "f"!
+				search_string, index_of_f_in_fearsome,
+				search_string, 0,
+				best_match);
+		Assert.assertEquals(-1, best_match.source_offset());
+		Assert.assertEquals(-1, best_match.target_offset());
+		Assert.assertEquals(0, best_match.size());
+	}
+
+	// Use a dictionary containing 1M copies of the letter 'Q',
+	// and target data that also contains 1M Qs.  If FindBestMatch
+	// is not throttled to find a maximum number of matches, this
+	// will take a very long time -- several seconds at least.
+	// If this test appears to hang, it is because the throttling code
+	// (see BlockHash::kMaxMatchesToCheck for details) is not working.
+	@Test
+	public void SearchStringFindsTooManyMatches() {
+		final int kTestSize = 1 << 20;  // 1M
+
+		byte[] huge_dictionary = new byte[kTestSize];
+		Arrays.fill(huge_dictionary, (byte)'Q');
+
+		BlockHash huge_bh = new BlockHash(huge_dictionary, 0, true);
+
+		byte[] huge_target = new byte[kTestSize];
+		Arrays.fill(huge_target, (byte)'Q');
+
+		long time = System.nanoTime();
+
+		BlockHash.Match best_match = new BlockHash.Match();
+		huge_bh.FindBestMatch((int)hashed_all_Qs,
+				huge_target, (kTestSize / 2),  // middle of target
+				huge_target, 0,
+				best_match);
+
+		time = System.nanoTime() - time;
+
+		double elapsed_time_in_us = time / 1000.0;
+		System.out.printf("Time to search for best match with 1M matches: %.3f us\n", elapsed_time_in_us);
+
+		// All blocks match the candidate block.  FindBestMatch should have checked
+		// a certain number of matches before giving up.  The best match
+		// should include at least half the source and target, since the candidate
+		// block was in the middle of the target data.
+		Assert.assertTrue((kTestSize / 2) > best_match.source_offset());
+		Assert.assertTrue((kTestSize / 2) > best_match.target_offset());
+		Assert.assertTrue((kTestSize / 2) < best_match.size());
+		Assert.assertTrue(5000000 > elapsed_time_in_us);  // < 5 seconds
+		Assert.assertTrue(1000000 > elapsed_time_in_us);  // < 1 second
+	}
+
+	// TODO: this test case should fail
+	/*
+	@Test
+	public void AddTooManyBlocks() {
+		BlockHash th_ = BlockHash.CreateTargetHash(sample_text, 0);
+		for (int i = 0; i < sample_text.length; i+=kBlockSize) {
+			th_.AddOneIndexHash(i, (int)hashed_e);
+		}
+		// Didn't expect another block to be added
+		th_.AddOneIndexHash(sample_text.length / kBlockSize, (int)hashed_e);
+	}
+	 */
+
 	private static void TestAndPrintTimesForCompareFunctions(boolean should_be_identical, byte[] compare_buffer_1_, byte[] compare_buffer_2_) {
 		// Prime the memory cache.
 		int prime_result_ = 0;

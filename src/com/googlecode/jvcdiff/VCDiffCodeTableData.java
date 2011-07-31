@@ -1,6 +1,6 @@
 package com.googlecode.jvcdiff;
 
-public class VCDiffCodeTableData {
+public class VCDiffCodeTableData implements Cloneable {
 
 	protected static final int kCodeTableSize = 256;
 
@@ -182,6 +182,10 @@ public class VCDiffCodeTableData {
 	protected final byte mode1[] = new byte[kCodeTableSize];  // from enum VCDiffModes
 	protected final byte mode2[] = new byte[kCodeTableSize];  // from enum VCDiffModes
 
+	public VCDiffCodeTableData() {
+		
+	}
+	
 	public VCDiffCodeTableData(byte[] inst1, byte[] inst2, byte[] size1, byte[] size2, byte[] mode1, byte[] mode2) {
 		if (inst1.length != kCodeTableSize || inst2.length != kCodeTableSize ||
 				size1.length != kCodeTableSize || size2.length != kCodeTableSize ||
@@ -197,6 +201,10 @@ public class VCDiffCodeTableData {
 		System.arraycopy(mode2, 0, this.mode2, 0, kCodeTableSize);
 	}
 
+	public VCDiffCodeTableData clone() {
+		return new VCDiffCodeTableData(this.inst1, this.inst2, this.size1, this.size2, this.mode1, this.mode2);
+	}
+	
 	protected String VCDiffInstructionName(int inst) {
 		switch (inst) {
 		case VCD_NOOP:

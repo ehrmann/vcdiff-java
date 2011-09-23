@@ -153,7 +153,7 @@ public class VCDiffCodeTableReaderTest {
 	}
 
 	@Test
-	public void ReadCopy() {
+	public void ReadCopyTest() {
 		instructions_and_sizes_ptr_.put((byte)58);
 		instructions_and_sizes_ptr_.put((byte)0);
 		instructions_and_sizes_ptr_.flip();
@@ -164,9 +164,363 @@ public class VCDiffCodeTableReaderTest {
 		AtomicInteger mode = new AtomicInteger();
 
 		byte found_inst = reader_.GetNextInstruction(size, mode);
-		
+
 		Assert.assertEquals(VCDiffCodeTableData.VCD_COPY, found_inst);
 		Assert.assertEquals(10, size.get());
 		Assert.assertEquals(2, mode.get());
+	}
+
+	@Test
+	public void ReadAddCopyTest() {
+		instructions_and_sizes_ptr_.put((byte)175);
+		instructions_and_sizes_ptr_.put((byte)0);
+		instructions_and_sizes_ptr_.flip();
+
+		reader_.Init(instructions_and_sizes_ptr_);
+
+		AtomicInteger size = new AtomicInteger();
+		AtomicInteger mode = new AtomicInteger();
+
+		byte found_inst = reader_.GetNextInstruction(size, mode);
+
+		Assert.assertEquals(VCDiffCodeTableData.VCD_ADD, found_inst);
+		Assert.assertEquals(1, size.get());
+		Assert.assertEquals(0, mode.get());
+
+		found_inst = reader_.GetNextInstruction(size, mode);
+		Assert.assertEquals(VCDiffCodeTableData.VCD_COPY, found_inst);
+		Assert.assertEquals(4, size.get());
+		Assert.assertEquals(1, mode.get());
+	}
+
+	@Test
+	public void ReadCopyAdd() {
+		instructions_and_sizes_ptr_.put((byte)255);
+		instructions_and_sizes_ptr_.put((byte)0);
+		instructions_and_sizes_ptr_.flip();
+
+		reader_.Init(instructions_and_sizes_ptr_);
+
+		AtomicInteger size = new AtomicInteger();
+		AtomicInteger mode = new AtomicInteger();
+
+		byte found_inst = reader_.GetNextInstruction(size, mode);
+
+		Assert.assertEquals(VCDiffCodeTableData.VCD_COPY, found_inst);
+		Assert.assertEquals(4, size.get());
+		Assert.assertEquals(8, mode.get());
+
+		mode.set(0);
+
+		found_inst = reader_.GetNextInstruction(size, mode);
+		Assert.assertEquals(VCDiffCodeTableData.VCD_ADD, found_inst);
+		Assert.assertEquals(1, size.get());
+		Assert.assertEquals(0, mode.get());
+	}
+
+	@Test
+	public void UnGetAdd() {
+		instructions_and_sizes_ptr_.put((byte)1);
+		VarInt.putInt(instructions_and_sizes_ptr_, 257);
+		instructions_and_sizes_ptr_.flip();
+
+		reader_.Init(instructions_and_sizes_ptr_);
+
+		AtomicInteger size = new AtomicInteger();
+		AtomicInteger mode = new AtomicInteger();
+
+		byte found_inst = reader_.GetNextInstruction(size, mode);
+
+		Assert.assertEquals(VCDiffCodeTableData.VCD_ADD, found_inst);
+		Assert.assertEquals(257, size.get());
+		Assert.assertEquals(0, mode.get());
+
+		reader_.UnGetInstruction();
+		size.set(0);
+
+		found_inst = reader_.GetNextInstruction(size, mode);
+		Assert.assertEquals(VCDiffCodeTableData.VCD_ADD, found_inst);
+		Assert.assertEquals(257, size.get());
+		Assert.assertEquals(0, mode.get());
+	}
+
+	@Test
+	public void UnGetCopy() {
+		instructions_and_sizes_ptr_.put((byte)58);
+		instructions_and_sizes_ptr_.put((byte)0);
+		instructions_and_sizes_ptr_.put((byte)255);
+		instructions_and_sizes_ptr_.flip();
+
+		reader_.Init(instructions_and_sizes_ptr_);
+
+		AtomicInteger size = new AtomicInteger();
+		AtomicInteger mode = new AtomicInteger();
+
+		byte found_inst = reader_.GetNextInstruction(size, mode);
+
+		Assert.assertEquals(VCDiffCodeTableData.VCD_COPY, found_inst);
+		Assert.assertEquals(10, size.get());
+		Assert.assertEquals(2, mode.get());
+
+		reader_.UnGetInstruction();
+		size.set(0);
+		mode.set(0);
+
+		found_inst = reader_.GetNextInstruction(size, mode);
+
+		Assert.assertEquals(VCDiffCodeTableData.VCD_COPY, found_inst);
+		Assert.assertEquals(10, size.get());
+		Assert.assertEquals(2, mode.get());
+	}
+
+	@Test
+	public void UnGetCopyAddTest() {
+		instructions_and_sizes_ptr_.put((byte)255);
+		instructions_and_sizes_ptr_.put((byte)0);
+		instructions_and_sizes_ptr_.flip();
+
+		reader_.Init(instructions_and_sizes_ptr_);
+
+		AtomicInteger size = new AtomicInteger();
+		AtomicInteger mode = new AtomicInteger();
+
+		byte found_inst = reader_.GetNextInstruction(size, mode);
+
+		Assert.assertEquals(VCDiffCodeTableData.VCD_COPY, found_inst);
+		Assert.assertEquals(4, size.get());
+		Assert.assertEquals(8, mode.get());
+
+		reader_.UnGetInstruction();
+		size.set(0);
+		mode.set(0);
+
+		found_inst = reader_.GetNextInstruction(size, mode);
+
+		Assert.assertEquals(VCDiffCodeTableData.VCD_COPY, found_inst);
+		Assert.assertEquals(4, size.get());
+		Assert.assertEquals(8, mode.get());
+
+		size.set(0);
+		mode.set(0);
+
+		found_inst = reader_.GetNextInstruction(size, mode);
+
+		Assert.assertEquals(VCDiffCodeTableData.VCD_ADD, found_inst);
+		Assert.assertEquals(1, size.get());
+		Assert.assertEquals(0, mode.get());
+	}
+
+	@Test
+	public void UnGetTwiceTest() {
+		instructions_and_sizes_ptr_.put((byte)255);
+		instructions_and_sizes_ptr_.put((byte)0);
+		instructions_and_sizes_ptr_.flip();
+
+		reader_.Init(instructions_and_sizes_ptr_);
+
+		AtomicInteger size = new AtomicInteger();
+		AtomicInteger mode = new AtomicInteger();
+
+		byte found_inst = reader_.GetNextInstruction(size, mode);
+
+		Assert.assertEquals(VCDiffCodeTableData.VCD_COPY, found_inst);
+		Assert.assertEquals(4, size.get());
+		Assert.assertEquals(8, mode.get());
+
+		reader_.UnGetInstruction();
+		reader_.UnGetInstruction();
+
+		mode.set(0);
+		size.set(0);
+
+		found_inst = reader_.GetNextInstruction(size, mode);
+
+		Assert.assertEquals(VCDiffCodeTableData.VCD_COPY, found_inst);
+		Assert.assertEquals(4, size.get());
+		Assert.assertEquals(8, mode.get());
+
+		mode.set(0);
+		size.set(0);
+
+		found_inst = reader_.GetNextInstruction(size, mode);
+
+		Assert.assertEquals(VCDiffCodeTableData.VCD_ADD, found_inst);
+		Assert.assertEquals(1, size.get());
+		Assert.assertEquals(0, mode.get());
+	}
+
+	@Test
+	public void UnGetBeforeGet() {
+		instructions_and_sizes_ptr_.put((byte)255);
+		instructions_and_sizes_ptr_.put((byte)0);
+		instructions_and_sizes_ptr_.flip();
+
+		reader_.Init(instructions_and_sizes_ptr_);
+
+		reader_.UnGetInstruction();
+
+		AtomicInteger size = new AtomicInteger();
+		AtomicInteger mode = new AtomicInteger();
+
+		byte found_inst = reader_.GetNextInstruction(size, mode);
+
+		Assert.assertEquals(VCDiffCodeTableData.VCD_COPY, found_inst);
+		Assert.assertEquals(4, size.get());
+		Assert.assertEquals(8, mode.get());
+	}
+
+	@Test
+	public void UnGetAddCopyTest() {
+		instructions_and_sizes_ptr_.put((byte)175);
+		instructions_and_sizes_ptr_.put((byte)0);
+		instructions_and_sizes_ptr_.flip();
+
+		reader_.Init(instructions_and_sizes_ptr_);
+
+		AtomicInteger size = new AtomicInteger();
+		AtomicInteger mode = new AtomicInteger();
+
+		byte found_inst = reader_.GetNextInstruction(size, mode);
+
+		Assert.assertEquals(VCDiffCodeTableData.VCD_ADD, found_inst);
+		Assert.assertEquals(1, size.get());
+		Assert.assertEquals(0, mode.get());
+
+		reader_.UnGetInstruction();
+
+		found_inst = reader_.GetNextInstruction(size, mode);
+
+		Assert.assertEquals(VCDiffCodeTableData.VCD_ADD, found_inst);
+		Assert.assertEquals(1, size.get());
+		Assert.assertEquals(0, mode.get());
+
+		found_inst = reader_.GetNextInstruction(size, mode);
+
+		Assert.assertEquals(VCDiffCodeTableData.VCD_COPY, found_inst);
+		Assert.assertEquals(4, size.get());
+		Assert.assertEquals(1, mode.get());
+	}
+
+	@Test
+	public void ReReadIncomplete() {
+		instructions_and_sizes_ptr_.put((byte)175);	// Add(1) + Copy1(4)
+		instructions_and_sizes_ptr_.put((byte)1);	// Add(0)
+		instructions_and_sizes_ptr_.put((byte)111);	// with size 111
+		instructions_and_sizes_ptr_.put((byte)255);	// Copy8(4) + Add(1)
+
+		// 0 bytes available
+		instructions_and_sizes_ptr_.limit(0);
+
+		AtomicInteger size = new AtomicInteger();
+		AtomicInteger mode = new AtomicInteger();
+
+		reader_.Init(instructions_and_sizes_ptr_);
+
+		Assert.assertEquals(VCDiffCodeTableData.VCD_INSTRUCTION_END_OF_DATA, reader_.GetNextInstruction(size, mode));
+		Assert.assertEquals(0, instructions_and_sizes_ptr_.position());
+
+		// 1 more byte available
+		instructions_and_sizes_ptr_.limit(1);
+		reader_.Init(instructions_and_sizes_ptr_);
+
+		Assert.assertEquals(VCDiffCodeTableData.VCD_ADD, reader_.GetNextInstruction(size, mode));
+		Assert.assertEquals(1, size.get());
+		Assert.assertEquals(0, mode.get());
+
+		Assert.assertEquals(VCDiffCodeTableData.VCD_COPY, reader_.GetNextInstruction(size, mode));
+		Assert.assertEquals(4, size.get());
+		Assert.assertEquals(1, mode.get());
+		Assert.assertEquals(VCDiffCodeTableData.VCD_INSTRUCTION_END_OF_DATA, reader_.GetNextInstruction(size, mode));
+		Assert.assertEquals(1, instructions_and_sizes_ptr_.position());
+
+		// 1 more byte available
+		instructions_and_sizes_ptr_.limit(instructions_and_sizes_ptr_.position() + 1);
+		reader_.Init(instructions_and_sizes_ptr_);
+
+		// The opcode is available, but the separately encoded size is not
+		Assert.assertEquals(VCDiffCodeTableData.VCD_INSTRUCTION_END_OF_DATA, reader_.GetNextInstruction(size, mode));
+		Assert.assertEquals(1, instructions_and_sizes_ptr_.position());
+
+		// 2 more bytes available
+		instructions_and_sizes_ptr_.limit(instructions_and_sizes_ptr_.position() + 2);
+		reader_.Init(instructions_and_sizes_ptr_);
+
+		Assert.assertEquals(VCDiffCodeTableData.VCD_ADD, reader_.GetNextInstruction(size, mode));
+		Assert.assertEquals(111, size.get());
+		Assert.assertEquals(0, mode.get());
+		Assert.assertEquals(VCDiffCodeTableData.VCD_INSTRUCTION_END_OF_DATA, reader_.GetNextInstruction(size, mode));
+		Assert.assertEquals(3, instructions_and_sizes_ptr_.position());
+
+		// 1 more byte available
+		instructions_and_sizes_ptr_.limit(instructions_and_sizes_ptr_.position() + 1);
+		reader_.Init(instructions_and_sizes_ptr_);
+
+		Assert.assertEquals(VCDiffCodeTableData.VCD_COPY, reader_.GetNextInstruction(size, mode));
+		Assert.assertEquals(4, size.get());
+		Assert.assertEquals(8, mode.get());
+		Assert.assertEquals(VCDiffCodeTableData.VCD_ADD, reader_.GetNextInstruction(size, mode));
+		Assert.assertEquals(1, size.get());
+		Assert.assertEquals(0, mode.get());
+		Assert.assertEquals(VCDiffCodeTableData.VCD_INSTRUCTION_END_OF_DATA, reader_.GetNextInstruction(size, mode));
+		Assert.assertEquals(4, instructions_and_sizes_ptr_.position());
+	}
+
+	@Test
+	public void ExerciseCodeTableReaderTest() {
+		for (int opcode = 0; opcode < VCDiffCodeTableData.kCodeTableSize; ++opcode) {
+			instructions_and_sizes_ptr_.put((byte)opcode);
+			if ((g_exercise_code_table_.inst1[opcode] != VCDiffCodeTableData.VCD_NOOP) && (g_exercise_code_table_.size1[opcode] == 0)) {
+				// A separately-encoded size value
+				int startPos = instructions_and_sizes_ptr_.position();
+				VarInt.putInt(instructions_and_sizes_ptr_, 1000 + opcode);
+				Assert.assertTrue(startPos < instructions_and_sizes_ptr_.position());
+			}
+			if ((g_exercise_code_table_.inst2[opcode] != VCDiffCodeTableData.VCD_NOOP) && (g_exercise_code_table_.size2[opcode] == 0)) {
+				int startPos = instructions_and_sizes_ptr_.position();
+				VarInt.putInt(instructions_and_sizes_ptr_, 1000 + opcode);
+				Assert.assertTrue(startPos < instructions_and_sizes_ptr_.position());
+			}
+		}
+		
+		instructions_and_sizes_ptr_.flip();
+		
+		reader_ = new VCDiffCodeTableReader(g_exercise_code_table_, kLastExerciseMode);
+		reader_.Init(instructions_and_sizes_ptr_);
+		
+		int opcode = 0;
+		
+		// This loop has the same bounds as the one in SetUpTestCase.
+		// Iterate over the instruction types and make sure that the opcodes,
+		// interpreted in order, return exactly those instruction types.
+		for (byte inst_mode1 = 0; inst_mode1 <= VCDiffCodeTableData.VCD_LAST_INSTRUCTION_TYPE + kLastExerciseMode; ++inst_mode1) {
+			byte inst1 = inst_mode1;
+			byte mode1 = 0;
+			if (inst_mode1 > VCDiffCodeTableData.VCD_COPY) {
+				inst1 = VCDiffCodeTableData.VCD_COPY;
+				mode1 = (byte) (inst_mode1 - VCDiffCodeTableData.VCD_COPY);
+			}
+			for (byte inst_mode2 = 0; inst_mode2 <= VCDiffCodeTableData.VCD_LAST_INSTRUCTION_TYPE + kLastExerciseMode; ++inst_mode2) {
+				byte inst2 = inst_mode2;
+				byte mode2 = 0;
+				if (inst_mode2 > VCDiffCodeTableData.VCD_COPY) {
+					inst2 = VCDiffCodeTableData.VCD_COPY;
+					mode2 = (byte) (inst_mode2 - VCDiffCodeTableData.VCD_COPY);
+				}
+				VerifyInstModeSize1(inst1, mode1, (byte)0, (byte)opcode);
+				VerifyInstModeSize2(inst2, mode2, (byte)0, (byte)opcode);
+				++opcode;
+				VerifyInstModeSize1(inst1, mode1, (byte)0, (byte)opcode);
+				VerifyInstModeSize2(inst2, mode2, (byte)255, (byte)opcode);
+				++opcode;
+				VerifyInstModeSize1(inst1, mode1, (byte)255, (byte)opcode);
+				VerifyInstModeSize2(inst2, mode2, (byte)0, (byte)opcode);
+				++opcode;
+				VerifyInstModeSize1(inst1, mode1, (byte)255, (byte)opcode);
+				VerifyInstModeSize2(inst2, mode2, (byte)255, (byte)opcode);
+				++opcode;
+			}
+		}
+
+		Assert.assertEquals(VCDiffCodeTableData.kCodeTableSize, opcode);
 	}
 }

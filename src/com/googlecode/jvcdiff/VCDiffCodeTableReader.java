@@ -124,9 +124,9 @@ public class VCDiffCodeTableReader {
 				// from the most recently processed opcode.
 				opcode = (byte)pending_second_instruction_;
 				pending_second_instruction_ = kNoOpcode;
-				instruction_type = code_table_data_.inst2[opcode];
-				instruction_size = code_table_data_.size2[opcode];
-				instruction_mode = code_table_data_.mode2[opcode];
+				instruction_type = code_table_data_.inst2[opcode & 0xff];
+				instruction_size = code_table_data_.size2[opcode & 0xff];
+				instruction_mode = code_table_data_.mode2[opcode & 0xff];
 				break;
 			}
 			if (!instructions_and_sizes_.hasRemaining()) {
@@ -135,16 +135,16 @@ public class VCDiffCodeTableReader {
 			}
 
 			opcode = instructions_and_sizes_.get();
-			if (code_table_data_.inst2[opcode] != VCDiffCodeTableData.VCD_NOOP) {
+			if (code_table_data_.inst2[opcode & 0xff] != VCDiffCodeTableData.VCD_NOOP) {
 				// This opcode contains two instructions; process the first one now, and
 				// save a pointer to the second instruction, which should be returned
 				// by the next call to GetNextInstruction
 				pending_second_instruction_ = opcode;
 			}
 
-			instruction_type = code_table_data_.inst1[opcode];
-			instruction_size = code_table_data_.size1[opcode];
-			instruction_mode = code_table_data_.mode1[opcode];
+			instruction_type = code_table_data_.inst1[opcode & 0xff];
+			instruction_size = code_table_data_.size1[opcode & 0xff];
+			instruction_mode = code_table_data_.mode1[opcode & 0xff];
 			// This do-while loop is necessary in case inst1 == VCD_NOOP for an opcode
 			// that was actually used in the encoding.  That case is unusual, but it
 			// is not prohibited by the standard.

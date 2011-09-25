@@ -4,15 +4,22 @@ import static com.googlecode.jvcdiff.VCDiffCodeTableData.VCD_ADD;
 import static com.googlecode.jvcdiff.VCDiffCodeTableData.VCD_COPY;
 import static com.googlecode.jvcdiff.VCDiffCodeTableData.VCD_NOOP;
 import static com.googlecode.jvcdiff.VCDiffCodeTableData.VCD_RUN;
+import static com.googlecode.jvcdiff.VCDiffCodeTableData.VCD_LAST_INSTRUCTION_TYPE;
 import static com.googlecode.jvcdiff.VCDiffCodeTableData.kNoOpcode;
 import static com.googlecode.jvcdiff.VCDiffInstructionMap.DEFAULT_INSTRUCTION_MAP;
 import static org.junit.Assert.assertEquals;
+import junit.framework.Assert;
 
 import org.junit.Test;
 
 
 public class VCDiffInstructionMapTest {
 
+	@Test
+	public void testAssumptions() {
+		Assert.assertTrue(VCDiffCodeTableData.kDefaultCodeTableData.Validate());
+	}
+	
 	@Test
 	public void DefaultMapLookupFirstNoopTest() {
 		assertEquals(kNoOpcode, DEFAULT_INSTRUCTION_MAP.LookupFirstOpcode(VCD_NOOP, (byte)0, (byte)0));
@@ -416,5 +423,124 @@ public class VCDiffInstructionMapTest {
 		assertEquals(kNoOpcode, DEFAULT_INSTRUCTION_MAP.LookupSecondOpcode((byte)2, VCD_COPY, (byte)255, (byte)255));
 		assertEquals(kNoOpcode, DEFAULT_INSTRUCTION_MAP.LookupSecondOpcode((byte)0, VCD_COPY, (byte)4, (byte)0));
 		assertEquals(kNoOpcode, DEFAULT_INSTRUCTION_MAP.LookupSecondOpcode((byte)255, VCD_COPY, (byte)4, (byte)0));
+	}
+
+	@Test
+	public void ExerciseTableLookupTest() {
+		// This value is designed so that the total number of inst values and modes
+		// will equal 8 (VCD_NOOP, VCD_ADD, VCD_RUN, VCD_COPY modes 0 - 4).
+		// Eight combinations of inst and mode, times two possible size values,
+		// squared (because there are two instructions per opcode), makes
+		// exactly 256 possible instruction combinations, which fits kCodeTableSize
+		// (the number of opcodes in the table.)
+		final int kLastExerciseMode = 4;
+
+		// Set up the test
+		VCDiffCodeTableData g_exercise_code_table_ = new VCDiffCodeTableData();
+		int opcode = 0;
+		for (byte inst_mode1 = 0; inst_mode1 <= VCD_LAST_INSTRUCTION_TYPE + kLastExerciseMode; ++inst_mode1) {
+			byte inst1 = inst_mode1;
+			byte mode1 = 0;
+			if (inst_mode1 > VCD_COPY) {
+				inst1 = VCD_COPY;
+				mode1 = (byte)(inst_mode1 - VCD_COPY);
+			}
+			for (byte inst_mode2 = 0; inst_mode2 <= VCD_LAST_INSTRUCTION_TYPE + kLastExerciseMode; ++inst_mode2) {
+				byte inst2 = inst_mode2;
+				byte mode2 = 0;
+				if (inst_mode2 > VCD_COPY) {
+					inst2 = VCD_COPY;
+					mode2 = (byte)(inst_mode2 - VCD_COPY);
+				}
+				
+				AddExerciseOpcode(g_exercise_code_table_, inst1, mode1, (byte)0, inst2, mode2, (byte)0, opcode++);
+				AddExerciseOpcode(g_exercise_code_table_, inst1, mode1, (byte)0, inst2, mode2, (byte)255, opcode++);
+				AddExerciseOpcode(g_exercise_code_table_, inst1, mode1, (byte)255, inst2, mode2, (byte)0, opcode++);
+				AddExerciseOpcode(g_exercise_code_table_, inst1, mode1, (byte)255, inst2, mode2, (byte)255, opcode++);
+			}
+		}
+
+		assertEquals(VCDiffCodeTableData.kCodeTableSize, opcode);
+		Assert.assertTrue(g_exercise_code_table_.Validate((short)kLastExerciseMode));
+		
+		VCDiffInstructionMap exercise_map = new VCDiffInstructionMap(g_exercise_code_table_, (byte)kLastExerciseMode);
+
+		opcode = 0;
+
+		// This loop has the same bounds as the one in SetUpTestCase.
+		// Look up each instruction type and make sure it returns
+		// the proper opcode.
+		for (byte inst_mode1 = 0; inst_mode1 <= VCD_LAST_INSTRUCTION_TYPE + kLastExerciseMode; ++inst_mode1) {
+			byte inst1 = inst_mode1;
+			byte mode1 = 0;
+			if (inst_mode1 > VCD_COPY) {
+				inst1 = VCD_COPY;
+				mode1 = (byte)(inst_mode1 - VCD_COPY);
+			}
+
+			for (byte inst_mode2 = 0; inst_mode2 <= VCD_LAST_INSTRUCTION_TYPE + kLastExerciseMode; ++inst_mode2) {
+				byte inst2 = inst_mode2;
+				byte mode2 = 0;
+				if (inst_mode2 > VCD_COPY) {
+					inst2 = VCD_COPY;
+					mode2 = (byte)(inst_mode2 - VCD_COPY);
+				}
+
+				if (inst2 == VCD_NOOP) {
+					VerifyExerciseFirstInstruction(exercise_map, g_exercise_code_table_, (byte)opcode, inst1, (byte)0, mode1);
+					VerifyExerciseFirstInstruction(exercise_map, g_exercise_code_table_, (byte)(opcode + 2), inst1, ((inst1 == VCD_NOOP) ? (byte)0 : (byte)255), mode1);
+				} else if (inst1 != VCD_NOOP) {
+					VerifyExerciseSecondInstruction(exercise_map, (byte)opcode, inst1, (byte)0, mode1, inst2, (byte)0, mode2);
+					VerifyExerciseSecondInstruction(exercise_map, (byte)(opcode + 1), inst1, (byte)0, mode1, inst2, (byte)255, mode2);
+					VerifyExerciseSecondInstruction(exercise_map, (byte)(opcode + 2), inst1, (byte)255, mode1, inst2, (byte)0, mode2);
+					VerifyExerciseSecondInstruction(exercise_map, (byte)(opcode + 3), inst1, (byte)255, mode1, inst2, (byte)255, mode2);
+				}
+
+				opcode += 4;
+			}
+		}
+	}
+
+	private static void AddExerciseOpcode(VCDiffCodeTableData g_exercise_code_table_,
+			byte inst1, byte mode1, byte size1, byte inst2, byte mode2, byte size2, int opcode) {
+		g_exercise_code_table_.inst1[opcode] = inst1;
+		g_exercise_code_table_.mode1[opcode] = mode1;
+		g_exercise_code_table_.size1[opcode] = (inst1 == VCD_NOOP) ? 0 : size1;
+		g_exercise_code_table_.inst2[opcode] = inst2;
+		g_exercise_code_table_.mode2[opcode] = mode2;
+		g_exercise_code_table_.size2[opcode] = (inst2 == VCD_NOOP) ? 0 : size2;
+	}
+	
+	private static void VerifyExerciseFirstInstruction(VCDiffInstructionMap exercise_map, VCDiffCodeTableData g_exercise_code_table_,
+			byte expected_opcode, byte inst, byte size, byte mode) {
+
+		int found_opcode = exercise_map.LookupFirstOpcode(inst, size, mode);
+		if (g_exercise_code_table_.inst1[found_opcode] == VCD_NOOP) {
+			// The opcode is backwards: (VCD_NOOP, [instruction])
+			Assert.assertTrue((expected_opcode & 0xff) >= found_opcode);
+
+			assertEquals(inst, g_exercise_code_table_.inst2[found_opcode]);
+			assertEquals(size, g_exercise_code_table_.size2[found_opcode]);
+			assertEquals(mode, g_exercise_code_table_.mode2[found_opcode]);
+			assertEquals(VCD_NOOP, g_exercise_code_table_.inst1[found_opcode]);
+			assertEquals(0, g_exercise_code_table_.size1[found_opcode]);
+			assertEquals(0, g_exercise_code_table_.mode1[found_opcode]);
+		} else {
+			assertEquals(expected_opcode, found_opcode);
+			assertEquals(inst, g_exercise_code_table_.inst1[found_opcode]);
+			assertEquals(size, g_exercise_code_table_.size1[found_opcode]);
+			assertEquals(mode, g_exercise_code_table_.mode1[found_opcode]);
+			assertEquals(VCD_NOOP, g_exercise_code_table_.inst2[found_opcode]);
+			assertEquals(0, g_exercise_code_table_.size2[found_opcode]);
+			assertEquals(0, g_exercise_code_table_.mode2[found_opcode]);
+		}
+	}
+
+	private static void VerifyExerciseSecondInstruction(VCDiffInstructionMap exercise_map,
+			byte expected_opcode, byte inst1, byte size1, byte mode1, byte inst2, byte size2, byte mode2) {
+		short first_opcode = exercise_map.LookupFirstOpcode(inst1, size1, mode1);
+
+		Assert.assertFalse(kNoOpcode == first_opcode);
+		assertEquals(expected_opcode & 0xff, exercise_map.LookupSecondOpcode((byte)first_opcode, inst2, size2, mode2));
 	}
 }

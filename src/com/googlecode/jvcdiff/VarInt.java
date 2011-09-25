@@ -35,7 +35,7 @@ public class VarInt {
 			if (!buffer.hasRemaining()) {
 				throw new VarIntEndOfBufferException();
 			}
-			if (buffer.position() - startPosition >= 9) {
+			if (buffer.position() - startPosition >= 10) {
 				throw new VarIntParseException("Data too long for a 64-bit int");
 			}
 
@@ -58,6 +58,42 @@ public class VarInt {
 				dest.put(b);
 			}
 		}
+	}
+	
+	public static void putLong(ByteBuffer dest, long val) {
+		for (int shift = 63; shift >= 0; shift -= 7) {
+			long v2 = val >> shift;
+			if (v2 != 0 || shift == 0) {
+				byte b = (byte)((v2 & 0x7f) | (shift == 0 ? 0 : 0x80));
+				dest.put(b);
+			}
+		}
+	}
+	
+	public static int calculateIntLength(int val) {
+		int size = 0;
+		
+		for (int shift = 28; shift >= 0; shift -= 7) {
+			int v2 = val >> shift;
+			if (v2 != 0 || shift == 0) {
+				size++;
+			}
+		}
+		
+		return size;
+	}
+	
+	public static int calculateLongLength(long val) {
+		int size = 0;
+		
+		for (int shift = 63; shift >= 0; shift -= 7) {
+			long v2 = val >> shift;
+			if (v2 != 0 || shift == 0) {
+				size++;
+			}
+		}
+		
+		return size;
 	}
 
 	public static class VarIntParseException extends Exception {

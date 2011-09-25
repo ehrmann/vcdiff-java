@@ -158,22 +158,26 @@ public class VCDiffInstructionMap {
 			// There must be at least (max_size_1_ + 1) elements in first_opcodes_
 			// because the element first_opcodes[max_size_1_] will be referenced.
 			first_opcodes_ = new short[num_instruction_type_modes_][max_size_1 + 1];
+			
+			for (short[] array : first_opcodes_) {
+				Arrays.fill(array, kNoOpcode);
+			}
 		}
 
 		public void Add(final byte inst, final byte size, final byte mode, final byte opcode) {
 			if (first_opcodes_[(inst & 0xff) + (mode & 0xff)][size & 0xff] == kNoOpcode) {
-				first_opcodes_[(inst & 0xff) + (mode & 0xff)][size & 0xff] = opcode;
+				first_opcodes_[(inst & 0xff) + (mode & 0xff)][size & 0xff] = (short)(opcode & 0xff);
 			}
 		}
 
 		// See comments for LookupFirstOpcode, above.
-		public short Lookup(short inst, short size, short mode) {
-			int inst_mode = (inst == VCD_COPY) ? (inst + mode) : inst;
-			if (size > max_size_1_) {
+		public short Lookup(final byte inst, final byte size, final byte mode) {
+			int inst_mode = (inst == VCD_COPY) ? ((inst & 0xff) + (mode & 0xff)) : (inst & 0xff);
+			if ((size & 0xff) > max_size_1_) {
 				return kNoOpcode;
 			}
 			// Lookup specific-sized opcode
-			return first_opcodes_[inst_mode][size];
+			return first_opcodes_[inst_mode][size & 0xff];
 		}
 	}
 
@@ -209,19 +213,19 @@ public class VCDiffInstructionMap {
 				second_opcodes_[first_opcode & 0xff] = new short[num_instruction_type_modes_][];
 			}
 
-			if (second_opcodes_[first_opcode & 0xff][inst + mode] == null) {
+			if (second_opcodes_[first_opcode & 0xff][(inst & 0xff) + (mode & 0xff)] == null) {
 				second_opcodes_[first_opcode & 0xff][(inst & 0xff) + (mode & 0xff)] = new short[max_size_2_ + 1];
 				Arrays.fill(second_opcodes_[first_opcode & 0xff][(inst & 0xff) + (mode & 0xff)], kNoOpcode);
 			}
 
 			if (second_opcodes_[first_opcode & 0xff][(inst & 0xff) + (mode & 0xff)][size & 0xff] == kNoOpcode) {
-				second_opcodes_[first_opcode & 0xff][(inst & 0xff) + (mode & 0xff)][size & 0xff] = second_opcode;
+				second_opcodes_[first_opcode & 0xff][(inst & 0xff) + (mode & 0xff)][size & 0xff] = (short)(second_opcode & 0xff);
 			}
 		}
 
 		// See comments for LookupSecondOpcode, above.
 		public short Lookup(final byte first_opcode, final byte inst, final byte size, final byte mode) {
-			if (size > max_size_2_) {
+			if ((size & 0xff) > max_size_2_) {
 				return kNoOpcode;
 			}
 

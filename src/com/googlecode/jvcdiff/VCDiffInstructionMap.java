@@ -107,14 +107,14 @@ public class VCDiffInstructionMap {
 		return second_instruction_map_.Lookup(first_opcode, inst, size, mode);
 	}
 
-	private static byte FindMaxSize(byte[] size_array) {
+	private static int FindMaxSize(byte[] size_array) {
 		int max_size = size_array[0] & 0xff;
 		for (int i = 1; i < size_array.length; ++i) {
 			if ((size_array[i] & 0xff) > max_size) {
 				max_size = (size_array[i] & 0xff);
 			}
 		}
-		return (byte)max_size;
+		return max_size;
 	}
 
 	/**

@@ -1,16 +1,13 @@
 package com.googlecode.jvcdiff;
 
 import java.io.IOException;
-import java.io.Writer;
 import java.util.EnumSet;
 
 
-public class JSONCodeTableWriter implements CodeTableWriterInterface {
-
-	protected final Writer writer;
+public class JSONCodeTableWriter implements CodeTableWriterInterface<Appendable> {
 
 	// Stores the JSON data before it is sent to the OutputString.
-	private StringBuilder output_ = new StringBuilder(64);
+	private StringBuilder output_ = new StringBuilder(1024);
 
 	// The sum of all the size arguments passed to Add(), Copy() and Run().
 	private int target_length_ = 0;
@@ -18,13 +15,7 @@ public class JSONCodeTableWriter implements CodeTableWriterInterface {
 	// Set if some data has been output.
 	private boolean output_called_ = false;
 
-	public JSONCodeTableWriter(Writer writer) {
-		if (writer == null) {
-			throw new NullPointerException();
-		}
-
-		this.writer = writer;
-
+	public JSONCodeTableWriter() {
 		this.output_.append('[');
 		this.target_length_ = 0;
 	}
@@ -57,16 +48,16 @@ public class JSONCodeTableWriter implements CodeTableWriterInterface {
 		target_length_ += size;
 	}
 
-	public void FinishEncoding() throws IOException {
+	public void FinishEncoding(Appendable out) throws IOException {
 		if (output_called_) {
-			writer.append(']');
+			out.append(']');
 		}
 	}
 
-	public void Output() throws IOException {
+	public void Output(Appendable out) throws IOException {
 		output_called_ = true;
-		writer.append(output_);
-		output_ = new StringBuilder(64);
+		out.append(output_);
+		output_ = new StringBuilder(1024);
 		target_length_ = 0;
 	}
 
@@ -84,7 +75,7 @@ public class JSONCodeTableWriter implements CodeTableWriterInterface {
 		target_length_ += size;
 	}
 
-	public void WriteHeader(EnumSet<VCDiffFormatExtensionFlags> formatExtensions) {
+	public void WriteHeader(Appendable out, EnumSet<VCDiffFormatExtensionFlags> formatExtensions) {
 		// The JSON format does not need a header.
 	}
 

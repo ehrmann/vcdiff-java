@@ -16,13 +16,13 @@ import java.util.EnumSet;
  * implementations may be used to produce other output formats, or as test
  * mocks, or to gather encoding statistics.
  */
-public interface CodeTableWriterInterface {
+public interface CodeTableWriterInterface<OUT> {
 
 	/**
 	 * Writes the header to the output string.
 	 * @param format_extensions
 	 */
-	public void WriteHeader(EnumSet<VCDiffFormatExtensionFlags> format_extensions);
+	public void WriteHeader(OUT out, EnumSet<VCDiffFormatExtensionFlags> format_extensions) throws IOException;
 
 	/**
 	 * Encode an ADD opcode with the "size" bytes starting at data
@@ -59,12 +59,12 @@ public interface CodeTableWriterInterface {
 	 * string.  The output string is not null-terminated and may contain embedded
 	 * '\0' characters.
 	 */
-	public void Output() throws IOException;
+	public void Output(OUT out) throws IOException;
 
 	/**
 	 * Finishes encoding.
 	 */
-	public void FinishEncoding() throws IOException;
+	public void FinishEncoding(OUT out) throws IOException;
 
 	/**
 	 * Returns the number of target bytes processed, which is the sum of all the

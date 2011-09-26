@@ -1,5 +1,7 @@
 package com.googlecode.jvcdiff;
 
+import java.io.IOException;
+import java.io.OutputStream;
 import java.nio.ByteBuffer;
 
 public class VarInt {
@@ -60,12 +62,32 @@ public class VarInt {
 		}
 	}
 	
+	public static void writeInt(OutputStream out, int val) throws IOException {
+		for (int shift = 28; shift >= 0; shift -= 7) {
+			int v2 = val >> shift;
+			if (v2 != 0 || shift == 0) {
+				byte b = (byte)((v2 & 0x7f) | (shift == 0 ? 0 : 0x80));
+				out.write(b);
+			}
+		}
+	}
+	
 	public static void putLong(ByteBuffer dest, long val) {
 		for (int shift = 63; shift >= 0; shift -= 7) {
 			long v2 = val >> shift;
 			if (v2 != 0 || shift == 0) {
 				byte b = (byte)((v2 & 0x7f) | (shift == 0 ? 0 : 0x80));
 				dest.put(b);
+			}
+		}
+	}
+	
+	public static void writeLong(OutputStream out, long val) throws IOException {
+		for (int shift = 63; shift >= 0; shift -= 7) {
+			long v2 = val >> shift;
+			if (v2 != 0 || shift == 0) {
+				byte b = (byte)((v2 & 0x7f) | (shift == 0 ? 0 : 0x80));
+				out.write(b);
 			}
 		}
 	}

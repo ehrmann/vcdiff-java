@@ -1,5 +1,7 @@
 package com.googlecode.jvcdiff;
 
+import java.io.ByteArrayOutputStream;
+import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.util.Random;
 
@@ -42,19 +44,23 @@ public class VarIntTest {
 	}
 	
 	@Test
-	public void randomIntTest() throws VarIntParseException, VarIntEndOfBufferException {
+	public void randomIntTest() throws VarIntParseException, VarIntEndOfBufferException, IOException {
 		Random random = new Random(0x42);
 		
 		ByteBuffer buffer = ByteBuffer.allocate(16384);
+		ByteArrayOutputStream out = new ByteArrayOutputStream(buffer.remaining());
 		
 		while (buffer.remaining() >= 5) {
 			int startPos = buffer.position();
 			int testVal = random.nextInt();
 			VarInt.putInt(buffer, testVal);
+			VarInt.writeInt(out, testVal);
 			Assert.assertEquals(buffer.position() - startPos, VarInt.calculateIntLength(testVal));
 		}
 		
 		buffer.flip();
+		
+		Assert.assertEquals(0, buffer.compareTo(ByteBuffer.wrap(out.toByteArray())));
 		
 		random = new Random(0x42);
 		while (buffer.hasRemaining()) {
@@ -93,19 +99,23 @@ public class VarIntTest {
 	}
 	
 	@Test
-	public void randomLongTest() throws VarIntParseException, VarIntEndOfBufferException {
+	public void randomLongTest() throws VarIntParseException, VarIntEndOfBufferException, IOException {
 		Random random = new Random(0x42);
 		
 		ByteBuffer buffer = ByteBuffer.allocate(16384);
+		ByteArrayOutputStream out = new ByteArrayOutputStream(buffer.remaining());
 		
 		while (buffer.remaining() >= 10) {
 			int startPos = buffer.position();
 			long testVal = random.nextLong();
 			VarInt.putLong(buffer, testVal);
+			VarInt.writeLong(out, testVal);
 			Assert.assertEquals(buffer.position() - startPos, VarInt.calculateLongLength(testVal));
 		}
 		
 		buffer.flip();
+		
+		Assert.assertEquals(0, buffer.compareTo(ByteBuffer.wrap(out.toByteArray())));
 		
 		random = new Random(0x42);
 		while (buffer.hasRemaining()) {

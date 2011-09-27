@@ -212,7 +212,7 @@ public class VCDiffCodeTableWriter implements CodeTableWriterInterface<OutputStr
 
 	public void AddChecksum(int checksum) {
 		add_checksum_ = true;
-		checksum_ = checksum;
+		checksum_ = checksum & 0xffffffffL;
 	}
 
 	/**

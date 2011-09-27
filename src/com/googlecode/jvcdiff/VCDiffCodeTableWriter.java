@@ -43,9 +43,9 @@ public class VCDiffCodeTableWriter implements CodeTableWriterInterface<OutputStr
 		(byte)0x00	// Hdr_Indicator: No compression, no custom code table
 	};  
 
-	private static final int VCD_SOURCE = 0x01;
+	protected static final int VCD_SOURCE = 0x01;
 	// private static final int VCD_TARGET = 0x02;
-	private static final int VCD_CHECKSUM = 0x04;
+	protected static final int VCD_CHECKSUM = 0x04;
 	
 	
 	/**
@@ -56,24 +56,27 @@ public class VCDiffCodeTableWriter implements CodeTableWriterInterface<OutputStr
 	// A series of instruction opcodes, each of which may be followed
 	// by one or two Varint values representing the size parameters
 	// of the first and second instruction in the opcode.
-	private ByteBuffer instructions_and_sizes_;
+	// TODO: replace with a Vector-like data structure
+	private ByteBuffer instructions_and_sizes_ = ByteBuffer.allocate(1024 * 1024);
 
 	// A series of data arguments (byte values) used for ADD and RUN
 	// instructions.  Depending on whether interleaved output is used
 	// for streaming or not, the pointer may point to
 	// separate_data_for_add_and_run_ or to instructions_and_sizes_.
+	// TODO:
 	private ByteBuffer data_for_add_and_run_;
-	private ByteBuffer separate_data_for_add_and_run_;
+	private final ByteBuffer separate_data_for_add_and_run_ = ByteBuffer.allocate(128 * 1024);
 
 	// A series of Varint addresses used for COPY instructions.
 	// For the SAME mode, a byte value is stored instead of a Varint.
 	// Depending on whether interleaved output is used
 	// for streaming or not, the pointer may point to
 	// separate_addresses_for_copy_ or to instructions_and_sizes_.
+	// TODO:
 	private ByteBuffer addresses_for_copy_;
-	private ByteBuffer separate_addresses_for_copy_;
+	private final ByteBuffer separate_addresses_for_copy_ = ByteBuffer.allocate(128 * 1024);
 
-	private VCDiffAddressCache address_cache_;
+	private final VCDiffAddressCache address_cache_;
 
 	private int dictionary_size_;
 
@@ -138,6 +141,7 @@ public class VCDiffCodeTableWriter implements CodeTableWriterInterface<OutputStr
 		last_opcode_index_ = -1;
 		add_checksum_ = false;
 		checksum_ = 0;
+		address_cache_ = new VCDiffAddressCacheImpl();
 		InitSectionPointers(interleaved);
 	}
 

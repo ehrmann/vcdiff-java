@@ -3,14 +3,17 @@ package com.googlecode.jvcdiff;
 import static com.googlecode.jvcdiff.VCDiffCodeTableData.VCD_COPY;
 import static com.googlecode.jvcdiff.VCDiffCodeTableData.VCD_LAST_INSTRUCTION_TYPE;
 import static com.googlecode.jvcdiff.VCDiffCodeTableData.VCD_NOOP;
+import static com.googlecode.jvcdiff.VCDiffCodeTableWriter.VCD_CHECKSUM;
 import static com.googlecode.jvcdiff.VCDiffCodeTableWriter.VCD_SOURCE;
+import static org.junit.Assert.assertArrayEquals;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
 
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.nio.charset.Charset;
-import java.util.Arrays;
+
+import junit.framework.Assert;
 
 import org.junit.Before;
 import org.junit.Test;
@@ -118,7 +121,7 @@ public class VCDiffCodeTableWriterTest {
 		standard_writer.Add("foo".getBytes(US_ASCII), 0, 3);
 		standard_writer.Output(out);
 
-		assertTrue(Arrays.equals(new byte[] {
+		assertArrayEquals(new byte[] {
 				VCD_SOURCE, // Win_Indicator: VCD_SOURCE (dictionary)
 				0x11,  		// Source segment size: dictionary length
 				0x00,  		// Source segment position: start of dictionary
@@ -130,8 +133,269 @@ public class VCDiffCodeTableWriterTest {
 				0x00,  		// length of addresses for COPYs
 				'f', 'o', 'o',
 				0x04,  		// ADD(3) opcode
-		}, out.toByteArray()));
+		}, out.toByteArray());
+	}
 
+	@Test
+	public void ExerciseWriterEncodeAdd() throws IOException {
+		exercise_writer.Init(0x11);
+		exercise_writer.Add("foo".getBytes(US_ASCII), 0, 3);
+		exercise_writer.Output(out);
 
+		assertArrayEquals(new byte[] {
+				VCD_SOURCE,	// Win_Indicator: VCD_SOURCE (dictionary)
+				0x11,		// Source segment size: dictionary length
+				0x00,		// Source segment position: start of dictionary
+				0x0A,		// Length of the delta encoding
+				0x03,		// Size of the target window
+				0x00,		// Delta_indicator (no compression)
+				0x00,		// length of data for ADDs and RUNs
+				0x05,		// length of instructions section
+				0x00,		// length of addresses for COPYs
+				0x04,		// Opcode: NOOP + ADD(0)
+				0x03,		// Size of ADD (3)
+				'f', 'o', 'o'
+		}, out.toByteArray());
+	}
+
+	@Test
+	public void StandardWriterEncodeRun() throws IOException {
+		standard_writer.Init(0x11);
+		standard_writer.Run(3, (byte)'a');
+		standard_writer.Output(out);
+
+		assertArrayEquals(new byte[] {
+				VCD_SOURCE,	// Win_Indicator: VCD_SOURCE (dictionary)
+				0x11,		// Source segment size: dictionary length
+				0x00,		// Source segment position: start of dictionary
+				0x08,		// Length of the delta encoding
+				0x03,		// Size of the target window
+				0x00,		// Delta_indicator (no compression)
+				0x01,		// length of data for ADDs and RUNs
+				0x02,		// length of instructions section
+				0x00,		// length of addresses for COPYs
+				'a',
+				0x00,		// RUN(0) opcode
+				0x03,		// Size of RUN (3)
+		}, out.toByteArray());
+	}
+
+	@Test
+	public void ExerciseWriterEncodeRun() throws IOException {
+		exercise_writer.Init(0x11);
+		exercise_writer.Run(3, (byte)'a');
+		exercise_writer.Output(out);
+
+		assertArrayEquals(new byte[] {
+				VCD_SOURCE,	// Win_Indicator: VCD_SOURCE (dictionary)
+				0x11,		// Source segment size: dictionary length
+				0x00,		// Source segment position: start of dictionary
+				0x08,		// Length of the delta encoding
+				0x03,		// Size of the target window
+				0x00,		// Delta_indicator (no compression)
+				0x00,		// length of data for ADDs and RUNs
+				0x03,		// length of instructions section
+				0x00,		// length of addresses for COPYs
+				0x08,		// Opcode: NOOP + RUN(0)
+				0x03,		// Size of RUN (3)
+				'a',
+		}, out.toByteArray());
+	}
+
+	@Test
+	public void StandardWriterEncodeCopy() throws IOException {
+		standard_writer.Init(0x11);
+		standard_writer.Copy(2, 8);
+		standard_writer.Copy(2, 8);
+		standard_writer.Output(out);
+
+		assertArrayEquals(new byte[] {
+				VCD_SOURCE,	// Win_Indicator: VCD_SOURCE (dictionary)
+				0x11,		// Source segment size: dictionary length
+				0x00,		// Source segment position: start of dictionary
+				0x09,		// Length of the delta encoding
+				0x10,		// Size of the target window
+				0x00,		// Delta_indicator (no compression)
+				0x00,		// length of data for ADDs and RUNs
+				0x02,		// length of instructions section
+				0x02,		// length of addresses for COPYs
+				0x18,		// COPY mode SELF, size 8
+				0x78,		// COPY mode SAME(0), size 8
+				0x02,		// COPY address (2)
+				0x02,		// COPY address (2)
+		}, out.toByteArray());
+	}
+
+	// The exercise code table can't be used to test how the code table
+	// writer encodes COPY instructions because the code table writer
+	// always uses the default cache sizes, which exceed the maximum mode
+	// used in the exercise table.
+	@Test
+	public void InterleavedWriterEncodeCopy() throws IOException {
+		interleaved_writer.Init(0x11);
+		interleaved_writer.Copy(2, 8);
+		interleaved_writer.Copy(2, 8);
+		interleaved_writer.Output(out);
+
+		assertArrayEquals(new byte[] {
+				VCD_SOURCE,	// Win_Indicator: VCD_SOURCE (dictionary)
+				0x11,		// Source segment size: dictionary length
+				0x00,		// Source segment position: start of dictionary
+				0x09,		// Length of the delta encoding
+				0x10,		// Size of the target window
+				0x00,		// Delta_indicator (no compression)
+				0x00,		// length of data for ADDs and RUNs
+				0x04,		// length of instructions section
+				0x00,		// length of addresses for COPYs
+				0x18,		// COPY mode SELF, size 8
+				0x02,		// COPY address (2)
+				0x78,		// COPY mode SAME(0), size 8
+				0x02,		// COPY address (2)
+		}, out.toByteArray());
+	}
+
+	@Test
+	public void StandardWriterEncodeCombo() throws IOException {
+		standard_writer.Init(0x11);
+		standard_writer.Add("rayo".getBytes(US_ASCII), 0, 4);
+		standard_writer.Copy(2, 5);
+		standard_writer.Copy(0, 4);
+		standard_writer.Add("X".getBytes(US_ASCII), 0, 1);
+		standard_writer.Output(out);
+
+		assertArrayEquals(new byte[] {
+				VCD_SOURCE,	// Win_Indicator: VCD_SOURCE (dictionary)
+				0x11,		// Source segment size: dictionary length
+				0x00,		// Source segment position: start of dictionary
+				0x0E,		// Length of the delta encoding
+				0x0E,		// Size of the target window
+				0x00,		// Delta_indicator (no compression)
+				0x05,		// length of data for ADDs and RUNs
+				0x02,		// length of instructions section
+				0x02,		// length of addresses for COPYs
+				'r', 'a', 'y', 'o', 'X',
+				(byte)0xAD,	// Combo: Add size 4 + COPY mode SELF, size 5
+				(byte)0xFD,	// Combo: COPY mode SAME(0), size 4 + Add size 1
+				0x02,		// COPY address (2)
+				0x00,		// COPY address (0)
+		}, out.toByteArray());
+	}
+
+	@Test
+	public void InterleavedWriterEncodeCombo() throws IOException {
+		interleaved_writer.Init(0x11);
+		interleaved_writer.Add("rayo".getBytes(US_ASCII), 0, 4);
+		interleaved_writer.Copy(2, 5);
+		interleaved_writer.Copy(0, 4);
+		interleaved_writer.Add("X".getBytes(US_ASCII), 0, 1);
+		interleaved_writer.Output(out);
+
+		assertArrayEquals(new byte[] {
+				VCD_SOURCE,	// Win_Indicator: VCD_SOURCE (dictionary)
+				0x11,		// Source segment size: dictionary length
+				0x00,		// Source segment position: start of dictionary
+				0x0E,		// Length of the delta encoding
+				0x0E,		// Size of the target window
+				0x00,		// Delta_indicator (no compression)
+				0x00,		// length of data for ADDs and RUNs
+				0x09,		// length of instructions section
+				0x00,		// length of addresses for COPYs
+				(byte)0xAD,	// Combo: Add size 4 + COPY mode SELF, size 5
+				'r', 'a', 'y', 'o',
+				0x02,		// COPY address (2)
+				(byte)0xFD,	// Combo: COPY mode SAME(0), size 4 + Add size 1
+				0x00,		// COPY address (0)
+				'X',
+		}, out.toByteArray());
+	}
+
+	@Test
+	public void InterleavedWriterEncodeComboWithChecksum() throws IOException {
+		interleaved_writer.Init(0x11);
+		final int checksum = 0xFFFFFFFF;  // would be negative if signed
+		interleaved_writer.AddChecksum(checksum);
+		interleaved_writer.Add("rayo".getBytes(US_ASCII), 0, 4);
+		interleaved_writer.Copy(2, 5);
+		interleaved_writer.Copy(0, 4);
+		interleaved_writer.Add("X".getBytes(US_ASCII), 0, 1);
+		interleaved_writer.Output(out);
+
+		assertArrayEquals(new byte[] {
+				VCD_SOURCE | VCD_CHECKSUM,		// Win_Indicator
+				0x11,		// Source segment size: dictionary length
+				0x00,		// Source segment position: start of dictionary
+				0x13,		// Length of the delta encoding
+				0x0E,		// Size of the target window
+				0x00,		// Delta_indicator (no compression)
+				0x00,		// length of data for ADDs and RUNs
+				0x09,		// length of instructions section
+				0x00,		// length of addresses for COPYs
+				(byte)0x8F,	// checksum byte 1
+				(byte)0xFF,	// checksum byte 2
+				(byte)0xFF,	// checksum byte 3
+				(byte)0xFF,	// checksum byte 4
+				0x7F,		// checksum byte 5
+				(byte)0xAD,	// Combo: Add size 4 + COPY mode SELF, size 5
+				'r', 'a', 'y', 'o',
+				0x02,		// COPY address (2)
+				(byte)0xFD,	// Combo: COPY mode SAME(0), size 4 + Add size 1
+				0x00,		// COPY address (0)
+				'X',
+		}, out.toByteArray());
+	}
+
+	@Test
+	public void ReallyBigDictionary() throws IOException {
+		interleaved_writer.Init(0x3FFFFFFF);
+		interleaved_writer.Copy(2, 8);
+		interleaved_writer.Copy(0x3FFFFFFE, 8);
+		interleaved_writer.Output(out);
+
+		assertArrayEquals(new byte[] {
+				VCD_SOURCE,	// Win_Indicator: VCD_SOURCE (dictionary)
+				(byte)0x83,	// Source segment size: dictionary length (1)
+				(byte)0xFF,	// Source segment size: dictionary length (2)
+				(byte)0xFF,	// Source segment size: dictionary length (3)
+				(byte)0xFF,	// Source segment size: dictionary length (4)
+				0x7F,		// Source segment size: dictionary length (5)
+				0x00,		// Source segment position: start of dictionary
+				0x09,		// Length of the delta encoding
+				0x10,		// Size of the target window
+				0x00,		// Delta_indicator (no compression)
+				0x00,		// length of data for ADDs and RUNs
+				0x04,		// length of instructions section
+				0x00,		// length of addresses for COPYs
+				0x18,		// COPY mode SELF, size 8
+				0x02,		// COPY address (2)
+				0x28,		// COPY mode HERE, size 8
+				0x09,		// COPY address (9)
+		}, out.toByteArray());
+	}
+
+	@Test (expected=IllegalStateException.class)
+	public void WriterAddWithoutInit() {
+		standard_writer.Add("Hello".getBytes(US_ASCII), 0, 5);
+	}
+
+	@Test (expected=IllegalStateException.class)
+	public void WriterRunWithoutInit() {
+		standard_writer.Run(3, (byte)'a');
+	}
+
+	@Test (expected=IllegalStateException.class)
+	public void WriterCopyWithoutInit() {
+		standard_writer.Copy(6, 5);
+	}
+
+	@Test (expected=IllegalArgumentException.class)
+	public void DictionaryTooBig() {
+		try { 
+			interleaved_writer.Init(0x7FFFFFFF);
+		} catch (RuntimeException e) {
+			Assert.fail();
+		}
+		
+		interleaved_writer.Copy(2, 8);
+		interleaved_writer.Copy(0x7FFFFFFE, 8);
 	}
 }

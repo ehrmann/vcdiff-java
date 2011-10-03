@@ -19,6 +19,7 @@
 
 package com.googlecode.jvcdiff;
 
+import java.nio.ByteBuffer;
 import java.util.Arrays;
 
 // A generic hash table which will be used to keep track of byte runs
@@ -100,7 +101,7 @@ public class BlockHash {
 
 	protected static final RollingHash rollingHash = new RollingHash(kBlockSize);
 	
-	private final byte[] source_data;
+	private final ByteBuffer source_data;
 
 	// The size of this array is determined using CalcTableSize().  It has at
 	// least one element for each kBlockSize-byte block in the source data.
@@ -193,18 +194,18 @@ public class BlockHash {
 	// starting_offset_ will be zero; for a hash of previously encoded
 	// target data, starting_offset_ will be equal to the dictionary size.
 	public BlockHash(byte[] source_data, int starting_offset, boolean populate_hash_table) {
-		if (starting_offset < 0) {
-			throw new IllegalArgumentException();
-		}
-
-		final int table_size = CalcTableSize(source_data.length);
+		this(ByteBuffer.wrap(source_data), starting_offset, populate_hash_table);
+	}
+	
+	public BlockHash(ByteBuffer source_data, int starting_offset, boolean populate_hash_table) {
+		final int table_size = CalcTableSize(source_data.remaining());
 		if (table_size == 0) {
-			throw new IllegalArgumentException("Error finding table size for source size " + source_data.length);
+			throw new IllegalArgumentException("Error finding table size for source size " + source_data.remaining());
 		}
-
+		
 		this.source_data = source_data;
 		this.starting_offset = starting_offset;
-
+		
 		// Since table_size is a power of 2, (table_size - 1) is a bit mask
 		// containing all the bits below table_size.
 		hash_table_mask = table_size - 1;
@@ -255,6 +256,10 @@ public class BlockHash {
 	public static BlockHash CreateTargetHash(byte[] target_data, int dictionary_size) {
 		return new BlockHash(target_data, dictionary_size, false);
 	}
+	
+	public static BlockHash CreateTargetHash(ByteBuffer target_data, int dictionary_size) {
+		return new BlockHash(target_data, dictionary_size, false);
+	}
 
 	// This function will be called to add blocks incrementally to the target hash
 	// as the encoding position advances through the target data.  It will be
@@ -290,8 +295,8 @@ public class BlockHash {
 	// add a whole range of data to a target hash when a COPY instruction
 	// is generated.
 	public void AddAllBlocksThroughIndex(int end_index) {
-		if (end_index > source_data.length) {
-			throw new IllegalArgumentException("AddAllBlocksThroughIndex() called with index " + end_index + " higher than end index " + source_data.length);
+		if (end_index > source_data.limit()) {
+			throw new IllegalArgumentException("AddAllBlocksThroughIndex() called with index " + end_index + " higher than end index " + source_data.limit());
 		}
 		final int last_index_added = last_block_added * kBlockSize;
 		if (end_index <= last_index_added) {
@@ -301,16 +306,17 @@ public class BlockHash {
 		// Don't allow reading any indices at or past source_size_.
 		// The Hash function extends (kBlockSize - 1) bytes past the index,
 		// so leave a margin of that size.
-		int last_legal_hash_index = source_data.length - kBlockSize;
+		int last_legal_hash_index = source_data.limit() - kBlockSize;
 		if (end_limit > last_legal_hash_index) {
 			end_limit = last_legal_hash_index + 1;
 		}
 
-		int block_ptr = NextIndexToAdd();
-		final int end_ptr = end_limit;
-		while (block_ptr < end_ptr) {
-			AddBlock((int)rollingHash.Hash(this.source_data, block_ptr, kBlockSize));
-			block_ptr += kBlockSize;
+		ByteBuffer temp = source_data.duplicate();
+		temp.position(NextIndexToAdd());
+		// temp.limit(end_limit);
+
+		while (temp.position() < end_limit) {
+			AddBlock((int)rollingHash.Hash(temp));
 		}
 	}
 
@@ -430,7 +436,7 @@ public class BlockHash {
 			}
 			{
 				// Extend match end towards end of unencoded data
-				final int source_bytes_to_right = source_data.length - source_match_end;
+				final int source_bytes_to_right = source_data.limit() - source_match_end;
 				final int target_bytes_to_right = target.length - target_match_end;
 				final int limit_bytes_to_right = Math.min(source_bytes_to_right, target_bytes_to_right);
 				match_size +=
@@ -483,7 +489,7 @@ public class BlockHash {
 	}
 
 	protected int GetNumberOfBlocks() {
-		return source_data.length / kBlockSize;
+		return source_data.limit() / kBlockSize;
 	}
 
 	// Use the lowest-order bits of the hash value
@@ -506,7 +512,7 @@ public class BlockHash {
 	protected void AddBlock(int hash_value) {
 		// The initial value of last_block_added_ is -1.
 		int block_number = last_block_added + 1;
-		final int total_blocks = (source_data.length / kBlockSize);  // round down
+		final int total_blocks = (source_data.limit() / kBlockSize);  // round down
 		if (block_number >= total_blocks) {
 			String.format("BlockHash.AddBlock() called with block number %d this is past last block %d", block_number, total_blocks - 1);
 			return;
@@ -539,12 +545,22 @@ public class BlockHash {
 	// to calling AddAllBlocksThroughIndex(source_data + source_size).
 	// This function is called when Init(true) is invoked.
 	protected void AddAllBlocks() {
-		AddAllBlocksThroughIndex(source_data.length);
+		AddAllBlocksThroughIndex(source_data.limit());
 	}
 
 	// Returns true if the contents of the kBlockSize-byte block
 	// beginning at block1 are identical to the contents of
 	// the block beginning at block2; false otherwise.
+	protected static boolean BlockContentsMatch(byte[] block1, int block1_ofset, ByteBuffer block2, int block2_offset) {
+		for (int i = 0; i < kBlockSize; i++) {
+			if (block1[block1_ofset + i] != block2.get(block2_offset + i)) {
+				return false;
+			}
+		}
+
+		return true;
+	}
+	
 	protected static boolean BlockContentsMatch(byte[] block1, int block1_ofset, byte[] block2, int block2_offset) {
 		for (int i = 0; i < kBlockSize; i++) {
 			if (block1[block1_ofset + i] != block2[block2_offset + i]) {
@@ -603,6 +619,20 @@ public class BlockHash {
 	// that match the corresponding bytes to the left of target_match_start.
 	// Will not examine more than max_bytes bytes, which is to say that
 	// the return value will be in the range [0, max_bytes] inclusive.
+	protected static int MatchingBytesToLeft(ByteBuffer source_match_start, int source_match_offset, byte[] target_match_start, int target_match_start_offset, int max_bytes) {
+		int bytes_found = 0;
+		while (bytes_found < max_bytes) {
+			--source_match_offset;
+			--target_match_start_offset;
+
+			if (source_match_start.get(source_match_offset) != target_match_start[target_match_start_offset]) {
+				break;
+			}
+			++bytes_found;
+		}
+		return bytes_found;
+	}
+	
 	protected static int MatchingBytesToLeft(byte[] source_match_start, int source_match_offset, byte[] target_match_start, int target_match_start_offset, int max_bytes) {
 		int bytes_found = 0;
 		while (bytes_found < max_bytes) {
@@ -621,6 +651,16 @@ public class BlockHash {
 	// that match the corresponding bytes starting at target_match_end.
 	// Will not examine more than max_bytes bytes, which is to say that
 	// the return value will be in the range [0, max_bytes] inclusive.
+	protected static int MatchingBytesToRight(ByteBuffer source_match_end, int source_match_end_offset, byte[] target_match_end, int target_match_end_offset, int max_bytes) {
+		int bytes_found = 0;
+		while ((bytes_found < max_bytes) && (source_match_end.get(source_match_end_offset) == target_match_end[target_match_end_offset])) {
+			++bytes_found;
+			++source_match_end_offset;
+			++target_match_end_offset;
+		}
+		return bytes_found;
+	}
+	
 	protected static int MatchingBytesToRight(byte[] source_match_end, int source_match_end_offset, byte[] target_match_end, int target_match_end_offset, int max_bytes) {
 		int bytes_found = 0;
 		while ((bytes_found < max_bytes) && (source_match_end[source_match_end_offset] == target_match_end[target_match_end_offset])) {

@@ -1,5 +1,7 @@
 package com.googlecode.jvcdiff;
 
+import java.nio.ByteBuffer;
+
 public class RollingHash {
 	private final int window_size;
 
@@ -22,6 +24,14 @@ public class RollingHash {
 		long h = RollingHashUtil.HashFirstTwoBytes(data, offset);
 		for (int i = 2; i < window_size; ++i) {
 			h = RollingHashUtil.HashStep(h, data[offset + i]);
+		}
+		return h;
+	}
+	
+	public long Hash(ByteBuffer data) {
+		long h = RollingHashUtil.HashFirstTwoBytes(data);
+		for (int i = 2; i < window_size; ++i) {
+			h = RollingHashUtil.HashStep(h, data.get());
 		}
 		return h;
 	}
@@ -103,6 +113,12 @@ public class RollingHash {
 		// avoiding an unnecessary ModBase operation.
 		public static long HashFirstTwoBytes(byte[] ptr, int offset) {
 			return ((ptr[offset] & 0xff) * kMult) + (ptr[offset + 1] & 0xff);
+		}
+		
+		public static long HashFirstTwoBytes(ByteBuffer data) {
+			long hash = (data.get() & 0xff) * kMult;
+			hash += (data.get() & 0xff);
+			return hash;
 		}
 
 		public static long[] BuildRemoveTable(int window_size) {

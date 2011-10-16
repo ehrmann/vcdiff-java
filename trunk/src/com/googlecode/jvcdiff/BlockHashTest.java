@@ -1,10 +1,13 @@
 package com.googlecode.jvcdiff;
 
 import java.io.UnsupportedEncodingException;
+import java.nio.ByteBuffer;
 import java.util.Arrays;
 
 import org.junit.Assert;
 import org.junit.Test;
+
+import com.googlecode.jvcdiff.BlockHash.Match;
 
 public class BlockHashTest {
 	private static final int kBlockSize = BlockHash.kBlockSize;
@@ -625,7 +628,29 @@ public class BlockHashTest {
 		th_.AddOneIndexHash(sample_text.length / kBlockSize, (int)hashed_e);
 	}
 	 */
+	
+	@Test
+	public void uninitializedVariableTest() throws UnsupportedEncodingException {
+		final String dictionary_without_spaces_ = "The only thing we have to fear is fear itself";
+		final String target_without_spaces_ = "What we hear is fearsome";
 
+		final byte[] dictionary_ = MakeEachLetterABlock(dictionary_without_spaces_, 32, false);
+		final byte[] target_ = MakeEachLetterABlock(target_without_spaces_, 32, false);
+
+		BlockHash.Match best_match = new Match();
+
+		ByteBuffer target = ByteBuffer.wrap(target_);
+		BlockHash hashed_dictionary_ = BlockHash.CreateDictionaryHash(dictionary_);
+
+		Assert.assertEquals(0, hashed_dictionary_.FirstMatchingBlock(983552, target_, 0));
+		
+		hashed_dictionary_.FindBestMatch(983552, target, best_match);
+		
+		Assert.assertEquals(0, best_match.source_offset());
+		Assert.assertEquals(0, best_match.target_offset());
+		Assert.assertEquals(31, best_match.size());
+	}
+	
 	private static void TestAndPrintTimesForCompareFunctions(boolean should_be_identical, byte[] compare_buffer_1_, byte[] compare_buffer_2_) {
 		// Prime the memory cache.
 		int prime_result_ = 0;
@@ -694,20 +719,31 @@ public class BlockHashTest {
 	// between the sample text and search string only depends on the
 	// trailing letter in each block.
 	private static byte[] MakeEachLetterABlock(String string_without_spaces) {
-		byte[] bytes;
+		return MakeEachLetterABlock(string_without_spaces, kBlockSize, false);
+	}
+	
+	private static byte[] MakeEachLetterABlock(String string_without_spaces, int block_size, boolean no_initial_padding) {
+		byte[] bytes_without_spaces;
 		try {
-			bytes = string_without_spaces.getBytes("US-ASCII");
+			bytes_without_spaces = string_without_spaces.getBytes("US-ASCII");
 		} catch (UnsupportedEncodingException e) {
+			Assert.fail(e.toString());
 			return null;
 		}
+		
+		byte[] padded_text = new byte[block_size * bytes_without_spaces.length - (no_initial_padding ? block_size - 1 : 0)];
+		Arrays.fill(padded_text, (byte)' ');
 
-		byte[] result = new byte[bytes.length * kBlockSize];
-		Arrays.fill(result, (byte)' ');
-
-		for (int i = 0, j = kBlockSize - 1; i < bytes.length; i++, j+=kBlockSize) {
-			result[j] = bytes[i];
+		int padded_text_index = 0;
+		if (!no_initial_padding) {
+			padded_text_index = block_size - 1;
 		}
 
-		return result;
+		for (int i = 0; i < bytes_without_spaces.length; ++i) {
+			padded_text[padded_text_index] = bytes_without_spaces[i];
+			padded_text_index += block_size;
+		}
+
+		return padded_text;
 	}
 }

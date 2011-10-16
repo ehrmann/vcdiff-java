@@ -133,7 +133,7 @@ public class BlockHash {
 
 	// Performing a bitwise AND with hash_table_mask_ will produce a value ranging
 	// from 0 to the number of elements in hash_table_.
-	private int hash_table_mask;
+	private final int hash_table_mask;
 
 	// The offset of the first byte of source data (the data at source_data_[0]).
 	// For the purpose of computing offsets, the source data and target data
@@ -150,7 +150,7 @@ public class BlockHash {
 	// The last index added by AddBlock().  This determines the block number
 	// for successive calls to AddBlock(), and is also
 	// used to determine the starting block for AddAllBlocksThroughIndex().
-	private int last_block_added;
+	private int last_block_added = -1;
 	
 	// This class is used to store the best match found by FindBestMatch()
 	// and return it to the caller.
@@ -404,31 +404,31 @@ public class BlockHash {
 	//                                  (offset of " LLOYD" in the target string),
 	//     and best_match->size() = 6.
 
-	public void FindBestMatch(int hash_value, byte[] target_candidate, int target_candidate_start, byte[] target, int target_start, Match best_match) {
+	public void FindBestMatch(int hash_value, ByteBuffer target, Match best_match) {
 		// Keep a count of the number of matches found.  This will throttle the
 		// number of iterations in FindBestMatch.  For example, if the entire
 		// dictionary is made up of spaces (' ') and the search string is also
 		// made up of spaces, there will be one match for each block in the
 		// dictionary.
 		int match_counter = 0;
-		for (int block_number = FirstMatchingBlock(hash_value, target_candidate, target_candidate_start);
+		// TODO
+		for (int block_number = FirstMatchingBlock(hash_value, target.array(), target.arrayOffset() + target.position());
 		(block_number >= 0) && !(++match_counter > kMaxMatchesToCheck);
-		block_number = NextMatchingBlock(block_number, target_candidate, target_candidate_start)) {
+		block_number = NextMatchingBlock(block_number, target.array(), target.arrayOffset() + target.position())) {
 			int source_match_offset = block_number * kBlockSize;
 			final int source_match_end = source_match_offset + kBlockSize;
 
-			int target_match_offset = target_candidate_start - target_start;
+			int target_match_offset = target.position();
 			final int target_match_end = target_match_offset + kBlockSize;
 
 			int match_size = kBlockSize;
 			{
 				// Extend match start towards beginning of unencoded data
-				final int limit_bytes_to_left = Math.min(source_match_offset,
-						target_match_offset);
+				final int limit_bytes_to_left = Math.min(source_match_offset, target_match_offset);
 				final int matching_bytes_to_left =
 					MatchingBytesToLeft(
 							source_data, source_match_offset,
-							target, target_start + target_match_offset,
+							target.array(), target.arrayOffset() + target_match_offset,
 							limit_bytes_to_left);
 				source_match_offset -= matching_bytes_to_left;
 				target_match_offset -= matching_bytes_to_left;
@@ -437,18 +437,32 @@ public class BlockHash {
 			{
 				// Extend match end towards end of unencoded data
 				final int source_bytes_to_right = source_data.limit() - source_match_end;
-				final int target_bytes_to_right = target.length - target_match_end;
+				final int target_bytes_to_right = target.limit() - target_match_end;
 				final int limit_bytes_to_right = Math.min(source_bytes_to_right, target_bytes_to_right);
 				match_size +=
 					MatchingBytesToRight(
 							source_data, source_match_end,
-							target, target_start + target_match_end,
+							target.array(), target.arrayOffset() + target_match_end,
 							limit_bytes_to_right);
 			}
 			// Update in/out parameter if the best match found was better
 			// than any match already stored in *best_match.
 			best_match.ReplaceIfBetterMatch(match_size, source_match_offset + starting_offset, target_match_offset);
 		}
+	}
+	
+	public void FindBestMatch(int hash_value, byte[] target_candidate, int target_candidate_start, byte[] target, int target_start, Match best_match) {
+		if (target_candidate != target) {
+			throw new IllegalArgumentException("target_candidate != target");
+		}
+		if (target_candidate_start < target_start) {
+			throw new IllegalArgumentException("target_candidate_start < target_start");
+		}
+		
+		ByteBuffer targetBuffer = ByteBuffer.wrap(target, target_start, target.length - target_start);
+		targetBuffer.position(target_candidate_start);
+		
+		FindBestMatch(hash_value, targetBuffer, best_match);
 	}
 
 	// Internal routine which calculates a hash table size based on kBlockSize and

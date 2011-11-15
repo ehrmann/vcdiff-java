@@ -1,6 +1,5 @@
 package com.googlecode.jvcdiff;
 
-import static com.googlecode.jvcdiff.BlockHash.kBlockSize;
 import static com.googlecode.jvcdiff.VCDiffAddressCache.VCD_SELF_MODE;
 import static org.junit.Assert.assertArrayEquals;
 import static org.junit.Assert.assertEquals;
@@ -19,7 +18,11 @@ import com.googlecode.jvcdiff.VarInt.VarIntParseException;
 
 public class VCDiffEngineTest {
 
-	private static final Charset US_ASCII = Charset.forName("US-ASCII");
+	// Some common definitions and helper functions used in the various tests
+	// for VCDiffEngine.
+	protected static final int kBlockSize = VCDiffEngine.kMinimumMatchSize;
+
+	protected static final Charset US_ASCII = Charset.forName("US-ASCII");
 
 	private static final String dictionary_without_spaces_ = "The only thing we have to fear is fear itself";
 	private static final String target_without_spaces_ = "What we hear is fearsome";
@@ -104,7 +107,7 @@ public class VCDiffEngineTest {
 
 		ByteBuffer actual = ByteBuffer.wrap(diff_.toByteArray());
 		VerifyHeaderForDictionaryAndTargetText(dictionary_, target_, actual);
-		
+
 		// Data for ADDs
 		ExpectDataStringWithBlockSpacing("W".getBytes(US_ASCII), false, actual);
 		ExpectDataByte((byte)'t', actual);
@@ -358,7 +361,7 @@ public class VCDiffEngineTest {
 	// spaces added in front of it.
 	private static byte[] MakeEachLetterABlock(String string_without_spaces, int block_size, boolean no_initial_padding) {
 		byte[] bytes_without_spaces = string_without_spaces.getBytes(US_ASCII);
-		byte[] padded_text = new byte[(block_size * bytes_without_spaces.length)];
+		byte[] padded_text = new byte[block_size * bytes_without_spaces.length - (no_initial_padding ? block_size - 1 : 0)];
 		Arrays.fill(padded_text, (byte)' ');
 
 		int padded_text_index = 0;

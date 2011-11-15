@@ -79,7 +79,9 @@ public class VCDiffEngine {
 		final ByteBuffer candidate_pos = local_target_data.slice();
 		
 		int hash_value = (int)hasher.Hash(candidate_pos.array(), candidate_pos.arrayOffset() + candidate_pos.position(), candidate_pos.remaining());
-		while (true) {			
+		while (true) {
+			System.out.printf("hash_value = %d\n", hash_value);
+			System.out.printf("candidate_pos.remaining() = %d\n", candidate_pos.remaining());
 			if (EncodeCopyForBestMatch(look_for_target_matches, hash_value, candidate_pos, local_target_data, target_hash, coder)) {
 				candidate_pos.position(local_target_data.position());
 				if (candidate_pos.remaining() < BlockHash.kBlockSize) {
@@ -108,7 +110,7 @@ public class VCDiffEngine {
 				byte new_last_byte = candidate_pos.get(candidate_pos.position() + BlockHash.kBlockSize);
 				byte old_first_byte = candidate_pos.get();
 				
-				hash_value = (int)hasher.UpdateHash(hash_value, new_last_byte, old_first_byte);
+				hash_value = (int)hasher.UpdateHash(hash_value, old_first_byte, new_last_byte);
 			}
 		}
 		
@@ -187,25 +189,17 @@ public class VCDiffEngine {
 		// and target offset of the match.
 		BlockHash.Match best_match = new Match();
 
+		ByteBuffer target = unencoded_target.slice();
+		target.position((target_candidate.arrayOffset() + target_candidate.position()) -
+				(unencoded_target.arrayOffset() + unencoded_target.position()));
+		
 		// First look for a match in the dictionary.
-		hashed_dictionary_.FindBestMatch(
-				hash_value,
-				target_candidate.array(),
-				target_candidate.arrayOffset() + target_candidate.position(),
-				unencoded_target.array(),
-				unencoded_target.arrayOffset() + unencoded_target.position(),
-				best_match);
+		hashed_dictionary_.FindBestMatch(hash_value, target, best_match);
 
 		// If target matching is enabled, then see if there is a better match
 		// within the target data that has been encoded so far.
 		if (look_for_target_matches) {
-			target_hash.FindBestMatch(
-					hash_value,
-					target_candidate.array(),
-					target_candidate.arrayOffset() + target_candidate.position(),
-					unencoded_target.array(),
-					unencoded_target.arrayOffset() + unencoded_target.position(),
-					best_match);
+			target_hash.FindBestMatch(hash_value, target, best_match);
 		}
 
 		if (!ShouldGenerateCopyInstructionForMatchOfSize(best_match.size())) {
@@ -218,14 +212,11 @@ public class VCDiffEngine {
 			// the beginning of this COPY match.
 			coder.Add(unencoded_target.array(),
 					unencoded_target.arrayOffset() + unencoded_target.position(),
-					best_match.target_offset() - (unencoded_target.arrayOffset() + unencoded_target.position()));
+					best_match.target_offset());
 		}
 
 		coder.Copy(best_match.source_offset(), best_match.size());
-
-		int delta = best_match.target_offset() + best_match.size() - (target_candidate.arrayOffset() + target_candidate.position());
-		unencoded_target.position(unencoded_target.position() + delta);
-		
-		return delta > 0;
+		unencoded_target.position(unencoded_target.position() + best_match.target_offset() + best_match.size());
+		return best_match.target_offset() + best_match.size() > 0;
 	}
 }

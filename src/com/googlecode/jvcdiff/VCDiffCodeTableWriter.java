@@ -57,7 +57,7 @@ public class VCDiffCodeTableWriter implements CodeTableWriterInterface<OutputStr
 	// by one or two Varint values representing the size parameters
 	// of the first and second instruction in the opcode.
 	// TODO: replace with a Vector-like data structure
-	private ByteBuffer instructions_and_sizes_ = ByteBuffer.allocate(1024 * 1024);
+	private ByteBuffer instructions_and_sizes_ = ByteBuffer.allocate(1024 * 1024 * 16);
 
 	// A series of data arguments (byte values) used for ADD and RUN
 	// instructions.  Depending on whether interleaved output is used
@@ -74,7 +74,7 @@ public class VCDiffCodeTableWriter implements CodeTableWriterInterface<OutputStr
 	// separate_addresses_for_copy_ or to instructions_and_sizes_.
 	// TODO:
 	private ByteBuffer addresses_for_copy_;
-	private final ByteBuffer separate_addresses_for_copy_ = ByteBuffer.allocate(128 * 1024);
+	private final ByteBuffer separate_addresses_for_copy_ = ByteBuffer.allocate(1024 * 1024);
 
 	private final VCDiffAddressCache address_cache_;
 
@@ -201,13 +201,13 @@ public class VCDiffCodeTableWriter implements CodeTableWriterInterface<OutputStr
 	 *  Encode an ADD opcode with the "size" bytes starting at data
 	 */
 	public void Add(byte[] data, int offset, int length) {
-		if (offset + length > data.length || length < offset) {
+		if (offset + length > data.length || length < 0) {
 			throw new IllegalArgumentException();
 		}
 
-		EncodeInstruction(VCDiffCodeTableData.VCD_ADD, length - offset);
+		EncodeInstruction(VCDiffCodeTableData.VCD_ADD, length);
 		data_for_add_and_run_.put(data, offset, length);
-		target_length_ += length - offset;
+		target_length_ += length;
 	}
 
 	public void AddChecksum(int checksum) {

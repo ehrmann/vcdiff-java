@@ -36,7 +36,7 @@ public class VCDiffEngineTest {
 	}
 
 	private final VCDiffEngine engine_;
-	private final VCDiffAddressCache default_cache_ = null;
+	private final VCDiffAddressCache default_cache_ = new VCDiffAddressCacheImpl();
 	private boolean interleaved_;
 	private int saved_total_size_position_ = 0;
 	private int saved_delta_encoding_position_ = 0;
@@ -209,28 +209,24 @@ public class VCDiffEngineTest {
 	}
 
 	void ExpectDataString(byte[] expected_string, ByteBuffer actual) {
-		byte[] actual_string = new byte[expected_string.length];
-		actual.get(actual_string);
-		assertArrayEquals(expected_string, actual_string);
+		for (byte b : expected_string) {
+			ExpectDataByte(b, actual);
+		}
 	}
 
 	void ExpectDataStringWithBlockSpacing(byte[] expected_string, boolean trailing_spaces, ByteBuffer actual) {
-		byte[] exploded;
+		for (byte b : expected_string) {
+			for (int i = 0; i < (kBlockSize - 1); ++i) {
+				ExpectDataByte((byte)' ', actual);
+			}
+			ExpectDataByte(b, actual);
+		}
+
 		if (trailing_spaces) {
-			exploded = new byte[expected_string.length * kBlockSize + kBlockSize - 1];
-		} else {
-			exploded = new byte[expected_string.length * kBlockSize];
+			for (int i = 0; i < (kBlockSize - 1); ++i) {
+				ExpectDataByte((byte)' ', actual);
+			}
 		}
-
-		Arrays.fill(exploded, (byte)' ');
-
-		for (int i = 0; i < expected_string.length; i++) {
-			exploded[(i + 1) * kBlockSize - 1] = expected_string[i];
-		}
-
-		byte[] actual_string = new byte[exploded.length];
-		actual.get(actual_string);
-		assertArrayEquals(exploded, actual_string);
 	}
 
 	void ExpectInstructionByte(byte b, ByteBuffer actual) {

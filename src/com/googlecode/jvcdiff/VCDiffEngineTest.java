@@ -105,9 +105,9 @@ public class VCDiffEngineTest {
 		int expected_length = VarInt.calculateIntLength(expected_value);
 		int parsed_value = VarInt.getInt(actual);
 
-		assertEquals(expected_length, actual.position() - original_position);
 		assertEquals(expected_value, parsed_value);
-
+		assertEquals(expected_length, actual.position() - original_position);
+		
 		return expected_length;
 	}
 
@@ -289,7 +289,6 @@ public class VCDiffEngineTest {
 		return padded_text;
 	}
 	
-	//@RunWith(VCDiffEngineTestImpl.class)
 	public static class VCDiffEngineTestImpl extends VCDiffEngineTest {
 		@Test
 		public void EngineEncodeNothing() throws IOException {
@@ -373,6 +372,48 @@ public class VCDiffEngineTest {
 			ExpectAddressVarint(4 * kBlockSize, actual);  // "o" from "The only"
 			ExpectAddressVarint(2 * kBlockSize, actual);  // "e" from "The only"
 
+			VerifySizes(actual);
+		}
+		
+		@Test
+		public void EngineEncodeSampleTextInterleaved() throws VarIntParseException, VarIntEndOfBufferException, IOException {
+			Encode(/* interleaved = */ true, /* target matching = */ false);
+
+			ByteBuffer actual = ByteBuffer.wrap(diff_.toByteArray());
+
+			// Interleaved section
+			if (!ExpectAddCopyInstruction(kBlockSize, (3 * kBlockSize) - 1, VCD_SELF_MODE, actual)) {
+				ExpectDataStringWithBlockSpacing("W".getBytes(US_ASCII), false, actual);
+				ExpectCopyInstruction((3 * kBlockSize) - 1, VCD_SELF_MODE, actual);
+			} else {
+				ExpectDataStringWithBlockSpacing("W".getBytes(US_ASCII), false, actual);
+			}
+
+			ExpectAddressVarint(18 * kBlockSize, actual);  // "ha"
+			ExpectAddInstruction(1, actual);
+			ExpectDataByte((byte)'t', actual);
+			ExpectCopyInstruction((6 * kBlockSize) - 1, VCD_SELF_MODE, actual);
+			ExpectAddressVarint(14 * kBlockSize, actual);  // " we h"
+			ExpectCopyInstruction(11 * kBlockSize, VCDiffAddressCache.VCD_FIRST_NEAR_MODE, actual);
+			ExpectAddressVarint((9 * kBlockSize) + (kBlockSize - 1), actual);  // "ear is fear"
+			
+			if (!ExpectAddCopyInstruction(1, (2 * kBlockSize) - 1, VCD_SELF_MODE, actual)) {
+				ExpectDataByte((byte)'s', actual);
+				ExpectCopyInstruction((2 * kBlockSize) - 1, VCD_SELF_MODE, actual);
+			} else {
+				ExpectDataByte((byte)'s', actual);
+			}
+			
+			ExpectAddressVarint(4 * kBlockSize, actual);  // "o" from "The only"
+			
+			if (!ExpectAddCopyInstruction(1, kBlockSize, VCD_SELF_MODE, actual)) {
+				ExpectDataByte((byte)'m', actual);
+				ExpectCopyInstruction(kBlockSize, VCD_SELF_MODE, actual);
+			} else {
+				ExpectDataByte((byte)'m', actual);
+			}
+			
+			ExpectAddressVarint(2 * kBlockSize, actual);  // "e" from "The only"
 			VerifySizes(actual);
 		}
 	}

@@ -87,9 +87,9 @@ public class VCDiffCodeTableReaderTest {
 		Assert.assertEquals(mode, found_mode.get());
 
 		if (size == 0) {
-			Assert.assertEquals(1000 + opcode, found_size.get());
+			Assert.assertEquals(1000 + (opcode & 0xff), found_size.get());
 		} else {
-			Assert.assertEquals(opcode, found_size.get());
+			Assert.assertEquals(size, found_size.get());
 		}
 	}
 
@@ -98,9 +98,9 @@ public class VCDiffCodeTableReaderTest {
 			size = 0;
 		}
 
-		Assert.assertEquals(g_exercise_code_table_.inst1[opcode], inst);
-		Assert.assertEquals(g_exercise_code_table_.mode1[opcode], mode);
-		Assert.assertEquals(g_exercise_code_table_.size1[opcode], size);
+		Assert.assertEquals(g_exercise_code_table_.inst1[opcode & 0xff], inst);
+		Assert.assertEquals(g_exercise_code_table_.mode1[opcode & 0xff], mode);
+		Assert.assertEquals(g_exercise_code_table_.size1[opcode & 0xff], size);
 
 		VerifyInstModeSize(inst, mode, size, opcode);
 	}
@@ -110,9 +110,9 @@ public class VCDiffCodeTableReaderTest {
 			size = 0;
 		}
 
-		Assert.assertEquals(g_exercise_code_table_.inst2[opcode], inst);
-		Assert.assertEquals(g_exercise_code_table_.mode2[opcode], mode);
-		Assert.assertEquals(g_exercise_code_table_.size2[opcode], size);
+		Assert.assertEquals(g_exercise_code_table_.inst2[opcode & 0xff], inst);
+		Assert.assertEquals(g_exercise_code_table_.mode2[opcode & 0xff], mode);
+		Assert.assertEquals(g_exercise_code_table_.size2[opcode & 0xff], size);
 
 		VerifyInstModeSize(inst, mode, size, opcode);
 	}

@@ -603,7 +603,7 @@ public class BlockHashTest {
 		time = System.nanoTime() - time;
 
 		double elapsed_time_in_us = time / 1000.0;
-		System.out.printf("Time to search for best match with 1M matches: %.3f us\n", elapsed_time_in_us);
+		System.out.printf("Time to search for best match with 1M matches: %.3f μs\n", elapsed_time_in_us);
 
 		// All blocks match the candidate block.  FindBestMatch should have checked
 		// a certain number of matches before giving up.  The best match
@@ -686,7 +686,7 @@ public class BlockHashTest {
 			Assert.assertTrue(block_contents_match_result > 0);
 		}
 
-		System.out.println( "BlockHash.BlockContentsMatch: " + time_for_block_contents_match + " us per operation");
+		System.out.println( "BlockHash.BlockContentsMatch: " + time_for_block_contents_match + " μs per operation");
 	}
 
 	void TimingTestForBlocksThatDifferAtByte(int n) {

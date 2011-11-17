@@ -22,6 +22,9 @@ package com.googlecode.jvcdiff;
 import java.nio.ByteBuffer;
 import java.util.Arrays;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 // A generic hash table which will be used to keep track of byte runs
 // of size kBlockSize in both the incrementally processed target data
 // and the preprocessed source dictionary.
@@ -38,6 +41,8 @@ import java.util.Arrays;
 //   (== kBlockSize * block_number).  This greatly reduces the size
 //   of a hash entry.
 public class BlockHash {
+	
+	private static final Logger LOGGER = LoggerFactory.getLogger(BlockHash.class);
 
 	// Block size as per Bentley/McIlroy; must be a power of two.
 	//
@@ -411,7 +416,8 @@ public class BlockHash {
 		// made up of spaces, there will be one match for each block in the
 		// dictionary.
 		int match_counter = 0;
-		// TODO
+		
+		// TODO: ?
 		for (int block_number = FirstMatchingBlock(hash_value, target.array(), target.arrayOffset() + target.position());
 		(block_number >= 0) && !(++match_counter > kMaxMatchesToCheck);
 		block_number = NextMatchingBlock(block_number, target.array(), target.arrayOffset() + target.position())) {
@@ -483,20 +489,20 @@ public class BlockHash {
 			table_size <<= 1;
 			// Guard against an infinite loop
 			if (table_size <= 0) {
-				String.format("Internal error: CalcTableSize(dictionary_size = %d): resulting table_size %d is zero or negative", dictionary_size, table_size);
+				LOGGER.error(String.format("Internal error: CalcTableSize(dictionary_size = %d): resulting table_size %d is zero or negative", dictionary_size, table_size));
 				return 0;
 			}
 		}
 		// Check size sanity
 		if ((table_size & (table_size - 1)) != 0) {
-			String.format("Internal error: CalcTableSize(dictionary_size = %d): resulting table_size %d is not a power of 2", dictionary_size, table_size);
+			LOGGER.error(String.format("Internal error: CalcTableSize(dictionary_size = %d): resulting table_size %d is not a power of 2", dictionary_size, table_size));
 			return 0;
 		}
 		// The loop above tries to find the smallest power of 2 that is >= min_size.
 		// That value must lie somewhere between min_size and (min_size * 2),
 		// except for the case (dictionary_size == 0, table_size == 1).
 		if ((dictionary_size > 0) && (table_size > (min_size * 2))) {
-			String.format("Internal error: CalcTableSize(dictionary_size = %d): resulting table_size %d is too large", dictionary_size, table_size);
+			LOGGER.error(String.format("Internal error: CalcTableSize(dictionary_size = %d): resulting table_size %d is too large", dictionary_size, table_size));
 			return 0;
 		}
 		return table_size;
@@ -528,11 +534,11 @@ public class BlockHash {
 		int block_number = last_block_added + 1;
 		final int total_blocks = (source_data.limit() / kBlockSize);  // round down
 		if (block_number >= total_blocks) {
-			String.format("BlockHash.AddBlock() called with block number %d this is past last block %d", block_number, total_blocks - 1);
+			LOGGER.error(String.format("BlockHash.AddBlock() called with block number %d this is past last block %d", block_number, total_blocks - 1));
 			return;
 		}
 		if (next_block_table[block_number] != -1) {
-			String.format("Internal error in BlockHash::AddBlock(): block number = %d, next block should be -1 but is %d", block_number, next_block_table[block_number]);
+			LOGGER.error(String.format("Internal error in BlockHash::AddBlock(): block number = %d, next block should be -1 but is %d", block_number, next_block_table[block_number]));
 			return;
 		}
 		final int hash_table_index = GetHashTableIndex(hash_value);
@@ -545,7 +551,7 @@ public class BlockHash {
 			// Add this entry at the end of the chain of matching blocks
 			final int last_matching_block = last_block_table[first_matching_block];
 			if (next_block_table[last_matching_block] != -1) {
-				String.format("Internal error in BlockHash::AddBlock(): first matching block = %d, last matching block = %d, next block should be -1 but is %d", first_matching_block, last_matching_block, next_block_table[last_matching_block]);
+				LOGGER.error(String.format("Internal error in BlockHash::AddBlock(): first matching block = %d, last matching block = %d, next block should be -1 but is %d", first_matching_block, last_matching_block, next_block_table[last_matching_block]));
 				return;
 			}
 			next_block_table[last_matching_block] = block_number;

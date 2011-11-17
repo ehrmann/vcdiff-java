@@ -33,11 +33,16 @@ import java.nio.ByteBuffer;
 import java.util.Arrays;
 import java.util.concurrent.atomic.AtomicInteger;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 import com.googlecode.jvcdiff.VarInt.VarIntEndOfBufferException;
 import com.googlecode.jvcdiff.VarInt.VarIntParseException;
 
 
 public class VCDiffAddressCacheImpl extends VCDiffAddressCache {
+	
+	private static final Logger LOGGER = LoggerFactory.getLogger(VCDiffAddressCacheImpl.class);
 
 	public VCDiffAddressCacheImpl() {
 		super();
@@ -189,10 +194,10 @@ public class VCDiffAddressCacheImpl extends VCDiffAddressCache {
 	// returns false.
 	static boolean IsDecodedAddressValid(int decoded_address, int here_address) {
 		if (decoded_address < 0) {
-			String.format("Decoded address %d is invalid", decoded_address);
+			LOGGER.warn(String.format("Decoded address %d is invalid", decoded_address));
 			return false;
 		} else if (decoded_address >= here_address) {
-			String.format("Decoded address (%d) is beyond location in target file (%d)", decoded_address, here_address);
+			LOGGER.warn(String.format("Decoded address (%d) is beyond location in target file (%d)", decoded_address, here_address));
 			return false;
 		}
 		return true;

@@ -4,12 +4,17 @@ import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.util.Arrays;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 import com.googlecode.jvcdiff.BlockHash.Match;
 
 /**
  * All methods in this class are thread-safe.
  */
 public class VCDiffEngine {
+	
+	private static final Logger LOGGER = LoggerFactory.getLogger(VCDiffEngine.class);
 
 	/**
 	 * The minimum size of a string match that is worth putting into a COPY
@@ -149,8 +154,8 @@ public class VCDiffEngine {
 	 */
 	protected <OUT> void FinishEncoding(int target_size, OUT diff, CodeTableWriterInterface<OUT> coder) throws IOException {
 		if (target_size != coder.target_length()) {
-			String.format("Internal error in VCDiffEngine::Encode: original target size (%d) does not match number of bytes processed (%d)",
-					target_size, coder.target_length());
+			LOGGER.error(String.format("Internal error in VCDiffEngine::Encode: original target size (%d) does not match number of bytes processed (%d)",
+					target_size, coder.target_length()));
 		}
 		coder.Output(diff);
 	}

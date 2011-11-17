@@ -1,7 +1,6 @@
 package com.googlecode.jvcdiff;
 
 import static com.googlecode.jvcdiff.VCDiffAddressCache.VCD_SELF_MODE;
-import static org.junit.Assert.assertArrayEquals;
 import static org.junit.Assert.assertEquals;
 
 import java.io.ByteArrayOutputStream;
@@ -17,7 +16,7 @@ import com.googlecode.jvcdiff.VarInt.VarIntEndOfBufferException;
 import com.googlecode.jvcdiff.VarInt.VarIntParseException;
 
 public class VCDiffEngineTest {
-
+	
 	// Some common definitions and helper functions used in the various tests
 	// for VCDiffEngine.
 	protected static final int kBlockSize = VCDiffEngine.kMinimumMatchSize;

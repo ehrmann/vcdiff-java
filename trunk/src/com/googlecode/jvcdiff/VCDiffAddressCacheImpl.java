@@ -194,10 +194,10 @@ public class VCDiffAddressCacheImpl extends VCDiffAddressCache {
 	// returns false.
 	static boolean IsDecodedAddressValid(int decoded_address, int here_address) {
 		if (decoded_address < 0) {
-			LOGGER.warn(String.format("Decoded address %d is invalid", decoded_address));
+			LOGGER.warn("Decoded address {} is invalid", decoded_address);
 			return false;
 		} else if (decoded_address >= here_address) {
-			LOGGER.warn(String.format("Decoded address (%d) is beyond location in target file (%d)", decoded_address, here_address));
+			LOGGER.warn("Decoded address ({}) is beyond location in target file ({})", decoded_address, here_address);
 			return false;
 		}
 		return true;

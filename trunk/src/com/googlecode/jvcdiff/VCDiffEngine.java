@@ -154,8 +154,8 @@ public class VCDiffEngine {
 	 */
 	protected <OUT> void FinishEncoding(int target_size, OUT diff, CodeTableWriterInterface<OUT> coder) throws IOException {
 		if (target_size != coder.target_length()) {
-			LOGGER.error(String.format("Internal error in VCDiffEngine::Encode: original target size (%d) does not match number of bytes processed (%d)",
-					target_size, coder.target_length()));
+			LOGGER.error("Internal error in VCDiffEngine::Encode: original target size ({}) does not match number of bytes processed ({})",
+					target_size, coder.target_length());
 		}
 		coder.Output(diff);
 	}

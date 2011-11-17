@@ -317,14 +317,14 @@ public class VCDiffCodeTableWriter implements CodeTableWriterInterface<OutputStr
 			// End of Delta Encoding
 			final int size_after_delta_encoding = out.getBytesWritten();
 			if (length_of_the_delta_encoding != (size_after_delta_encoding - size_before_delta_encoding)) {
-				LOGGER.error(String.format("Internal error: calculated length of the delta encoding (%d) does not match actual length (%d)",
-						length_of_the_delta_encoding, (size_after_delta_encoding - size_before_delta_encoding)));
+				LOGGER.error("Internal error: calculated length of the delta encoding ({}) does not match actual length ({})",
+						length_of_the_delta_encoding, (size_after_delta_encoding - size_before_delta_encoding));
 			}
 			separate_data_for_add_and_run_.clear();
 			instructions_and_sizes_.clear();
 			separate_addresses_for_copy_.clear();
 			if (target_length_ == 0) {
-				LOGGER.warn(String.format("Empty target window"));
+				LOGGER.warn("Empty target window");
 			}
 		}
 
@@ -438,7 +438,7 @@ public class VCDiffCodeTableWriter implements CodeTableWriterInterface<OutputStr
 		// There should always be an opcode with size 0.
 		opcode = instruction_map_.LookupFirstOpcode(inst, (byte)0, mode);
 		if (opcode == kNoOpcode) {
-			LOGGER.warn(String.format("No matching opcode found for inst %d, mode %d, size 0", inst, mode));
+			LOGGER.warn("No matching opcode found for inst {}, mode {}, size 0", inst, mode);
 			return;
 		}
 

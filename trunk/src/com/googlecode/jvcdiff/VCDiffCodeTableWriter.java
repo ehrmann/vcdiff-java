@@ -1,10 +1,9 @@
 package com.googlecode.jvcdiff;
 
-import static com.googlecode.jvcdiff.VCDiffCodeTableData.VCD_COPY;
 import static com.googlecode.jvcdiff.VCDiffCodeTableData.VCD_ADD;
+import static com.googlecode.jvcdiff.VCDiffCodeTableData.VCD_COPY;
 import static com.googlecode.jvcdiff.VCDiffCodeTableData.kNoOpcode;
 
-import java.io.FilterOutputStream;
 import java.io.IOException;
 import java.io.OutputStream;
 import java.nio.ByteBuffer;

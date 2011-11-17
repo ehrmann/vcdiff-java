@@ -11,10 +11,12 @@ import java.util.Arrays;
 
 import org.junit.Assert;
 import org.junit.Test;
+import org.junit.runners.Suite.SuiteClasses;
 
 import com.googlecode.jvcdiff.VarInt.VarIntEndOfBufferException;
 import com.googlecode.jvcdiff.VarInt.VarIntParseException;
 
+@SuiteClasses({VCDiffEngineTest.VCDiffEngineTestImpl.class, VCDiffEngineTest.WeaselsToMoonpiesTest.class})
 public class VCDiffEngineTest {
 	
 	// Some common definitions and helper functions used in the various tests
@@ -44,98 +46,13 @@ public class VCDiffEngineTest {
 	private int data_bytes_ = 0;
 	private int address_bytes_ = 0;
 
-	private ByteArrayOutputStream diff_ = new ByteArrayOutputStream();
+	protected ByteArrayOutputStream diff_ = new ByteArrayOutputStream();
 
 	public VCDiffEngineTest() {
 		engine_ = new VCDiffEngine(dictionary_);
 	}
 
-	@Test
-	public void EngineEncodeNothing() throws IOException {
-		EncodeNothing(/* interleaved = */ false, /* target matching = */ false);
-	}
-
-	@Test
-	public void EngineEncodeNothingInterleaved() throws IOException {
-		EncodeNothing(/* interleaved = */ true, /* target matching = */ false);
-	}
-
-	@Test
-	public void EngineEncodeNothingTarget() throws IOException {
-		EncodeNothing(/* interleaved = */ false, /* target matching = */ true);
-	}
-
-	@Test
-	public void EngineEncodeNothingTargetInterleaved() throws IOException {
-		EncodeNothing(/* interleaved = */ true, /* target matching = */ true);
-	}
-
-	@Test
-	public void EngineEncodeSmallerThanOneBlock() throws IOException, VarIntParseException, VarIntEndOfBufferException {
-		final byte[] small_text = "  ".getBytes(US_ASCII);
-		EncodeText(small_text, /* interleaved = */ false, /* target matching = */ false);
-
-		ByteBuffer actual = ByteBuffer.wrap(diff_.toByteArray());
-		VerifyHeaderForDictionaryAndTargetText(dictionary_, small_text, actual);
-
-		// Data for ADDs
-		byte[] actual_small_text = new byte[small_text.length];
-		actual.get(actual_small_text);
-		Assert.assertArrayEquals(small_text, actual_small_text);
-
-		// Instructions and sizes
-		ExpectAddInstructionForStringLength(small_text, actual);
-	}
-
-	@Test
-	public void EngineEncodeSmallerThanOneBlockInterleaved() throws IOException, VarIntParseException, VarIntEndOfBufferException {
-		byte[] small_text = "  ".getBytes(US_ASCII);
-		EncodeText(small_text, /* interleaved = */ true, /* target matching = */ false);
-
-		ByteBuffer actual = ByteBuffer.wrap(diff_.toByteArray());
-		VerifyHeaderForDictionaryAndTargetText(dictionary_, small_text, actual);
-
-		// Interleaved section
-		ExpectAddInstructionForStringLength(small_text, actual);
-		ExpectDataString(small_text, actual);
-	}
-
-	@Test
-	public void EngineEncodeSampleText() throws VarIntParseException, VarIntEndOfBufferException, IOException {
-		Encode(/* interleaved = */ false, /* target matching = */ false);
-
-		ByteBuffer actual = ByteBuffer.wrap(diff_.toByteArray());
-		VerifyHeaderForDictionaryAndTargetText(dictionary_, target_, actual);
-
-		// Data for ADDs
-		ExpectDataStringWithBlockSpacing("W".getBytes(US_ASCII), false, actual);
-		ExpectDataByte((byte)'t', actual);
-		ExpectDataByte((byte)'s', actual);
-		ExpectDataByte((byte)'m', actual);
-		// Instructions and sizes
-		if (!ExpectAddCopyInstruction(kBlockSize, (3 * kBlockSize) - 1, VCD_SELF_MODE, actual)) {
-			ExpectCopyInstruction((3 * kBlockSize) - 1, VCD_SELF_MODE, actual);
-		}
-		ExpectAddInstruction(1, actual);
-		ExpectCopyInstruction((6 * kBlockSize) - 1, VCD_SELF_MODE, actual);
-		ExpectCopyInstruction(11 * kBlockSize, VCDiffAddressCache.VCD_FIRST_NEAR_MODE, actual);
-		if (!ExpectAddCopyInstruction(1, (2 * kBlockSize) - 1, VCD_SELF_MODE, actual)) {
-			ExpectCopyInstruction((2 * kBlockSize) - 1, VCD_SELF_MODE, actual);
-		}
-		if (!ExpectAddCopyInstruction(1, kBlockSize, VCD_SELF_MODE, actual)) {
-			ExpectCopyInstruction(kBlockSize, VCD_SELF_MODE, actual);
-		}
-		// Addresses for COPY
-		ExpectAddressVarint(18 * kBlockSize, actual);  // "ha"
-		ExpectAddressVarint(14 * kBlockSize, actual);  // " we h"
-		ExpectAddressVarint((9 * kBlockSize) + (kBlockSize - 1), actual);  // "ear is fear"
-		ExpectAddressVarint(4 * kBlockSize, actual);  // "o" from "The only"
-		ExpectAddressVarint(2 * kBlockSize, actual);  // "e" from "The only"
-
-		VerifySizes(actual);
-	}
-
-	private void EncodeNothing(boolean interleaved, boolean target_matching) throws IOException {
+	protected void EncodeNothing(boolean interleaved, boolean target_matching) throws IOException {
 		interleaved_ = interleaved;
 		VCDiffCodeTableWriter coder = new VCDiffCodeTableWriter(interleaved);
 		coder.Init(engine_.dictionary_size());
@@ -144,7 +61,7 @@ public class VCDiffEngineTest {
 		assertEquals(0, diff_.size());
 	}
 
-	private void EncodeText(byte[] bytes, boolean interleaved, boolean target_matching) throws IOException {
+	protected void EncodeText(byte[] bytes, boolean interleaved, boolean target_matching) throws IOException {
 		interleaved_ = interleaved;
 		VCDiffCodeTableWriter coder = new VCDiffCodeTableWriter(interleaved);
 		coder.Init(engine_.dictionary_size());
@@ -179,11 +96,11 @@ public class VCDiffEngineTest {
 
 	// These functions iterate through the decoded output and expect
 	// simple elements: bytes or variable-length integers.
-	private void ExpectByte(byte b, ByteBuffer actual) {
+	protected void ExpectByte(byte b, ByteBuffer actual) {
 		assertEquals(b, actual.get());
 	}
 
-	private int ExpectVarint(int expected_value, ByteBuffer actual) throws VarIntParseException, VarIntEndOfBufferException {
+	protected int ExpectVarint(int expected_value, ByteBuffer actual) throws VarIntParseException, VarIntEndOfBufferException {
 		int original_position = actual.position();
 		int expected_length = VarInt.calculateIntLength(expected_value);
 		int parsed_value = VarInt.getInt(actual);
@@ -194,11 +111,11 @@ public class VCDiffEngineTest {
 		return expected_length;
 	}
 
-	void SkipVarint(ByteBuffer actual) throws VarIntParseException, VarIntEndOfBufferException {
+	protected void SkipVarint(ByteBuffer actual) throws VarIntParseException, VarIntEndOfBufferException {
 		VarInt.getInt(actual);
 	}
 
-	void ExpectDataByte(byte b, ByteBuffer actual) {
+	protected void ExpectDataByte(byte b, ByteBuffer actual) {
 		ExpectByte(b, actual);
 		if (interleaved_) {
 			++instruction_bytes_;
@@ -207,13 +124,13 @@ public class VCDiffEngineTest {
 		}
 	}
 
-	void ExpectDataString(byte[] expected_string, ByteBuffer actual) {
+	protected void ExpectDataString(byte[] expected_string, ByteBuffer actual) {
 		for (byte b : expected_string) {
 			ExpectDataByte(b, actual);
 		}
 	}
 
-	void ExpectDataStringWithBlockSpacing(byte[] expected_string, boolean trailing_spaces, ByteBuffer actual) {
+	protected void ExpectDataStringWithBlockSpacing(byte[] expected_string, boolean trailing_spaces, ByteBuffer actual) {
 		for (byte b : expected_string) {
 			for (int i = 0; i < (kBlockSize - 1); ++i) {
 				ExpectDataByte((byte)' ', actual);
@@ -228,16 +145,16 @@ public class VCDiffEngineTest {
 		}
 	}
 
-	void ExpectInstructionByte(byte b, ByteBuffer actual) {
+	protected void ExpectInstructionByte(byte b, ByteBuffer actual) {
 		ExpectByte(b, actual);
 		++instruction_bytes_;
 	}
 
-	void ExpectInstructionVarint(int value, ByteBuffer actual) throws VarIntParseException, VarIntEndOfBufferException {
+	protected void ExpectInstructionVarint(int value, ByteBuffer actual) throws VarIntParseException, VarIntEndOfBufferException {
 		instruction_bytes_ += ExpectVarint(value, actual);
 	}
 
-	void ExpectAddressByte(byte b, ByteBuffer actual) {
+	protected void ExpectAddressByte(byte b, ByteBuffer actual) {
 		ExpectByte(b, actual);
 		if (interleaved_) {
 			++instruction_bytes_;
@@ -246,7 +163,7 @@ public class VCDiffEngineTest {
 		}
 	}
 
-	void ExpectAddressVarint(int value, ByteBuffer actual) throws VarIntParseException, VarIntEndOfBufferException {
+	protected void ExpectAddressVarint(int value, ByteBuffer actual) throws VarIntParseException, VarIntEndOfBufferException {
 		if (interleaved_) {
 			instruction_bytes_ += ExpectVarint(value, actual);
 		} else {
@@ -262,7 +179,7 @@ public class VCDiffEngineTest {
 	// this version will help validate that the other is correct.
 	// This version uses conditional statements, while encodetable.h
 	// looks up values in a mapping table.
-	private void ExpectAddress(byte address, short copy_mode, ByteBuffer actual) throws VarIntParseException, VarIntEndOfBufferException {
+	protected void ExpectAddress(byte address, short copy_mode, ByteBuffer actual) throws VarIntParseException, VarIntEndOfBufferException {
 		if (default_cache_.WriteAddressAsVarintForMode(copy_mode)) {
 			ExpectAddressVarint(address, actual);
 		} else {
@@ -270,7 +187,7 @@ public class VCDiffEngineTest {
 		}
 	}
 
-	private void ExpectAddInstruction(int size, ByteBuffer actual) throws VarIntParseException, VarIntEndOfBufferException {
+	protected void ExpectAddInstruction(int size, ByteBuffer actual) throws VarIntParseException, VarIntEndOfBufferException {
 		if (size <= 18) {
 			ExpectInstructionByte((byte)(0x01 + size), actual);
 		} else {
@@ -279,7 +196,7 @@ public class VCDiffEngineTest {
 		}
 	}
 
-	private void ExpectCopyInstruction(int size, int mode, ByteBuffer actual) throws VarIntParseException, VarIntEndOfBufferException {
+	protected void ExpectCopyInstruction(int size, int mode, ByteBuffer actual) throws VarIntParseException, VarIntEndOfBufferException {
 		if ((size >= 4) && (size <= 16)) {
 			ExpectInstructionByte((byte)(0x10 + (0x10 * mode) + size), actual);
 		} else {
@@ -288,7 +205,7 @@ public class VCDiffEngineTest {
 		}
 	}
 
-	private boolean ExpectAddCopyInstruction(int add_size, int copy_size, short copy_mode, ByteBuffer actual) throws VarIntParseException, VarIntEndOfBufferException {
+	protected boolean ExpectAddCopyInstruction(int add_size, int copy_size, short copy_mode, ByteBuffer actual) throws VarIntParseException, VarIntEndOfBufferException {
 		if (!default_cache_.IsSameMode(copy_mode) &&
 				(add_size <= 4) &&
 				(copy_size >= 4) &&
@@ -309,15 +226,15 @@ public class VCDiffEngineTest {
 		}
 	}
 
-	private void ExpectAddInstructionForStringLength(byte[] s, ByteBuffer actual) throws VarIntParseException, VarIntEndOfBufferException {
+	protected void ExpectAddInstructionForStringLength(byte[] s, ByteBuffer actual) throws VarIntParseException, VarIntEndOfBufferException {
 		ExpectAddInstruction(s.length, actual);
 	}
 
-	private int ExpectStringLength(byte[] s, ByteBuffer actual) throws VarIntParseException, VarIntEndOfBufferException {
+	protected int ExpectStringLength(byte[] s, ByteBuffer actual) throws VarIntParseException, VarIntEndOfBufferException {
 		return ExpectSize(s.length, actual);
 	}
 
-	int ExpectSize(int size, ByteBuffer actual) throws VarIntParseException, VarIntEndOfBufferException {
+	protected int ExpectSize(int size, ByteBuffer actual) throws VarIntParseException, VarIntEndOfBufferException {
 		return ExpectVarint(size, actual);
 	}
 
@@ -325,7 +242,7 @@ public class VCDiffEngineTest {
 	// diff string using the Expect... functions.  It makes sure that the
 	// size totals in the window header match the number of bytes that
 	// were parsed.
-	void VerifySizes(ByteBuffer actual) throws VarIntParseException, VarIntEndOfBufferException {
+	protected void VerifySizes(ByteBuffer actual) throws VarIntParseException, VarIntEndOfBufferException {
 		Assert.assertFalse(actual.hasRemaining());
 
 		final int delta_encoding_size = actual.position() - saved_delta_encoding_position_;
@@ -354,7 +271,7 @@ public class VCDiffEngineTest {
 	// trailing letter in each block.
 	// If no_initial_padding is true, then the first letter will not have
 	// spaces added in front of it.
-	private static byte[] MakeEachLetterABlock(String string_without_spaces, int block_size, boolean no_initial_padding) {
+	protected static byte[] MakeEachLetterABlock(String string_without_spaces, int block_size, boolean no_initial_padding) {
 		byte[] bytes_without_spaces = string_without_spaces.getBytes(US_ASCII);
 		byte[] padded_text = new byte[block_size * bytes_without_spaces.length - (no_initial_padding ? block_size - 1 : 0)];
 		Arrays.fill(padded_text, (byte)' ');
@@ -370,5 +287,97 @@ public class VCDiffEngineTest {
 		}
 
 		return padded_text;
+	}
+	
+	//@RunWith(VCDiffEngineTestImpl.class)
+	public static class VCDiffEngineTestImpl extends VCDiffEngineTest {
+		@Test
+		public void EngineEncodeNothing() throws IOException {
+			EncodeNothing(/* interleaved = */ false, /* target matching = */ false);
+		}
+
+		@Test
+		public void EngineEncodeNothingInterleaved() throws IOException {
+			EncodeNothing(/* interleaved = */ true, /* target matching = */ false);
+		}
+
+		@Test
+		public void EngineEncodeNothingTarget() throws IOException {
+			EncodeNothing(/* interleaved = */ false, /* target matching = */ true);
+		}
+
+		@Test
+		public void EngineEncodeNothingTargetInterleaved() throws IOException {
+			EncodeNothing(/* interleaved = */ true, /* target matching = */ true);
+		}
+
+		@Test
+		public void EngineEncodeSmallerThanOneBlock() throws IOException, VarIntParseException, VarIntEndOfBufferException {
+			final byte[] small_text = "  ".getBytes(US_ASCII);
+			EncodeText(small_text, /* interleaved = */ false, /* target matching = */ false);
+
+			ByteBuffer actual = ByteBuffer.wrap(diff_.toByteArray());
+			VerifyHeaderForDictionaryAndTargetText(dictionary_, small_text, actual);
+
+			// Data for ADDs
+			byte[] actual_small_text = new byte[small_text.length];
+			actual.get(actual_small_text);
+			Assert.assertArrayEquals(small_text, actual_small_text);
+
+			// Instructions and sizes
+			ExpectAddInstructionForStringLength(small_text, actual);
+		}
+
+		@Test
+		public void EngineEncodeSmallerThanOneBlockInterleaved() throws IOException, VarIntParseException, VarIntEndOfBufferException {
+			byte[] small_text = "  ".getBytes(US_ASCII);
+			EncodeText(small_text, /* interleaved = */ true, /* target matching = */ false);
+
+			ByteBuffer actual = ByteBuffer.wrap(diff_.toByteArray());
+			VerifyHeaderForDictionaryAndTargetText(dictionary_, small_text, actual);
+
+			// Interleaved section
+			ExpectAddInstructionForStringLength(small_text, actual);
+			ExpectDataString(small_text, actual);
+		}
+
+		@Test
+		public void EngineEncodeSampleText() throws VarIntParseException, VarIntEndOfBufferException, IOException {
+			Encode(/* interleaved = */ false, /* target matching = */ false);
+
+			ByteBuffer actual = ByteBuffer.wrap(diff_.toByteArray());
+			VerifyHeaderForDictionaryAndTargetText(dictionary_, target_, actual);
+
+			// Data for ADDs
+			ExpectDataStringWithBlockSpacing("W".getBytes(US_ASCII), false, actual);
+			ExpectDataByte((byte)'t', actual);
+			ExpectDataByte((byte)'s', actual);
+			ExpectDataByte((byte)'m', actual);
+			// Instructions and sizes
+			if (!ExpectAddCopyInstruction(kBlockSize, (3 * kBlockSize) - 1, VCD_SELF_MODE, actual)) {
+				ExpectCopyInstruction((3 * kBlockSize) - 1, VCD_SELF_MODE, actual);
+			}
+			ExpectAddInstruction(1, actual);
+			ExpectCopyInstruction((6 * kBlockSize) - 1, VCD_SELF_MODE, actual);
+			ExpectCopyInstruction(11 * kBlockSize, VCDiffAddressCache.VCD_FIRST_NEAR_MODE, actual);
+			if (!ExpectAddCopyInstruction(1, (2 * kBlockSize) - 1, VCD_SELF_MODE, actual)) {
+				ExpectCopyInstruction((2 * kBlockSize) - 1, VCD_SELF_MODE, actual);
+			}
+			if (!ExpectAddCopyInstruction(1, kBlockSize, VCD_SELF_MODE, actual)) {
+				ExpectCopyInstruction(kBlockSize, VCD_SELF_MODE, actual);
+			}
+			// Addresses for COPY
+			ExpectAddressVarint(18 * kBlockSize, actual);  // "ha"
+			ExpectAddressVarint(14 * kBlockSize, actual);  // " we h"
+			ExpectAddressVarint((9 * kBlockSize) + (kBlockSize - 1), actual);  // "ear is fear"
+			ExpectAddressVarint(4 * kBlockSize, actual);  // "o" from "The only"
+			ExpectAddressVarint(2 * kBlockSize, actual);  // "e" from "The only"
+
+			VerifySizes(actual);
+		}
+	}
+	
+	public static class WeaselsToMoonpiesTest extends VCDiffEngineTest {
+
 	}
 }

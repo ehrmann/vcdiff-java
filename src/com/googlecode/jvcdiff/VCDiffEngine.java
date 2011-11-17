@@ -120,7 +120,7 @@ public class VCDiffEngine {
 		}
 		
 		AddUnmatchedRemainder(local_target_data, coder);
-		FinishEncoding(local_target_data.remaining(), diff, coder);
+		FinishEncoding(local_target_data.capacity(), diff, coder);
 		
 		target_data.position(target_data.position() + local_target_data.position());
 	}

@@ -271,8 +271,7 @@ public class VCDiffAddressCacheImpl extends VCDiffAddressCache {
 			//VarintBE<int32_t>::Parse(address_stream_end, &new_address_pos);
 			switch (encoded_address) {
 			case RESULT_ERROR:
-				// VCD_ERROR << "Found invalid variable-length integer "
-				//            "as encoded address value" << VCD_ENDL;
+				LOGGER.error("Found invalid variable-length integer as encoded address value");
 				return RESULT_ERROR;
 			case RESULT_END_OF_DATA:
 				return RESULT_END_OF_DATA;

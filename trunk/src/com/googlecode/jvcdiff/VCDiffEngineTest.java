@@ -25,7 +25,7 @@ public abstract class VCDiffEngineTest {
 
 	// Some common definitions and helper functions used in the various tests
 	// for VCDiffEngine.
-	protected static final int kBlockSize = VCDiffEngine.kMinimumMatchSize;
+
 
 	protected static final Charset US_ASCII = Charset.forName("US-ASCII");
 
@@ -134,16 +134,16 @@ public abstract class VCDiffEngineTest {
 		}
 	}
 
-	protected void ExpectDataStringWithBlockSpacing(byte[] expected_string, boolean trailing_spaces, ByteBuffer actual) {
+	protected void ExpectDataStringWithBlockSpacing(byte[] expected_string, int blockSize, boolean trailing_spaces, ByteBuffer actual) {
 		for (byte b : expected_string) {
-			for (int i = 0; i < (kBlockSize - 1); ++i) {
+			for (int i = 0; i < (blockSize - 1); ++i) {
 				ExpectDataByte((byte)' ', actual);
 			}
 			ExpectDataByte(b, actual);
 		}
 
 		if (trailing_spaces) {
-			for (int i = 0; i < (kBlockSize - 1); ++i) {
+			for (int i = 0; i < (blockSize - 1); ++i) {
 				ExpectDataByte((byte)' ', actual);
 			}
 		}
@@ -303,6 +303,8 @@ public abstract class VCDiffEngineTest {
 
 	public static class VCDiffEngineTestImpl extends VCDiffEngineTest {
 
+		protected static final int kBlockSize = VCDiffEngine.kMinimumMatchSize;
+		
 		private static final String dictionary_without_spaces_ = "The only thing we have to fear is fear itself";
 		private static final String target_without_spaces_ = "What we hear is fearsome";
 
@@ -370,7 +372,7 @@ public abstract class VCDiffEngineTest {
 			VerifyHeaderForDictionaryAndTargetText(dictionary_, target_, actual);
 
 			// Data for ADDs
-			ExpectDataStringWithBlockSpacing("W".getBytes(US_ASCII), false, actual);
+			ExpectDataStringWithBlockSpacing("W".getBytes(US_ASCII), kBlockSize, false, actual);
 			ExpectDataByte((byte)'t', actual);
 			ExpectDataByte((byte)'s', actual);
 			ExpectDataByte((byte)'m', actual);
@@ -406,10 +408,10 @@ public abstract class VCDiffEngineTest {
 
 			// Interleaved section
 			if (!ExpectAddCopyInstruction(kBlockSize, (3 * kBlockSize) - 1, VCD_SELF_MODE, actual)) {
-				ExpectDataStringWithBlockSpacing("W".getBytes(US_ASCII), false, actual);
+				ExpectDataStringWithBlockSpacing("W".getBytes(US_ASCII), kBlockSize, false, actual);
 				ExpectCopyInstruction((3 * kBlockSize) - 1, VCD_SELF_MODE, actual);
 			} else {
-				ExpectDataStringWithBlockSpacing("W".getBytes(US_ASCII), false, actual);
+				ExpectDataStringWithBlockSpacing("W".getBytes(US_ASCII), kBlockSize, false, actual);
 			}
 
 			ExpectAddressVarint(18 * kBlockSize, actual);  // "ha"
@@ -448,7 +450,7 @@ public abstract class VCDiffEngineTest {
 			VerifyHeaderForDictionaryAndTargetText(dictionary_, target_, actual);
 
 			// Data for ADDs
-			ExpectDataStringWithBlockSpacing("W".getBytes(US_ASCII), false, actual);
+			ExpectDataStringWithBlockSpacing("W".getBytes(US_ASCII), kBlockSize, false, actual);
 			ExpectDataByte((byte)'t', actual);
 			ExpectDataByte((byte)'s', actual);
 			ExpectDataByte((byte)'m', actual);
@@ -491,10 +493,10 @@ public abstract class VCDiffEngineTest {
 
 			// Interleaved section
 			if (!ExpectAddCopyInstruction(kBlockSize, (3 * kBlockSize) - 1, VCD_SELF_MODE, actual)) {
-				ExpectDataStringWithBlockSpacing("W".getBytes(US_ASCII), false, actual);
+				ExpectDataStringWithBlockSpacing("W".getBytes(US_ASCII), kBlockSize, false, actual);
 				ExpectCopyInstruction((3 * kBlockSize) - 1, VCD_SELF_MODE, actual);
 			} else {
-				ExpectDataStringWithBlockSpacing("W".getBytes(US_ASCII), false, actual);
+				ExpectDataStringWithBlockSpacing("W".getBytes(US_ASCII), kBlockSize, false, actual);
 			}
 			ExpectAddressVarint(18 * kBlockSize, actual);  // "ha"
 			ExpectAddInstruction(1, actual);
@@ -545,7 +547,7 @@ public abstract class VCDiffEngineTest {
 		// the encoder's block-hash algorithm.  A good value, that will give
 		// reproducible results across all block sizes, will be somewhere
 		// in between these extremes.
-		protected static final int kCompressibleTestBlockSize = kBlockSize / 4;
+		protected static final int kCompressibleTestBlockSize = VCDiffEngine.kMinimumMatchSize / 4;
 		protected static final int kTrailingSpaces = kCompressibleTestBlockSize - 1;
 
 		// Care is taken in the formulation of the dictionary
@@ -564,9 +566,9 @@ public abstract class VCDiffEngineTest {
 			"<body>\n" +
 			"<h1>All about the weasel: highly compressible HTML text</h1>" +
 			"<ul>\n" +
-			"<li>Don\'t look a gift weasel in its mouth.</li>\n" +
+			"<li>Don't look a gift weasel in its mouth.</li>\n" +
 			"<li>This item makes sure the next occurrence is found.</li>\n" +
-			"<li>Don\'t count your weasel, before it\'s hatched.</li>\n" +
+			"<li>Don't count your weasel, before it's hatched.</li>\n" +
 			"</ul>\n" +
 			"<br>\n" +
 			"</body>\n" +
@@ -584,9 +586,9 @@ public abstract class VCDiffEngineTest {
 			"<body>\n" +
 			"<h1>All about the moon-pie: highly compressible HTML text</h1>" +
 			"<ul>\n" +
-			"<li>Don\'t look a gift moon-pie in its mouth.</li>\n" +
+			"<li>Don't look a gift moon-pie in its mouth.</li>\n" +
 			"<li>This item makes sure the next occurrence is found.</li>\n" +
-			"<li>Don\'t count your moon-pie, before it\'s hatched.</li>\n" +
+			"<li>Don't count your moon-pie, before it's hatched.</li>\n" +
 			"</ul>\n" +
 			"<br>\n" +
 			"</body>\n" +

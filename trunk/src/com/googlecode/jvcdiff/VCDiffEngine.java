@@ -85,8 +85,6 @@ public class VCDiffEngine {
 		
 		int hash_value = (int)hasher.Hash(candidate_pos.array(), candidate_pos.arrayOffset() + candidate_pos.position(), candidate_pos.remaining());
 		while (true) {
-			// System.out.printf("hash_value = %d\n", hash_value);
-			// System.out.printf("candidate_pos.remaining() = %d\n", candidate_pos.remaining());
 			if (EncodeCopyForBestMatch(look_for_target_matches, hash_value, candidate_pos, local_target_data, target_hash, coder)) {
 				candidate_pos.position(local_target_data.position());
 				if (candidate_pos.remaining() < BlockHash.kBlockSize) {

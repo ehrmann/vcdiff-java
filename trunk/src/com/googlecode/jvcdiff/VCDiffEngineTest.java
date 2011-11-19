@@ -191,11 +191,11 @@ public abstract class VCDiffEngineTest {
 	// this version will help validate that the other is correct.
 	// This version uses conditional statements, while encodetable.h
 	// looks up values in a mapping table.
-	protected void ExpectAddress(byte address, short copy_mode, ByteBuffer actual) throws VarIntParseException, VarIntEndOfBufferException {
+	protected void ExpectAddress(int address, short copy_mode, ByteBuffer actual) throws VarIntParseException, VarIntEndOfBufferException {
 		if (default_cache_.WriteAddressAsVarintForMode(copy_mode)) {
 			ExpectAddressVarint(address, actual);
 		} else {
-			ExpectAddressByte(address, actual);
+			ExpectAddressByte((byte)address, actual);
 		}
 	}
 
@@ -776,7 +776,7 @@ public abstract class VCDiffEngineTest {
 		protected void CopyBoilerplateAndAddMoonpie(short copy_mode, ByteBuffer actual) throws VarIntParseException, VarIntEndOfBufferException {
 			assertFalse(NoMoreMoonpies());
 			ExpectCopyForSize(CurrentBoilerplateLength(), copy_mode, actual);
-			ExpectAddress((byte)FindBoilerplateAddressForCopyMode(copy_mode), copy_mode, actual);
+			ExpectAddress(FindBoilerplateAddressForCopyMode(copy_mode), copy_mode, actual);
 			ExpectAddInstructionForStringLength(moonpie_text_, actual);
 			ExpectDataString(moonpie_text_, actual);
 		}
@@ -787,10 +787,10 @@ public abstract class VCDiffEngineTest {
 		protected void CopyBoilerplateAndCopyMoonpie(short copy_mode, short moonpie_copy_mode, ByteBuffer actual) throws VarIntParseException, VarIntEndOfBufferException {
 			assertFalse(NoMoreMoonpies());
 			ExpectCopyForSize(CurrentBoilerplateLength(), copy_mode, actual);
-			ExpectAddress((byte)FindBoilerplateAddressForCopyMode(copy_mode), copy_mode, actual);
+			ExpectAddress(FindBoilerplateAddressForCopyMode(copy_mode), copy_mode, actual);
 			moonpie_copy_mode = UpdateCopyModeForMoonpie(moonpie_copy_mode);
 			ExpectCopyForSize(moonpie_text_.length + kTrailingSpaces, moonpie_copy_mode, actual);
-			ExpectAddress((byte)FindMoonpieAddressForCopyMode(moonpie_copy_mode), moonpie_copy_mode, actual);
+			ExpectAddress(FindMoonpieAddressForCopyMode(moonpie_copy_mode), moonpie_copy_mode, actual);
 			copied_moonpie_address_ = dictionary_.length + LastMoonpiePosition();
 		}
 

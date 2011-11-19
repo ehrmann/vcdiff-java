@@ -67,7 +67,7 @@ public class VCDiffCodeTableWriter implements CodeTableWriterInterface<OutputStr
 	// instructions.  Depending on whether interleaved output is used
 	// for streaming or not, the pointer may point to
 	// separate_data_for_add_and_run_ or to instructions_and_sizes_.
-	// TODO:
+	// TODO: Possibly.  The tests seem to work, so I might have forgotten to remove the TODO.
 	private ByteBuffer data_for_add_and_run_;
 	private final ByteBuffer separate_data_for_add_and_run_ = ByteBuffer.allocate(128 * 1024);
 
@@ -76,7 +76,7 @@ public class VCDiffCodeTableWriter implements CodeTableWriterInterface<OutputStr
 	// Depending on whether interleaved output is used
 	// for streaming or not, the pointer may point to
 	// separate_addresses_for_copy_ or to instructions_and_sizes_.
-	// TODO:
+	// TODO: Again, this might actually work.
 	private ByteBuffer addresses_for_copy_;
 	private final ByteBuffer separate_addresses_for_copy_ = ByteBuffer.allocate(1024 * 1024);
 
@@ -401,7 +401,7 @@ public class VCDiffCodeTableWriter implements CodeTableWriterInterface<OutputStr
 			// This won't cause a failure, but it's inefficient encoding and probably
 			// represents a bug in the higher-level logic of the encoder.
 			if (inst == VCD_ADD && code_table_data_.inst1[last_opcode & 0xff] == VCD_ADD) {
-				// VCD_WARNING << "EncodeInstruction() called for two ADD instructions in a row" << VCD_ENDL;
+				LOGGER.warn("EncodeInstruction() called for two ADD instructions in a row");
 			}
 
 			short compound_opcode = kNoOpcode;

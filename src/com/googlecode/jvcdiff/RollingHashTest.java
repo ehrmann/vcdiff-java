@@ -62,7 +62,7 @@ public class RollingHashTest {
 
 		final double time_for_default_hash = DefaultHashTimingTest(kBlockSize, buffer);
 		final double time_for_rolling_hash = RollingTimingTest(kBlockSize, buffer);
-		System.out.printf("%d\t%f\t%f (%f%%)\n",
+		System.out.printf("%d\t%.3f\t%.3f (%.1f%%)\n",
 				kBlockSize,
 				time_for_default_hash,
 				time_for_rolling_hash,

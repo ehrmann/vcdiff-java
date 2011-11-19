@@ -3,10 +3,15 @@ package com.googlecode.jvcdiff;
 import java.nio.ByteBuffer;
 import java.util.concurrent.atomic.AtomicInteger;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 import com.googlecode.jvcdiff.VarInt.VarIntEndOfBufferException;
 import com.googlecode.jvcdiff.VarInt.VarIntParseException;
 
 public class VCDiffCodeTableReader {
+	private static final Logger LOGGER = LoggerFactory.getLogger(VCDiffCodeTableReader.class);
+	
 	// A pointer to the code table.  This is the object that will be used
 	// to interpret opcodes in GetNextInstruction().
 	protected final VCDiffCodeTableData code_table_data_;
@@ -29,14 +34,12 @@ public class VCDiffCodeTableReader {
 	public void UnGetInstruction() {
 		if (last_instruction_start_ >= 0) {
 			if (last_instruction_start_ > instructions_and_sizes_.position()) {
-				// VCD_DFATAL << "Internal error: last_instruction_start past end of "
-				//             "instructions_and_sizes in UnGetInstruction" << VCD_ENDL;
+				LOGGER.error("Internal error: last_instruction_start past end of instructions_and_sizes in UnGetInstruction");
 			}
 			instructions_and_sizes_.position(last_instruction_start_);
 			if ((pending_second_instruction_ != kNoOpcode) &&
 					(last_pending_second_instruction_ != kNoOpcode)) {
-				//VCD_DFATAL << "Internal error: two pending instructions in a row "
-				//             "in UnGetInstruction" << VCD_ENDL;
+				LOGGER.error("Internal error: two pending instructions in a row in UnGetInstruction");
 			}
 			pending_second_instruction_ = last_pending_second_instruction_;
 		}
@@ -107,7 +110,7 @@ public class VCDiffCodeTableReader {
 	// VCD_INSTRUCTION_ERROR will be returned.
 	public byte GetNextInstruction(AtomicInteger size, AtomicInteger mode) {
 		if (instructions_and_sizes_ == null) {
-			// VCD_ERROR << "Internal error: GetNextInstruction() called before Init()"
+			LOGGER.error("Internal error: GetNextInstruction() called before Init()");
 			return VCDiffCodeTableData.VCD_INSTRUCTION_ERROR;
 		}
 
@@ -154,8 +157,7 @@ public class VCDiffCodeTableReader {
 			try {
 				size.set(VarInt.getInt(instructions_and_sizes_));
 			} catch (VarIntParseException e) {
-				//VCD_ERROR << "Instruction size is not a valid variable-length integer"
-				//         << VCD_ENDL;
+				LOGGER.error("Instruction size is not a valid variable-length integer", e);
 				return VCDiffCodeTableData.VCD_INSTRUCTION_ERROR;
 			} catch (VarIntEndOfBufferException e) {
 				UnGetInstruction();  // Rewind to instruction start

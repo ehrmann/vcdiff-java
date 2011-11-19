@@ -271,7 +271,7 @@ public class VCDiffCodeTableWriter implements CodeTableWriterInterface<OutputStr
 	 */
 	public void Output(OutputStream out2) throws IOException {
 		if (instructions_and_sizes_.position() == 0) {
-			// "Empty input; no delta window produced"
+			LOGGER.warn("Empty input; no delta window produced");
 		} else {
 			CountingOutputStream out = new CountingOutputStream(out2);
 			

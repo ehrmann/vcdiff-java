@@ -290,6 +290,7 @@ public class VCDiffEngineTest {
 	}
 	
 	public static class VCDiffEngineTestImpl extends VCDiffEngineTest {
+
 		@Test
 		public void EngineEncodeNothing() throws IOException {
 			EncodeNothing(/* interleaved = */ false, /* target matching = */ false);
@@ -380,6 +381,7 @@ public class VCDiffEngineTest {
 			Encode(/* interleaved = */ true, /* target matching = */ false);
 
 			ByteBuffer actual = ByteBuffer.wrap(diff_.toByteArray());
+			VerifyHeaderForDictionaryAndTargetText(dictionary_, target_, actual);
 
 			// Interleaved section
 			if (!ExpectAddCopyInstruction(kBlockSize, (3 * kBlockSize) - 1, VCD_SELF_MODE, actual)) {

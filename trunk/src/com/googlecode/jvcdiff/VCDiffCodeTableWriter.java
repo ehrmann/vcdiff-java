@@ -47,9 +47,9 @@ public class VCDiffCodeTableWriter implements CodeTableWriterInterface<OutputStr
 		(byte)0x00	// Hdr_Indicator: No compression, no custom code table
 	};  
 
-	protected static final int VCD_SOURCE = 0x01;
-	// private static final int VCD_TARGET = 0x02;
-	protected static final int VCD_CHECKSUM = 0x04;
+	public static final int VCD_SOURCE = 0x01;
+	public static final int VCD_TARGET = 0x02;
+	public static final int VCD_CHECKSUM = 0x04;
 	
 	
 	/**

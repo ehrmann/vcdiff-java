@@ -1,14 +1,17 @@
 package com.googlecode.jvcdiff.codec;
 
+import java.io.ByteArrayOutputStream;
 import java.io.OutputStream;
+import java.nio.ByteBuffer;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import com.googlecode.jvcdiff.VCDiffAddressCache;
+import com.googlecode.jvcdiff.VCDiffAddressCacheImpl;
 import com.googlecode.jvcdiff.VCDiffCodeTableData;
 
-public class VCDiffStreamingDecoderImpl {
+public class VCDiffStreamingDecoderImpl implements VCDiffStreamingDecoder {
 	private static final Logger LOGGER = LoggerFactory.getLogger(VCDiffStreamingDecoderImpl.class);
 	
 	// The default maximum target file size (and target window size) if
@@ -36,12 +39,12 @@ public class VCDiffStreamingDecoderImpl {
 	// These functions are identical to their counterparts
 	// in VCDiffStreamingDecoder.
 	//
-	public void StartDecoding(byte[] dictionary_ptr, int dictionary_size) {
+	public void StartDecoding(byte[] dictionary_ptr) {
 		// TODO:
 	}
 
-	public boolean DecodeChunk(byte[] data, int len, OutputStream output_string) {
-
+	public boolean DecodeChunk(byte[] data, int offset, int len, OutputStream output_string) {
+		// TODO:
 	}
 
 	public boolean FinishDecoding() {
@@ -68,7 +71,6 @@ public class VCDiffStreamingDecoderImpl {
 	// and for others not to use it (and leave the flag bit set to 0.)
 	// Just as with AllowInterleaved(), this extension is not part of the draft
 	// standard and is only available when the version code 'S' is specified.
-	//
 	public boolean AllowChecksum() { return vcdiff_version_code_ == 'S'; }
 
 	public boolean SetMaximumTargetFileSize(int new_maximum_target_file_size) {
@@ -142,8 +144,8 @@ public class VCDiffStreamingDecoderImpl {
 			// No complete delta file header has been parsed yet.  DecodeChunk()
 			// may have received some data that it hasn't yet parsed, in which case
 			// decoding is incomplete.
-			return unparsed_bytes_.empty();
-		} else if (custom_code_table_decoder_.get()) {
+			return unparsed_bytes_.size() == 0;
+		} else if (custom_code_table_decoder_ != null) {
 			// The decoder is in the middle of parsing a custom code table.
 			return false;
 		} else if (delta_window_.FoundWindowHeader()) {
@@ -159,13 +161,13 @@ public class VCDiffStreamingDecoderImpl {
 			// No complete delta file window has been parsed yet.  DecodeChunk()
 			// may have received some data that it hasn't yet parsed, in which case
 			// decoding is incomplete.
-			return unparsed_bytes_.empty();
+			return unparsed_bytes_.size() == 0;
 		}
 	}
 
-	public const char* dictionary_ptr() { return dictionary_ptr_; }
+	public byte[] dictionary_ptr() { return dictionary_ptr_; }
 
-	public int dictionary_size() { return dictionary_size_; }
+	public int dictionary_size() { return dictionary_ptr_.length; }
 
 	public VCDiffAddressCache addr_cache() { return addr_cache_; }
 
@@ -187,9 +189,8 @@ public class VCDiffStreamingDecoderImpl {
 	// before the entire header could be read.  (The latter may be an error
 	// condition if there is no more data available.)  Otherwise, advances
 	// data->position_ past the header and returns RESULT_SUCCESS.
-	//
 	private int ReadDeltaFileHeader(ParseableChunk data) {
-		
+		// TODO
 	}
 
 	// Indicates whether or not the header has already been read.
@@ -203,7 +204,44 @@ public class VCDiffStreamingDecoderImpl {
 	// reached before the custom cache sizes could be read.  Otherwise, returns
 	// the number of bytes read.
 	//
-	private int InitCustomCodeTable(const char* data_start, const char* data_end);
+	private int InitCustomCodeTable(byte[] data_start, int offset, int length) {
+		  // A custom code table is being specified.  Parse the variable-length
+		  // cache sizes and begin parsing the encoded custom code table.
+		  Integer near_cache_size = null;
+		  Integer same_cache_size = null;
+		  
+		  VCDiffHeaderParser header_parser = new VCDiffHeaderParser(ByteBuffer.wrap(data_start, offset, length));
+		  if ((near_cache_size = header_parser.ParseInt32()) == null) {
+			  LOGGER.warn("Failed to parse size of near cache");
+		    return header_parser.GetResult();
+		  }
+		  if ((same_cache_size = header_parser.ParseInt32()) == null) {
+			  LOGGER.warn("Failed to parse size of same cache");
+		    return header_parser.GetResult();
+		  }
+		  
+		  custom_code_table_ = new VCDiffCodeTableData();
+
+		  custom_code_table_string_.clear();
+		  addr_cache_ = new VCDiffAddressCacheImpl(near_cache_size.shortValue(), same_cache_size.shortValue());
+		  
+		  // addr_cache_->Init() will be called
+		  // from VCDiffStreamingDecoderImpl::DecodeChunk()
+
+		  // If we reach this point (the start of the custom code table)
+		  // without encountering a RESULT_END_OF_DATA condition, then we won't call
+		  // ReadDeltaFileHeader() again for this delta file.
+		  //
+		  // Instantiate a recursive decoder to interpret the custom code table
+		  // as a VCDIFF encoding of the default code table.
+		  custom_code_table_decoder_ = new VCDiffStreamingDecoderImpl();
+		  
+		  byte[] codeTableBytes = VCDiffCodeTableData.kDefaultCodeTableData.getBytes();
+		  custom_code_table_decoder_.StartDecoding(codeTableBytes);
+		  custom_code_table_decoder_.SetPlannedTargetFileSize(codeTableBytes.length);
+		  
+		  return header_parser.ParsedSize();
+	}
 
 	// If a custom code table was specified in the header section that was parsed
 	// by ReadDeltaFileHeader(), this function makes a recursive call to another
@@ -216,7 +254,9 @@ public class VCDiffStreamingDecoderImpl {
 	// custom code table.  If the function returns RESULT_SUCCESS or
 	// RESULT_END_OF_DATA, it advances data->position_ past the parsed bytes.
 	//
-	private VCDiffResult ReadCustomCodeTable(ParseableChunk* data);
+	private int ReadCustomCodeTable(ParseableChunk data) {
+		// TODO
+	}
 
 	// Called after the decoder exhausts all input data.  This function
 	// copies from decoded_target_ into output_string all the data that
@@ -236,15 +276,14 @@ public class VCDiffStreamingDecoderImpl {
 	}
 
 	// Contents and length of the source (dictionary) data.
-	private const char* dictionary_ptr_;
-	private int dictionary_size_;
+	private final byte[] dictionary_ptr_;
 
 	// This string will be used to store any unparsed bytes left over when
 	// DecodeChunk() reaches the end of its input and returns RESULT_END_OF_DATA.
 	// It will also be used to concatenate those unparsed bytes with the data
 	// supplied to the next call to DecodeChunk(), so that they appear in
 	// contiguous memory.
-	private string unparsed_bytes_;
+	private ByteArrayOutputStream unparsed_bytes_ = new ByteArrayOutputStream(256);
 
 	// The portion of the target file that has been decoded so far.  This will be
 	// used to fill the output string for DecodeChunk(), and will also be used to

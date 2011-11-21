@@ -88,11 +88,9 @@ public class VCDiffHeaderParser {
 		try {
 			parsed_value = VarInt.getInt(buffer);
 		} catch (VarIntParseException e) {
-			// TODO Auto-generated catch block
-			e.printStackTrace();
+			return null;
 		} catch (VarIntEndOfBufferException e) {
-			// TODO Auto-generated catch block
-			e.printStackTrace();
+			return null;
 		}
 
 		switch (parsed_value) {
@@ -263,59 +261,4 @@ public class VCDiffHeaderParser {
 		// TODO:
 		return false;
 	}
-
-	protected class ParseableChunk {
-		protected ByteBuffer buffer;
-
-		public int End() {
-			return buffer.limit();
-		}
-
-		// The number of bytes remaining to be parsed.  This is not necessarily the
-		// same as the initial size of the buffer; it changes with each call to
-		// Advance().
-		public int UnparsedSize() {
-			return buffer.remaining();
-		}
-
-		// The number of bytes that have already been parsed.
-		public int ParsedSize() {
-			return buffer.position();
-		}
-
-		public boolean Empty() {
-			return 0 == UnparsedSize();
-		}
-
-		// The start of the data remaining to be parsed.
-		public int UnparsedData() {
-			return buffer.position();
-		}
-
-		// Moves the parsing position forward by number_of_bytes.
-		public void Advance(int number_of_bytes) {
-			buffer.position(buffer.position() + number_of_bytes);
-		}
-
-		// Jumps the parsing position to a new location.
-		public void SetPosition(int position) {
-			buffer.position(position);
-		}
-
-		// Jumps the parsing position to the end of the data chunk.
-		public void Finish() {
-			buffer.position(buffer.limit());
-		}
-
-		// Jumps the parsing position so that there are now number_of_bytes
-		// bytes left to parse.  This number should be smaller than the size of data
-		// to be parsed before the function was called.
-		public void FinishExcept(int number_of_bytes) {
-			buffer.position(buffer.limit() - number_of_bytes);
-		}
-
-		public void SetDataBuffer(ByteBuffer buffer) {
-			this.buffer = buffer;
-		}
-	};
 }

@@ -301,6 +301,32 @@ public class VCDiffCodeTableData implements Cloneable {
 		}
 		return no_errors_found;
 	}
+	
+	public byte[] getBytes() {
+		byte[] bytes = new byte[inst1.length + inst2.length + size1.length + size2.length + mode1.length + mode2.length];
+
+		int destPos = 0;
+		
+		System.arraycopy(inst1, 0, bytes, destPos, inst1.length);
+		destPos += inst1.length;
+		
+		System.arraycopy(inst2, 0, bytes, destPos, inst2.length);
+		destPos += inst2.length;
+		
+		System.arraycopy(size1, 0, bytes, destPos, size1.length);
+		destPos += size1.length;
+		
+		System.arraycopy(size2, 0, bytes, destPos, size2.length);
+		destPos += size2.length;
+		
+		System.arraycopy(mode1, 0, bytes, destPos, mode1.length);
+		destPos += mode1.length;
+		
+		System.arraycopy(mode2, 0, bytes, destPos, mode2.length);
+		destPos += mode2.length;
+		
+		return bytes;
+	}
 
 	protected boolean Validate() {
 		return Validate(VCDiffAddressCache.DefaultLastMode());

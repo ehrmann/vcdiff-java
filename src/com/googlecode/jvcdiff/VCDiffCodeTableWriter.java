@@ -6,12 +6,13 @@ import static com.googlecode.jvcdiff.VCDiffCodeTableData.kNoOpcode;
 
 import java.io.IOException;
 import java.io.OutputStream;
-import java.nio.ByteBuffer;
 import java.util.EnumSet;
 import java.util.concurrent.atomic.AtomicInteger;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+
+import com.googlecode.jvcdiff.mina_buffer.IoBuffer;
 
 /**
  * @author David Ehrmann
@@ -60,25 +61,22 @@ public class VCDiffCodeTableWriter implements CodeTableWriterInterface<OutputStr
 	// A series of instruction opcodes, each of which may be followed
 	// by one or two Varint values representing the size parameters
 	// of the first and second instruction in the opcode.
-	// TODO: replace with a Vector-like data structure
-	private ByteBuffer instructions_and_sizes_ = ByteBuffer.allocate(1024 * 1024 * 16);
+	private IoBuffer instructions_and_sizes_ = IoBuffer.allocate(1024);
 
 	// A series of data arguments (byte values) used for ADD and RUN
 	// instructions.  Depending on whether interleaved output is used
 	// for streaming or not, the pointer may point to
 	// separate_data_for_add_and_run_ or to instructions_and_sizes_.
-	// TODO: Possibly.  The tests seem to work, so I might have forgotten to remove the TODO.
-	private ByteBuffer data_for_add_and_run_;
-	private final ByteBuffer separate_data_for_add_and_run_ = ByteBuffer.allocate(128 * 1024);
+	private IoBuffer data_for_add_and_run_;
+	private final IoBuffer separate_data_for_add_and_run_ = IoBuffer.allocate(1024);
 
 	// A series of Varint addresses used for COPY instructions.
 	// For the SAME mode, a byte value is stored instead of a Varint.
 	// Depending on whether interleaved output is used
 	// for streaming or not, the pointer may point to
 	// separate_addresses_for_copy_ or to instructions_and_sizes_.
-	// TODO: Again, this might actually work.
-	private ByteBuffer addresses_for_copy_;
-	private final ByteBuffer separate_addresses_for_copy_ = ByteBuffer.allocate(1024 * 1024);
+	private IoBuffer addresses_for_copy_;
+	private final IoBuffer separate_addresses_for_copy_ = IoBuffer.allocate(1024);
 
 	private final VCDiffAddressCache address_cache_;
 
@@ -146,6 +144,11 @@ public class VCDiffCodeTableWriter implements CodeTableWriterInterface<OutputStr
 		add_checksum_ = false;
 		checksum_ = 0;
 		address_cache_ = new VCDiffAddressCacheImpl();
+		
+		instructions_and_sizes_.setAutoExpand(true);
+		separate_data_for_add_and_run_.setAutoExpand(true);
+		separate_addresses_for_copy_.setAutoExpand(true);
+		
 		InitSectionPointers(interleaved);
 	}
 
@@ -236,7 +239,8 @@ public class VCDiffCodeTableWriter implements CodeTableWriterInterface<OutputStr
 		final byte mode = (byte)address_cache_.EncodeAddress(offset, dictionary_size_ + target_length_, encoded_addr);
 		EncodeInstruction(VCD_COPY, size, mode);
 		if (address_cache_.WriteAddressAsVarintForMode(mode)) {
-			VarInt.putInt(addresses_for_copy_, encoded_addr.get());
+			addresses_for_copy_.expand(VarInt.calculateIntLength(encoded_addr.get()));
+			VarInt.putInt(addresses_for_copy_.buf(), encoded_addr.get());
 		} else {
 			addresses_for_copy_.put((byte)encoded_addr.get());
 		}
@@ -419,7 +423,8 @@ public class VCDiffCodeTableWriter implements CodeTableWriterInterface<OutputStr
 			if (compound_opcode != kNoOpcode) {
 				instructions_and_sizes_.put(last_opcode_index_, (byte)compound_opcode);
 				last_opcode_index_ = -1;
-				VarInt.putInt(instructions_and_sizes_, size);
+				instructions_and_sizes_.expand(VarInt.calculateIntLength(size));
+				VarInt.putInt(instructions_and_sizes_.buf(), size);
 				return;
 			}
 		}
@@ -443,7 +448,8 @@ public class VCDiffCodeTableWriter implements CodeTableWriterInterface<OutputStr
 
 		instructions_and_sizes_.put((byte)opcode);
 		last_opcode_index_ = instructions_and_sizes_.position() - 1;
-		VarInt.putInt(instructions_and_sizes_, size);
+		instructions_and_sizes_.expand(VarInt.calculateIntLength(size));
+		VarInt.putInt(instructions_and_sizes_.buf(), size);
 	}
 
 	private void EncodeInstruction(byte inst, int size) {

@@ -1,6 +1,13 @@
 package com.googlecode.jvcdiff.codec;
 
+import static com.googlecode.jvcdiff.codec.VCDiffHeaderParser.RESULT_ERROR;
+import static com.googlecode.jvcdiff.codec.VCDiffHeaderParser.RESULT_SUCCESS;
+import static com.googlecode.jvcdiff.codec.VCDiffHeaderParser.RESULT_END_OF_DATA;
+import static com.googlecode.jvcdiff.codec.VCDiffHeaderParser.VCD_CODETABLE;
+import static com.googlecode.jvcdiff.codec.VCDiffHeaderParser.VCD_DECOMPRESS;
+
 import java.io.ByteArrayOutputStream;
+import java.io.IOException;
 import java.io.OutputStream;
 import java.nio.ByteBuffer;
 
@@ -10,6 +17,7 @@ import org.slf4j.LoggerFactory;
 import com.googlecode.jvcdiff.VCDiffAddressCache;
 import com.googlecode.jvcdiff.VCDiffAddressCacheImpl;
 import com.googlecode.jvcdiff.VCDiffCodeTableData;
+import com.googlecode.jvcdiff.mina_buffer.IoBuffer;
 
 public class VCDiffStreamingDecoderImpl implements VCDiffStreamingDecoder {
 	private static final Logger LOGGER = LoggerFactory.getLogger(VCDiffStreamingDecoderImpl.class);
@@ -28,14 +36,14 @@ public class VCDiffStreamingDecoderImpl implements VCDiffStreamingDecoder {
 	public static final int kUnlimitedBytes = -3;
 
 	// Contents and length of the source (dictionary) data.
-	private final byte[] dictionary_ptr_;
+	private byte[] dictionary_ptr_;
 
 	// This string will be used to store any unparsed bytes left over when
 	// DecodeChunk() reaches the end of its input and returns RESULT_END_OF_DATA.
 	// It will also be used to concatenate those unparsed bytes with the data
 	// supplied to the next call to DecodeChunk(), so that they appear in
 	// contiguous memory.
-	private ByteArrayOutputStream unparsed_bytes_ = new ByteArrayOutputStream(256);
+	private final IoBuffer unparsed_bytes_ = IoBuffer.allocate(256);
 
 	// The portion of the target file that has been decoded so far.  This will be
 	// used to fill the output string for DecodeChunk(), and will also be used to
@@ -43,7 +51,7 @@ public class VCDiffStreamingDecoderImpl implements VCDiffStreamingDecoder {
 	// window can come from a range of addresses in the previously decoded target
 	// data, the entire target file needs to be available to the decoder, not just
 	// the current target window.
-	private string decoded_target_;
+	private final IoBuffer decoded_target_ = IoBuffer.allocate(512);
 
 	// The VCDIFF version byte (also known as "header4") from the
 	// delta file header.
@@ -57,7 +65,7 @@ public class VCDiffStreamingDecoderImpl implements VCDiffStreamingDecoder {
 	private VCDiffCodeTableData custom_code_table_;
 
 	// Used to receive the decoded custom code table.
-	private string custom_code_table_string_;
+	private IoBuffer custom_code_table_string_;
 
 	// If a custom code table is specified, it will be expressed
 	// as an embedded VCDIFF delta file which uses the default code table
@@ -130,6 +138,7 @@ public class VCDiffStreamingDecoderImpl implements VCDiffStreamingDecoder {
 			LOGGER.error("StartDecoding() called twice without FinishDecoding()");
 			return;
 		}
+
 		unparsed_bytes_.clear();
 		decoded_target_.clear();  // delta_window_.Reset() depends on this
 		Reset();
@@ -144,18 +153,17 @@ public class VCDiffStreamingDecoderImpl implements VCDiffStreamingDecoder {
 			return false;
 		}
 		ParseableChunk parseable_chunk = new ParseableChunk(data, len);
-		if (!unparsed_bytes_.empty()) {
-			unparsed_bytes_.append(data, len);
-			parseable_chunk.SetDataBuffer(unparsed_bytes_.data(),
-					unparsed_bytes_.size());
+		if (unparsed_bytes_.position() > 0) {
+			unparsed_bytes_.put(data, offset, len);
+			parseable_chunk.SetDataBuffer(unparsed_bytes_.data(), unparsed_bytes_.size());
 		}
-		int result = ReadDeltaFileHeader(&parseable_chunk);
+		int result = ReadDeltaFileHeader(parseable_chunk);
 		if (RESULT_SUCCESS == result) {
-			result = ReadCustomCodeTable(&parseable_chunk);
+			result = ReadCustomCodeTable(parseable_chunk);
 		}
 		if (RESULT_SUCCESS == result) {
 			while (!parseable_chunk.Empty()) {
-				result = delta_window_.DecodeWindow(&parseable_chunk);
+				result = delta_window_.DecodeWindow(parseable_chunk);
 				if (RESULT_SUCCESS != result) {
 					break;
 				}
@@ -302,7 +310,8 @@ public class VCDiffStreamingDecoderImpl implements VCDiffStreamingDecoder {
 	// SetPlannedTargetFileSize() is being used, in order to preserve the
 	// remaining input data stream once the planned target file has been decoded.
 	public int GetUnconsumedDataSize() {
-		return unparsed_bytes_.size();
+		// FIXME
+		return unparsed_bytes_.remaining();
 	}
 
 	// This function will return true if the decoder has parsed a complete delta
@@ -314,7 +323,8 @@ public class VCDiffStreamingDecoderImpl implements VCDiffStreamingDecoder {
 			// No complete delta file header has been parsed yet.  DecodeChunk()
 			// may have received some data that it hasn't yet parsed, in which case
 			// decoding is incomplete.
-			return unparsed_bytes_.size() == 0;
+			// FIXME
+			return unparsed_bytes_.remaining() == 0;
 		} else if (custom_code_table_decoder_ != null) {
 			// The decoder is in the middle of parsing a custom code table.
 			return false;
@@ -331,7 +341,8 @@ public class VCDiffStreamingDecoderImpl implements VCDiffStreamingDecoder {
 			// No complete delta file window has been parsed yet.  DecodeChunk()
 			// may have received some data that it hasn't yet parsed, in which case
 			// decoding is incomplete.
-			return unparsed_bytes_.size() == 0;
+			// FIXME
+			return unparsed_bytes_.remaining() == 0;
 		}
 	}
 
@@ -341,7 +352,7 @@ public class VCDiffStreamingDecoderImpl implements VCDiffStreamingDecoder {
 
 	public VCDiffAddressCache addr_cache() { return addr_cache_; }
 
-	public string* decoded_target() { return &decoded_target_; }
+	public ByteBuffer decoded_target() { return decoded_target_.buf().asReadOnlyBuffer(); }
 
 	public boolean allow_vcd_target() { return allow_vcd_target_; }
 
@@ -388,8 +399,7 @@ public class VCDiffStreamingDecoderImpl implements VCDiffStreamingDecoder {
 			return RESULT_SUCCESS;
 		}
 		int data_size = data.UnparsedSize();
-		final DeltaFileHeader header =
-			reinterpret_cast<const DeltaFileHeader*>(data.UnparsedData());
+		final DeltaFileHeader header = new DeltaFileHeader(data.UnparsedData());
 			boolean wrong_magic_number = false;
 			switch (data_size) {
 			// Verify only the bytes that are available.
@@ -479,6 +489,7 @@ public class VCDiffStreamingDecoderImpl implements VCDiffStreamingDecoder {
 
 		custom_code_table_ = new VCDiffCodeTableData();
 
+		// FIXME
 		custom_code_table_string_.clear();
 		addr_cache_ = new VCDiffAddressCacheImpl(near_cache_size.shortValue(), same_cache_size.shortValue());
 
@@ -515,7 +526,7 @@ public class VCDiffStreamingDecoderImpl implements VCDiffStreamingDecoder {
 		if (custom_code_table_decoder_ == null) {
 			return RESULT_SUCCESS;
 		}
-		if (!custom_code_table_.get()) {
+		if (custom_code_table_ != null) {
 			LOGGER.error("Internal error:  custom_code_table_decoder_ is set, but custom_code_table_ is NULL");
 			return RESULT_ERROR;
 		}
@@ -525,7 +536,7 @@ public class VCDiffStreamingDecoderImpl implements VCDiffStreamingDecoder {
 				&output_string)) {
 			return RESULT_ERROR;
 		}
-		if (custom_code_table_string_.length() < sizeof(*custom_code_table_)) {
+		if (custom_code_table_string_.length() < VCDiffCodeTableData.SERIALIZED_BYTE_SIZE) {
 			// Skip over the consumed data.
 			data.Finish();
 			return RESULT_END_OF_DATA;
@@ -533,19 +544,20 @@ public class VCDiffStreamingDecoderImpl implements VCDiffStreamingDecoder {
 		if (!custom_code_table_decoder_.FinishDecoding()) {
 			return RESULT_ERROR;
 		}
-		if (custom_code_table_string_.length() != sizeof(*custom_code_table_)) {
+		if (custom_code_table_string_.length() != VCDiffCodeTableData.SERIALIZED_BYTE_SIZE) {
 			LOGGER.error("Decoded custom code table size ({}) does not match size of a code table ({})",
-					custom_code_table_string_.length(), sizeof(*custom_code_table_);
+					custom_code_table_string_.length(), VCDiffCodeTableData.SERIALIZED_BYTE_SIZE);
 			return RESULT_ERROR;
 		}
-		memcpy(custom_code_table_.get(),
-				custom_code_table_string_.data(),
-				sizeof(*custom_code_table_));
+		
+		custom_code_table_ = new VCDiffCodeTableData(custom_code_table_string_.data());
+
+		// FIXME
 		custom_code_table_string_.clear();
 		// Skip over the consumed data.
 		data.FinishExcept(custom_code_table_decoder_.GetUnconsumedDataSize());
-		custom_code_table_decoder_.reset();
-		delta_window_.UseCodeTable(*custom_code_table_, addr_cache_.LastMode());
+		custom_code_table_decoder_ = null;
+		delta_window_.UseCodeTable(custom_code_table_, addr_cache_.LastMode());
 		return RESULT_SUCCESS;
 	}
 
@@ -577,10 +589,9 @@ public class VCDiffStreamingDecoderImpl implements VCDiffStreamingDecoder {
 	// called after each complete target window has been decoded if
 	// allow_vcd_target is false.  In that case, there is no need to retain
 	// target data from any window except the current window.
-	private void FlushDecodedTarget(OutputStream output_string) {
-		output_string.append(
-				decoded_target_.data() + decoded_target_output_position_,
-				decoded_target_.size() - decoded_target_output_position_);
+	private void FlushDecodedTarget(OutputStream output_string) throws IOException {
+		decoded_target_.flip();
+		output_string.write(decoded_target_.array(), decoded_target_.arrayOffset() + decoded_target_.position(), decoded_target_.remaining());
 		decoded_target_.clear();
 		delta_window_.set_target_window_start_pos(0);
 		decoded_target_output_position_ = 0;

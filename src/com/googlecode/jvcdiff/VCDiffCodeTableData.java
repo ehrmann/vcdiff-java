@@ -4,7 +4,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 public class VCDiffCodeTableData implements Cloneable {
-	
+
 	private static final Logger LOGGER = LoggerFactory.getLogger(VCDiffCodeTableData.class);
 
 	protected static final int kCodeTableSize = 256;
@@ -179,6 +179,8 @@ public class VCDiffCodeTableData implements Cloneable {
 					0, 0, 0, 0, 0, 0, 0, 0, 0  // opcodes 247-255
 			}
 	);
+	
+	public static final int SERIALIZED_BYTE_SIZE = kDefaultCodeTableData.getBytes().length;
 
 	protected final byte inst1[] = new byte[kCodeTableSize];  // from enum VCDiffInstructionType
 	protected final byte inst2[] = new byte[kCodeTableSize];  // from enum VCDiffInstructionType
@@ -187,10 +189,38 @@ public class VCDiffCodeTableData implements Cloneable {
 	protected final byte mode1[] = new byte[kCodeTableSize];  // from enum VCDiffModes
 	protected final byte mode2[] = new byte[kCodeTableSize];  // from enum VCDiffModes
 
-	public VCDiffCodeTableData() {
-		
-	}
+	private volatile byte[] bytes = null;
 	
+	public VCDiffCodeTableData() {
+
+	}
+
+	public VCDiffCodeTableData(byte[] bytes) {
+		if (bytes.length != inst1.length + inst2.length + size1.length + size2.length + mode1.length + mode2.length) {
+			throw new IllegalArgumentException();
+		}
+
+		int srcPos = 0;
+
+		System.arraycopy(bytes, srcPos, inst1, 0, inst1.length);
+		srcPos += inst1.length;
+
+		System.arraycopy(bytes, srcPos, inst2, 0, inst2.length);
+		srcPos += inst2.length;
+
+		System.arraycopy(bytes, srcPos, size1, 0, size1.length);
+		srcPos += size1.length;
+
+		System.arraycopy(bytes, srcPos, size2, 0, size2.length);
+		srcPos += size2.length;
+
+		System.arraycopy(bytes, srcPos, mode1, 0, mode1.length);
+		srcPos += mode1.length;
+
+		System.arraycopy(bytes, srcPos, mode2, 0, mode2.length);
+		srcPos += mode2.length;
+	}
+
 	public VCDiffCodeTableData(byte[] inst1, byte[] inst2, byte[] size1, byte[] size2, byte[] mode1, byte[] mode2) {
 		if (inst1.length != kCodeTableSize || inst2.length != kCodeTableSize ||
 				size1.length != kCodeTableSize || size2.length != kCodeTableSize ||
@@ -209,7 +239,7 @@ public class VCDiffCodeTableData implements Cloneable {
 	public VCDiffCodeTableData clone() {
 		return new VCDiffCodeTableData(this.inst1, this.inst2, this.size1, this.size2, this.mode1, this.mode2);
 	}
-	
+
 	protected String VCDiffInstructionName(int inst) {
 		switch (inst) {
 		case VCD_NOOP:
@@ -301,30 +331,36 @@ public class VCDiffCodeTableData implements Cloneable {
 		}
 		return no_errors_found;
 	}
-	
-	public byte[] getBytes() {
-		byte[] bytes = new byte[inst1.length + inst2.length + size1.length + size2.length + mode1.length + mode2.length];
 
-		int destPos = 0;
-		
-		System.arraycopy(inst1, 0, bytes, destPos, inst1.length);
-		destPos += inst1.length;
-		
-		System.arraycopy(inst2, 0, bytes, destPos, inst2.length);
-		destPos += inst2.length;
-		
-		System.arraycopy(size1, 0, bytes, destPos, size1.length);
-		destPos += size1.length;
-		
-		System.arraycopy(size2, 0, bytes, destPos, size2.length);
-		destPos += size2.length;
-		
-		System.arraycopy(mode1, 0, bytes, destPos, mode1.length);
-		destPos += mode1.length;
-		
-		System.arraycopy(mode2, 0, bytes, destPos, mode2.length);
-		destPos += mode2.length;
-		
+	public byte[] getBytes() {
+		if (bytes == null) {
+			synchronized (this) {
+				if (bytes == null) {
+					bytes = new byte[inst1.length + inst2.length + size1.length + size2.length + mode1.length + mode2.length];
+
+					int destPos = 0;
+
+					System.arraycopy(inst1, 0, bytes, destPos, inst1.length);
+					destPos += inst1.length;
+
+					System.arraycopy(inst2, 0, bytes, destPos, inst2.length);
+					destPos += inst2.length;
+
+					System.arraycopy(size1, 0, bytes, destPos, size1.length);
+					destPos += size1.length;
+
+					System.arraycopy(size2, 0, bytes, destPos, size2.length);
+					destPos += size2.length;
+
+					System.arraycopy(mode1, 0, bytes, destPos, mode1.length);
+					destPos += mode1.length;
+
+					System.arraycopy(mode2, 0, bytes, destPos, mode2.length);
+					destPos += mode2.length;
+				}
+			}
+		}
+
 		return bytes;
 	}
 

@@ -92,7 +92,7 @@ public abstract class VCDiffAddressCache {
 
 	// Returns the maximum valid mode number, which happens to be
 	// the last SAME mode.
-	short LastMode() {
+	public short LastMode() {
 		return (byte) (FirstSameMode() + (same_addresses_.length / 256) - 1);
 	}
 

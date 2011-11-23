@@ -18,6 +18,10 @@ public class VCDiffHeaderParser {
 	public static final short RESULT_END_OF_DATA = -2;
 	public static final short RESULT_ERROR = -1;
 
+	public static final byte VCD_DECOMPRESS = 0x01;
+	public static final byte VCD_CODETABLE = 0x02;
+
+	
 	protected ParseableChunk parseable_chunk_;
 
 	// Contains the result code of the last Parse...() operation that failed

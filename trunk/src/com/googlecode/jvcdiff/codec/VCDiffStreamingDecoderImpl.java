@@ -51,9 +51,9 @@ public class VCDiffStreamingDecoderImpl implements VCDiffStreamingDecoder {
 	// window can come from a range of addresses in the previously decoded target
 	// data, the entire target file needs to be available to the decoder, not just
 	// the current target window.
-	
+
 	// Originally a String
-	private final IoBuffer decoded_target_ = IoBuffer.allocate(512);
+	private final DecoratedByteArrayOutputStream decoded_target_ = new DecoratedByteArrayOutputStream(512); //IoBuffer.allocate(512);
 
 	// The VCDIFF version byte (also known as "header4") from the
 	// delta file header.
@@ -67,7 +67,7 @@ public class VCDiffStreamingDecoderImpl implements VCDiffStreamingDecoder {
 	private VCDiffCodeTableData custom_code_table_;
 
 	// Used to receive the decoded custom code table.
-	private IoBuffer custom_code_table_string_;
+	private final ByteArrayOutputStream custom_code_table_string_ = new ByteArrayOutputStream(1024);
 
 	// If a custom code table is specified, it will be expressed
 	// as an embedded VCDIFF delta file which uses the default code table
@@ -114,7 +114,7 @@ public class VCDiffStreamingDecoderImpl implements VCDiffStreamingDecoder {
 	private boolean allow_vcd_target_ = true;
 
 	public VCDiffStreamingDecoderImpl() {
-		delta_window_.Init(this);
+		delta_window_ = new VCDiffDeltaFileWindow(this);
 		Reset();
 	}
 
@@ -142,13 +142,13 @@ public class VCDiffStreamingDecoderImpl implements VCDiffStreamingDecoder {
 		}
 
 		unparsed_bytes_.clear();
-		decoded_target_.clear();  // delta_window_.Reset() depends on this
+		decoded_target_.reset();  // delta_window_.Reset() depends on this
 		Reset();
 		dictionary_ptr_ = dictionary_ptr;
 		start_decoding_was_called_ = true;
 	}
 
-	public boolean DecodeChunk(byte[] data, int offset, int len, OutputStream output_string) {
+	public boolean DecodeChunk(byte[] data, int offset, int len, OutputStream output_string) throws IOException {
 		if (!start_decoding_was_called_) {
 			LOGGER.error("DecodeChunk() called without StartDecoding()");
 			Reset();
@@ -160,7 +160,7 @@ public class VCDiffStreamingDecoderImpl implements VCDiffStreamingDecoder {
 			parseable_chunk = unparsed_bytes_.duplicate();
 			parseable_chunk.flip();
 		} else {
-			 parseable_chunk = IoBuffer.wrap(data, offset, len);
+			parseable_chunk = IoBuffer.wrap(data, offset, len);
 		}
 
 		int result = ReadDeltaFileHeader(parseable_chunk);
@@ -189,8 +189,9 @@ public class VCDiffStreamingDecoderImpl implements VCDiffStreamingDecoder {
 			Reset();  // Don't allow further DecodeChunk calls
 			return false;
 		}
-		unparsed_bytes_ = IoBuffer.allocate(parseable_chunk.remaining() + 128);
+		unparsed_bytes_.clear();
 		unparsed_bytes_.put(parseable_chunk);
+		unparsed_bytes_.flip();
 		AppendNewOutputText(output_string);
 		return true;
 	}
@@ -316,7 +317,6 @@ public class VCDiffStreamingDecoderImpl implements VCDiffStreamingDecoder {
 	// SetPlannedTargetFileSize() is being used, in order to preserve the
 	// remaining input data stream once the planned target file has been decoded.
 	public int GetUnconsumedDataSize() {
-		// FIXME
 		return unparsed_bytes_.remaining();
 	}
 
@@ -329,8 +329,7 @@ public class VCDiffStreamingDecoderImpl implements VCDiffStreamingDecoder {
 			// No complete delta file header has been parsed yet.  DecodeChunk()
 			// may have received some data that it hasn't yet parsed, in which case
 			// decoding is incomplete.
-			// FIXME
-			return unparsed_bytes_.remaining() == 0;
+			return !unparsed_bytes_.hasRemaining();
 		} else if (custom_code_table_decoder_ != null) {
 			// The decoder is in the middle of parsing a custom code table.
 			return false;
@@ -347,8 +346,7 @@ public class VCDiffStreamingDecoderImpl implements VCDiffStreamingDecoder {
 			// No complete delta file window has been parsed yet.  DecodeChunk()
 			// may have received some data that it hasn't yet parsed, in which case
 			// decoding is incomplete.
-			// FIXME
-			return unparsed_bytes_.remaining() == 0;
+			return !unparsed_bytes_.hasRemaining();
 		}
 	}
 
@@ -358,7 +356,7 @@ public class VCDiffStreamingDecoderImpl implements VCDiffStreamingDecoder {
 
 	public VCDiffAddressCache addr_cache() { return addr_cache_; }
 
-	IoBuffer decoded_target() { return decoded_target_; }
+	ByteArrayOutputStream decoded_target() { return decoded_target_; }
 
 	public boolean allow_vcd_target() { return allow_vcd_target_; }
 
@@ -406,63 +404,63 @@ public class VCDiffStreamingDecoderImpl implements VCDiffStreamingDecoder {
 		}
 		int data_size = data.remaining();
 		final DeltaFileHeader header = new DeltaFileHeader(data.slice());
-			boolean wrong_magic_number = false;
-			switch (data_size) {
-			// Verify only the bytes that are available.
-			default:
-				// Found header contents up to and including VCDIFF version
-				vcdiff_version_code_ = header.header4;
-				if ((vcdiff_version_code_ != 0x00) &&  // Draft standard VCDIFF (RFC 3284)
-						(vcdiff_version_code_ != 'S')) {   // Enhancements for SDCH protocol
-					LOGGER.error("Unrecognized VCDIFF format version");
-					return RESULT_ERROR;
-				}
-				// fall through
-			case 3:
-				if (header.header3 != 0xC4) {  // magic value 'D' | 0x80
-					wrong_magic_number = true;
-				}
-				// fall through
-			case 2:
-				if (header.header2 != 0xC3) {  // magic value 'C' | 0x80
-					wrong_magic_number = true;
-				}
-				// fall through
-			case 1:
-				if (header.header1 != 0xD6) {  // magic value 'V' | 0x80
-					wrong_magic_number = true;
-				}
-				// fall through
-			case 0:
-				if (wrong_magic_number) {
-					LOGGER.error("Did not find VCDIFF header bytes; input is not a VCDIFF delta file");
-					return RESULT_ERROR;
-				}
-				if (data_size < DeltaFileHeader.SERIALIZED_SIZE) return RESULT_END_OF_DATA;
-			}
-			// Secondary compressor not supported.
-			if (header.hdr_indicator & VCD_DECOMPRESS) {
-				LOGGER.error("Secondary compression is not supported");
+		boolean wrong_magic_number = false;
+		switch (data_size) {
+		// Verify only the bytes that are available.
+		default:
+			// Found header contents up to and including VCDIFF version
+			vcdiff_version_code_ = header.header4;
+			if ((vcdiff_version_code_ != 0x00) &&  // Draft standard VCDIFF (RFC 3284)
+					(vcdiff_version_code_ != 'S')) {   // Enhancements for SDCH protocol
+				LOGGER.error("Unrecognized VCDIFF format version");
 				return RESULT_ERROR;
 			}
-			if (header.hdr_indicator & VCD_CODETABLE) {
-				int bytes_parsed = InitCustomCodeTable(data.array(), data.arrayOffset() + data.position() + DeltaFileHeader.SERIALIZED_SIZE,
-						data.remaining() - DeltaFileHeader.SERIALIZED_SIZE);
-				switch (bytes_parsed) {
-				case RESULT_ERROR:
-					return RESULT_ERROR;
-				case RESULT_END_OF_DATA:
-					return RESULT_END_OF_DATA;
-				default:
-					data.position(data.position() + DeltaFileHeader.SERIALIZED_SIZE + bytes_parsed);
-				}
-			} else {
-				addr_cache_ = new VCDiffAddressCacheImpl();
-				// addr_cache_->Init() will be called
-				// from VCDiffStreamingDecoderImpl::DecodeChunk()
-				data.position(data.position() + DeltaFileHeader.SERIALIZED_SIZE);
+			// fall through
+		case 3:
+			if (header.header3 != 0xC4) {  // magic value 'D' | 0x80
+				wrong_magic_number = true;
 			}
-			return RESULT_SUCCESS;
+			// fall through
+		case 2:
+			if (header.header2 != 0xC3) {  // magic value 'C' | 0x80
+				wrong_magic_number = true;
+			}
+			// fall through
+		case 1:
+			if (header.header1 != 0xD6) {  // magic value 'V' | 0x80
+				wrong_magic_number = true;
+			}
+			// fall through
+		case 0:
+			if (wrong_magic_number) {
+				LOGGER.error("Did not find VCDIFF header bytes; input is not a VCDIFF delta file");
+				return RESULT_ERROR;
+			}
+			if (data_size < DeltaFileHeader.SERIALIZED_SIZE) return RESULT_END_OF_DATA;
+		}
+		// Secondary compressor not supported.
+		if ((header.hdr_indicator & VCD_DECOMPRESS) != 0) {
+			LOGGER.error("Secondary compression is not supported");
+			return RESULT_ERROR;
+		}
+		if ((header.hdr_indicator & VCD_CODETABLE) != 0) {
+			int bytes_parsed = InitCustomCodeTable(data.array(), data.arrayOffset() + data.position() + DeltaFileHeader.SERIALIZED_SIZE,
+					data.remaining() - DeltaFileHeader.SERIALIZED_SIZE);
+			switch (bytes_parsed) {
+			case RESULT_ERROR:
+				return RESULT_ERROR;
+			case RESULT_END_OF_DATA:
+				return RESULT_END_OF_DATA;
+			default:
+				data.position(data.position() + DeltaFileHeader.SERIALIZED_SIZE + bytes_parsed);
+			}
+		} else {
+			addr_cache_ = new VCDiffAddressCacheImpl();
+			// addr_cache_->Init() will be called
+			// from VCDiffStreamingDecoderImpl::DecodeChunk()
+			data.position(data.position() + DeltaFileHeader.SERIALIZED_SIZE);
+		}
+		return RESULT_SUCCESS;
 	}
 
 	// Indicates whether or not the header has already been read.
@@ -494,8 +492,7 @@ public class VCDiffStreamingDecoderImpl implements VCDiffStreamingDecoder {
 
 		custom_code_table_ = new VCDiffCodeTableData();
 
-		// FIXME
-		custom_code_table_string_.clear();
+		custom_code_table_string_.reset();
 		addr_cache_ = new VCDiffAddressCacheImpl(near_cache_size.shortValue(), same_cache_size.shortValue());
 
 		// addr_cache_->Init() will be called
@@ -526,7 +523,6 @@ public class VCDiffStreamingDecoderImpl implements VCDiffStreamingDecoder {
 	// returns RESULT_SUCCESS and sets *data_ptr to the position after the encoded
 	// custom code table.  If the function returns RESULT_SUCCESS or
 	// RESULT_END_OF_DATA, it advances data->position_ past the parsed bytes.
-	//
 	private int ReadCustomCodeTable(IoBuffer data) {
 		if (custom_code_table_decoder_ == null) {
 			return RESULT_SUCCESS;
@@ -535,30 +531,34 @@ public class VCDiffStreamingDecoderImpl implements VCDiffStreamingDecoder {
 			LOGGER.error("Internal error:  custom_code_table_decoder_ is set, but custom_code_table_ is NULL");
 			return RESULT_ERROR;
 		}
-		OutputString<string> output_string(&custom_code_table_string_);
-		if (!custom_code_table_decoder_.DecodeChunk(data.UnparsedData(),
-				data.UnparsedSize(),
-				&output_string)) {
+
+		boolean rc = false;
+		try {
+			rc = custom_code_table_decoder_.DecodeChunk(data.array(),
+					data.arrayOffset() + data.position(), data.remaining(), custom_code_table_string_);
+		} catch (IOException e) {
+			LOGGER.error("Failed to write to custom_code_table_string_.", e);
+		}
+		if (!rc) {
 			return RESULT_ERROR;
 		}
-		if (custom_code_table_string_.length() < VCDiffCodeTableData.SERIALIZED_BYTE_SIZE) {
+		if (custom_code_table_string_.size() < VCDiffCodeTableData.SERIALIZED_BYTE_SIZE) {
 			// Skip over the consumed data.
-			data.Finish();
+			data.position(data.limit());
 			return RESULT_END_OF_DATA;
 		}
 		if (!custom_code_table_decoder_.FinishDecoding()) {
 			return RESULT_ERROR;
 		}
-		if (custom_code_table_string_.length() != VCDiffCodeTableData.SERIALIZED_BYTE_SIZE) {
+		if (custom_code_table_string_.size() != VCDiffCodeTableData.SERIALIZED_BYTE_SIZE) {
 			LOGGER.error("Decoded custom code table size ({}) does not match size of a code table ({})",
-					custom_code_table_string_.length(), VCDiffCodeTableData.SERIALIZED_BYTE_SIZE);
+					custom_code_table_string_.size(), VCDiffCodeTableData.SERIALIZED_BYTE_SIZE);
 			return RESULT_ERROR;
 		}
-		
-		custom_code_table_ = new VCDiffCodeTableData(custom_code_table_string_.data());
 
-		// FIXME
-		custom_code_table_string_.clear();
+		custom_code_table_ = new VCDiffCodeTableData(custom_code_table_string_.toByteArray());
+		custom_code_table_string_.reset();
+
 		// Skip over the consumed data.
 		data.position(data.limit() - custom_code_table_decoder_.GetUnconsumedDataSize());
 		custom_code_table_decoder_ = null;
@@ -570,24 +570,16 @@ public class VCDiffStreamingDecoderImpl implements VCDiffStreamingDecoder {
 	// copies from decoded_target_ into output_string all the data that
 	// has not yet been output.  It sets decoded_target_output_position_
 	// to mark the start of the next data that needs to be output.
-	private void AppendNewOutputText(OutputStream output_string) {
-		final int bytes_decoded_this_chunk =
-			decoded_target_.size() - decoded_target_output_position_;
-		if (bytes_decoded_this_chunk > 0) {
-			int target_bytes_remaining = delta_window_.TargetBytesRemaining();
-			if (target_bytes_remaining > 0) {
-				// The decoder is midway through decoding a target window.  Resize
-				// output_string to match the expected length.  The interface guarantees
-				// not to resize output_string more than once per target window decoded.
-				// FIXME:
-				// output_string.ReserveAdditionalBytes(bytes_decoded_this_chunk + target_bytes_remaining);
-			}
-			output_string.write(
-					decoded_target_.array(), decoded_target_.arrayOffset() + decoded_target_output_position_,
-					bytes_decoded_this_chunk);
-			// TODO Limit or Pos
-			decoded_target_output_position_ = decoded_target_.limit();
-		}
+	private void AppendNewOutputText(OutputStream output_string) throws IOException {
+		ByteBuffer decoded_target_buffer = decoded_target_.toByteBuffer();
+		decoded_target_buffer.position(decoded_target_output_position_);
+
+		output_string.write(
+				decoded_target_buffer.array(),
+				decoded_target_buffer.arrayOffset() + decoded_target_buffer.position(),
+				decoded_target_buffer.remaining());
+
+		decoded_target_output_position_ = decoded_target_buffer.limit();
 	}
 
 	// Appends to output_string the portion of decoded_target_ that has
@@ -596,10 +588,30 @@ public class VCDiffStreamingDecoderImpl implements VCDiffStreamingDecoder {
 	// allow_vcd_target is false.  In that case, there is no need to retain
 	// target data from any window except the current window.
 	private void FlushDecodedTarget(OutputStream output_string) throws IOException {
-		decoded_target_.flip();
-		output_string.write(decoded_target_.array(), decoded_target_.arrayOffset() + decoded_target_.position(), decoded_target_.remaining());
-		decoded_target_.clear();
+		ByteBuffer decoded_target_buffer = decoded_target_.toByteBuffer();
+		decoded_target_buffer.position(decoded_target_output_position_);
+
+		output_string.write(
+				decoded_target_buffer.array(),
+				decoded_target_buffer.arrayOffset() + decoded_target_buffer.position(),
+				decoded_target_buffer.remaining());
+
+		decoded_target_.reset();
 		delta_window_.set_target_window_start_pos(0);
 		decoded_target_output_position_ = 0;
+	}
+
+	protected static class DecoratedByteArrayOutputStream extends ByteArrayOutputStream {
+		public DecoratedByteArrayOutputStream() {
+			super();
+		}
+
+		public DecoratedByteArrayOutputStream(int size) {
+			super(size);
+		}
+
+		public synchronized ByteBuffer toByteBuffer() {
+			return ByteBuffer.wrap(buf, 0, count).asReadOnlyBuffer();
+		}
 	}
 }

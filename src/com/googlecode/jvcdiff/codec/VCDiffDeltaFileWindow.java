@@ -13,6 +13,7 @@ import org.slf4j.LoggerFactory;
 
 import com.googlecode.jvcdiff.VCDiffCodeTableData;
 import com.googlecode.jvcdiff.VCDiffCodeTableReader;
+import com.googlecode.jvcdiff.mina_buffer.IoBuffer;
 
 public class VCDiffDeltaFileWindow {
 	private static final Logger LOGGER = LoggerFactory.getLogger(VCDiffDeltaFileWindow.class);
@@ -59,7 +60,7 @@ public class VCDiffDeltaFileWindow {
 	// parseable_chunk->Advance() is called to point to the input data position
 	// just after the data that has been decoded.
 	//
-	public int DecodeWindow(ParseableChunk parseable_chunk) {
+	public int DecodeWindow(IoBuffer parseable_chunk) {
 		return -1;
 	}
 

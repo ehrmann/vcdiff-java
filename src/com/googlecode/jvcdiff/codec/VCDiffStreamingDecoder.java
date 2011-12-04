@@ -1,5 +1,6 @@
 package com.googlecode.jvcdiff.codec;
 
+import java.io.IOException;
 import java.io.OutputStream;
 
 
@@ -27,8 +28,9 @@ public interface VCDiffStreamingDecoder {
 	 * output_string is guaranteed to be resized no more than once for each
 	 * window in the VCDIFF delta file.  This rule is irrespective
 	 * of the number of calls to DecodeChunk().
+	 * @throws IOException 
 	 */
-	public abstract boolean DecodeChunk(byte[] data, int offset, int length, OutputStream output_string);
+	public abstract boolean DecodeChunk(byte[] data, int offset, int length, OutputStream output_string) throws IOException;
 
 	/**
 	 * Finishes decoding after all data has been received.  Returns true

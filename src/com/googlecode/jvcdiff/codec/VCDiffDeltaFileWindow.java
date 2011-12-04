@@ -1,12 +1,18 @@
 package com.googlecode.jvcdiff.codec;
 
+import static com.googlecode.jvcdiff.VCDiffCodeTableData.VCD_ADD;
+import static com.googlecode.jvcdiff.VCDiffCodeTableData.VCD_COPY;
+import static com.googlecode.jvcdiff.VCDiffCodeTableData.VCD_RUN;
 import static com.googlecode.jvcdiff.VCDiffCodeTableWriter.VCD_CHECKSUM;
 import static com.googlecode.jvcdiff.VCDiffCodeTableWriter.VCD_SOURCE;
 import static com.googlecode.jvcdiff.VCDiffCodeTableWriter.VCD_TARGET;
+import static com.googlecode.jvcdiff.codec.VCDiffHeaderParser.RESULT_END_OF_DATA;
 import static com.googlecode.jvcdiff.codec.VCDiffHeaderParser.RESULT_ERROR;
 import static com.googlecode.jvcdiff.codec.VCDiffHeaderParser.RESULT_SUCCESS;
 
+import java.io.ByteArrayOutputStream;
 import java.nio.ByteBuffer;
+import java.util.zip.Adler32;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -23,6 +29,7 @@ public class VCDiffDeltaFileWindow {
 			throw new NullPointerException();
 		}
 		this.parent_ = parent;
+		Reset();
 	}
 
 	// Resets the pointers to the data sections in the current window.
@@ -61,7 +68,52 @@ public class VCDiffDeltaFileWindow {
 	// just after the data that has been decoded.
 	//
 	public int DecodeWindow(IoBuffer parseable_chunk) {
-		return -1;
+		// TODO
+		/*
+		if (!parent_) {
+			LOGGER.error("Internal error: VCDiffDeltaFileWindow::DecodeWindow() called before VCDiffDeltaFileWindow::Init()";
+			return RESULT_ERROR;
+		}
+		 */
+		if (!found_header_) {
+			switch (ReadHeader(parseable_chunk)) {
+			case RESULT_END_OF_DATA:
+				return RESULT_END_OF_DATA;
+			case RESULT_ERROR:
+				return RESULT_ERROR;
+			default:
+				// Reset address cache between windows (RFC section 5.1)
+				parent_.addr_cache().Init()
+			}
+		} else {
+			// We are resuming a window that was partially decoded before a
+			// RESULT_END_OF_DATA was returned.  This can only happen on the first
+			// loop iteration, and only if the interleaved format is enabled and used.
+			if (!IsInterleaved()) {
+				LOGGER.error("Internal error: Resumed decoding of a delta file window when interleaved format is not being used");
+				return RESULT_ERROR;
+			}
+			UpdateInterleavedSectionPointers(parseable_chunk.UnparsedData(),
+					parseable_chunk.End());
+			reader_.UpdatePointers(instructions_and_sizes_.UnparsedDataAddr(),
+					instructions_and_sizes_.End());
+		}
+		switch (DecodeBody(parseable_chunk)) {
+		case RESULT_END_OF_DATA:
+			if (MoreDataExpected()) {
+				return RESULT_END_OF_DATA;
+			} else {
+				LOGGER.error("End of data reached while decoding VCDIFF delta file");
+				// fall through to RESULT_ERROR case
+			}
+		case RESULT_ERROR:
+			return RESULT_ERROR;
+		default:
+			break;  // DecodeBody succeeded
+		}
+		// Get ready to read a new delta window
+		Reset();
+		return RESULT_SUCCESS;
 	}
 
 	public boolean FoundWindowHeader() {
@@ -87,7 +139,12 @@ public class VCDiffDeltaFileWindow {
 	// Returns the number of bytes remaining to be decoded in the target window.
 	// If not in the process of decoding a window, returns 0.
 	public int TargetBytesRemaining() {
-		return -1;
+		if (target_window_length_ == 0) {
+			// There is no window being decoded at present
+			return 0;
+		} else {
+			return target_window_length_ - TargetBytesDecoded();
+		}
 	}
 
 	// Reads the header of the window section as described in RFC sections 4.2 and
@@ -101,7 +158,7 @@ public class VCDiffDeltaFileWindow {
 	// Otherwise, returns RESULT_SUCCESS and advances parseable_chunk past the
 	// parsed header.
 	//
-	private int ReadHeader(ParseableChunk parseable_chunk) {
+	private int ReadHeader(IoBuffer parseable_chunk) {
 		// Here are the elements of the delta window header to be parsed,
 		// from section 4 of the RFC:
 		//
@@ -121,11 +178,11 @@ public class VCDiffDeltaFileWindow {
 		//		                 Instructions and sizes section   - array of bytes
 		//		                 Addresses section for COPYs      - array of bytes
 		//
-		std::string* decoded_target = parent_->decoded_target();
+		ByteArrayOutputStream decoded_target = parent_.decoded_target();
 		VCDiffHeaderParser header_parser(parseable_chunk.UnparsedData(),
-				parseable_chunk->End());
+				parseable_chunk.End());
 		int source_segment_position = 0;
-		unsigned char win_indicator = 0;
+		byte win_indicator = 0;
 		if (!header_parser.ParseWinIndicatorAndSourceSegment(
 				parent_.dictionary_size(),
 				decoded_target.size(),
@@ -156,7 +213,7 @@ public class VCDiffDeltaFileWindow {
 		}
 		// Get a pointer to the start of the source segment.
 		if (win_indicator & VCD_SOURCE) {
-			source_segment_ptr_ = parent_->dictionary_ptr() + source_segment_position;
+			source_segment_ptr_ = parent_.dictionary_ptr() + source_segment_position;
 		} else if (win_indicator & VCD_TARGET) {
 			// This assignment must happen after the reserve().
 			// decoded_target should not be resized again while processing this window,
@@ -242,28 +299,186 @@ public class VCDiffDeltaFileWindow {
 	// decoding.  Appends as much of the decoded target window as possible to
 	// parent->decoded_target().
 	//
-	private int DecodeBody(ParseableChunk parseable_chunk) {
-		return -1;
+	private int DecodeBody(IoBuffer parseable_chunk) {
+		if (IsInterleaved() && (instructions_and_sizes_.UnparsedData()
+				!= parseable_chunk.UnparsedData())) {
+			LOGGER.error("Internal error: interleaved format is used, but the input pointer does not point to the instructions section");
+			return RESULT_ERROR;
+		}
+		while (TargetBytesDecoded() < target_window_length_) {
+			int32_t decoded_size = VCD_INSTRUCTION_ERROR;
+			unsigned char mode = 0;
+			VCDiffInstructionType instruction =
+				reader_.GetNextInstruction(&decoded_size, &mode);
+			switch (instruction) {
+			case VCD_INSTRUCTION_END_OF_DATA:
+				UpdateInstructionPointer(parseable_chunk);
+				return RESULT_END_OF_DATA;
+			case VCD_INSTRUCTION_ERROR:
+				return RESULT_ERROR;
+			default:
+				break;
+			}
+			final int size = static_cast<size_t>(decoded_size);
+			// The value of "size" itself could be enormous (say, INT32_MAX)
+			// so check it individually against the limit to protect against
+			// overflow when adding it to something else.
+			if ((size > target_window_length_) ||
+					((size + TargetBytesDecoded()) > target_window_length_)) {
+				LOGGER.error("{} with size {} plus existing {} bytes of target data exceeds length of target window ({} bytes)",
+						new Object[] { VCDiffInstructionName(instruction), size, TargetBytesDecoded(), target_window_length_ });
+				return RESULT_ERROR;
+			}
+			int result = RESULT_SUCCESS;
+			switch (instruction) {
+			case VCD_ADD:
+				result = DecodeAdd(size);
+				break;
+			case VCD_RUN:
+				result = DecodeRun(size);
+				break;
+			case VCD_COPY:
+				result = DecodeCopy(size, mode);
+				break;
+			default:
+				LOGGER.error("Unexpected instruction type {} in opcode stream", instruction);
+				return RESULT_ERROR;
+			}
+			switch (result) {
+			case RESULT_END_OF_DATA:
+				reader_.UnGetInstruction();
+				UpdateInstructionPointer(parseable_chunk);
+				return RESULT_END_OF_DATA;
+			case RESULT_ERROR:
+				return RESULT_ERROR;
+			case RESULT_SUCCESS:
+				break;
+			}
+		}
+		if (TargetBytesDecoded() != target_window_length_) {
+			LOGGER.error("Decoded target window size ({}bytes) does not match expected size ({} bytes)",
+					TargetBytesDecoded(), target_window_length_);
+			return RESULT_ERROR;
+		}
+		final char* target_window_start =
+			parent_.decoded_target().data() + target_window_start_pos_;
+		if (has_checksum_) {
+			adler32.update(target_window_start, 0, target_window_length_);
+			int checksum = (int)adler32.getValue();
+			adler32.reset();
+		
+			if (checksum != expected_checksum_) {
+				LOGGER.error("Target data does not match checksum; this could mean that the wrong dictionary was used");
+				return RESULT_ERROR;
+			}
+		}
+		if (!instructions_and_sizes_.Empty()) {
+			LOGGER.error("Excess instructions and sizes left over after decoding target window");
+			return RESULT_ERROR;
+		}
+		if (!IsInterleaved()) {
+			// Standard format is being used, with three separate sections for the
+			// instructions, data, and addresses.
+			if (!data_for_add_and_run_.Empty()) {
+				LOGGER.error("Excess ADD/RUN data left over after decoding target window");
+				return RESULT_ERROR;
+			}
+			if (!addresses_for_copy_.Empty()) {
+				LOGGER.error("Excess COPY addresses left over after decoding target window");
+				return RESULT_ERROR;
+			}
+			// Reached the end of the window.  Update the ParseableChunk to point to the
+			// end of the addresses section, which is the last section in the window.
+			parseable_chunk.SetPosition(addresses_for_copy_.End());
+		} else {
+			// Interleaved format is being used.
+			UpdateInstructionPointer(parseable_chunk);
+		}
+		return RESULT_SUCCESS;
 	}
 
 	// Returns the number of bytes already decoded into the target window.
 	private int TargetBytesDecoded() {
-		return -1;
+		return parent_.decoded_target().size() - target_window_start_pos_;
 	}
 
 	// Decodes a single ADD instruction, updating parent_->decoded_target_.
 	private int DecodeAdd(int size) {
-		return -1;
+		if (size > data_for_add_and_run_.UnparsedSize()) {
+			return RESULT_END_OF_DATA;
+		}
+		// Write the next "size" data bytes
+		CopyBytes(data_for_add_and_run_.UnparsedData(), size);
+		data_for_add_and_run_.Advance(size);
+		return RESULT_SUCCESS;
 	}
 
 	// Decodes a single RUN instruction, updating parent_->decoded_target_.
 	private int DecodeRun(int size) {
-		return -1;
+		if (data_for_add_and_run_.Empty()) {
+			return RESULT_END_OF_DATA;
+		}
+		// Write "size" copies of the next data byte
+		RunByte(*data_for_add_and_run_.UnparsedData(), size);
+		data_for_add_and_run_.Advance(1);
+		return RESULT_SUCCESS;
 	}
 
 	// Decodes a single COPY instruction, updating parent_->decoded_target_.
 	private int DecodeCopy(int size, short mode) {
-		return -1;
+		// Keep track of the number of target bytes decoded as a local variable
+		// to avoid recalculating it each time it is needed.
+		int target_bytes_decoded = TargetBytesDecoded();
+		const VCDAddress here_address =
+			static_cast<VCDAddress>(source_segment_length_ + target_bytes_decoded);
+		const VCDAddress decoded_address = parent_.addr_cache().DecodeAddress(
+				here_address,
+				mode,
+				addresses_for_copy_.UnparsedDataAddr(),
+				addresses_for_copy_.End());
+		switch (decoded_address) {
+		case RESULT_ERROR:
+			LOGGER.error("Unable to decode address for COPY");
+			return RESULT_ERROR;
+		case RESULT_END_OF_DATA:
+			return RESULT_END_OF_DATA;
+		default:
+			if ((decoded_address < 0) || (decoded_address > here_address)) {
+				LOGGER.error("Internal error: unexpected address {} returned from DecodeAddress, with here_address = {}",
+						decoded_address, here_address);
+				return RESULT_ERROR;
+			}
+			break;
+		}
+		int address = static_cast<size_t>(decoded_address);
+		if ((address + size) <= source_segment_length_) {
+			// Copy all data from source segment
+			CopyBytes(&source_segment_ptr_[address], size);
+			return RESULT_SUCCESS;
+		}
+		// Copy some data from target window...
+		if (address < source_segment_length_) {
+			// ... plus some data from source segment
+			final int partial_copy_size = source_segment_length_ - address;
+			CopyBytes(&source_segment_ptr_[address], partial_copy_size);
+			target_bytes_decoded += partial_copy_size;
+			address += partial_copy_size;
+			size -= partial_copy_size;
+		}
+		address -= source_segment_length_;
+		// address is now based at start of target window
+		const char* const target_segment_ptr = parent_.decoded_target().data() +
+		target_window_start_pos_;
+		while (size > (target_bytes_decoded - address)) {
+			// Recursive copy that extends into the yet-to-be-copied target data
+			const int partial_copy_size = target_bytes_decoded - address;
+			CopyBytes(&target_segment_ptr[address], partial_copy_size);
+			target_bytes_decoded += partial_copy_size;
+			address += partial_copy_size;
+			size -= partial_copy_size;
+		}
+		CopyBytes(&target_segment_ptr[address], size);
+		return RESULT_SUCCESS;
 	}
 
 	// When using the interleaved format, this function is called both on parsing
@@ -299,25 +514,32 @@ public class VCDiffDeltaFileWindow {
 	// Executes a single COPY or ADD instruction, appending data to
 	// parent_->decoded_target().
 	private void CopyBytes(byte[] data, int offset, int size) {
-
+		parent_.decoded_target().write(data, offset, size);
 	}
 
 	// Executes a single RUN instruction, appending data to
 	// parent_->decoded_target().
 	private void RunByte(byte b, int size) {
-
+		for (int i = 0; i < size; i++) {
+			parent_.decoded_target().write(b);
+		}
 	}
 
 	// Advance *parseable_chunk to point to the current position in the
 	// instructions/sizes section.  If interleaved format is used, then
 	// decrement the number of expected bytes in the instructions/sizes section
 	// by the number of instruction/size bytes parsed.
-	private void UpdateInstructionPointer(ParseableChunk parseable_chunk) {
-
+	private void UpdateInstructionPointer(IoBuffer parseable_chunk) {
+		if (IsInterleaved()) {
+			int bytes_parsed = instructions_and_sizes_.ParsedSize();
+			// Reduce expected instruction segment length by bytes parsed
+			interleaved_bytes_expected_ -= bytes_parsed;
+			parseable_chunk.position(parseable_chunk.position() + bytes_parsed);
+		}
 	}
 
 	// The parent object which was passed to Init().
-	private VCDiffStreamingDecoderImpl parent_;
+	private final VCDiffStreamingDecoderImpl parent_;
 
 	// This value will be true if VCDiffDeltaFileWindow::ReadDeltaWindowHeader()
 	// has been called and succeeded in parsing the delta window header, but the
@@ -357,6 +579,8 @@ public class VCDiffDeltaFileWindow {
 	// VCDIFF 'S' (SDCH) format, but is not part of the RFC 3284 draft standard.
 	private boolean has_checksum_;
 	private int expected_checksum_;
+	
+	private final Adler32 adler32 = new Adler32(); 
 
 	private VCDiffCodeTableReader reader_;
 }

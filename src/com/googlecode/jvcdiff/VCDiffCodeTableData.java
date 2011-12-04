@@ -9,10 +9,10 @@ public class VCDiffCodeTableData implements Cloneable {
 
 	protected static final int kCodeTableSize = 256;
 
-	protected static final byte VCD_NOOP = 0;
-	protected static final byte VCD_ADD  = 1;
-	protected static final byte VCD_RUN  = 2;
-	protected static final byte VCD_COPY = 3;
+	public static final byte VCD_NOOP = 0;
+	public static final byte VCD_ADD  = 1;
+	public static final byte VCD_RUN  = 2;
+	public static final byte VCD_COPY = 3;
 	protected static final byte VCD_LAST_INSTRUCTION_TYPE = VCD_COPY;
 
 	// Single-letter abbreviations that make it easier to read the default code table data.

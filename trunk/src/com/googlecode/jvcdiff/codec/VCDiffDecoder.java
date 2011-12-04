@@ -1,5 +1,6 @@
 package com.googlecode.jvcdiff.codec;
 
+import java.io.IOException;
 import java.io.OutputStream;
 
 
@@ -16,8 +17,9 @@ public class VCDiffDecoder {
 	 *
 	 * Returns true if "encoding" was a well-formed sequence of
 	 * instructions, and returns false if not.
+	 * @throws IOException 
 	 */
-	public boolean Decode(byte[] dictionary_ptr, byte[] encoding, int offset, int length, OutputStream target) {
+	public boolean Decode(byte[] dictionary_ptr, byte[] encoding, int offset, int length, OutputStream target) throws IOException {
 		decoder_.StartDecoding(dictionary_ptr);
 		if (!decoder_.DecodeChunk(encoding, offset, length, target)) {
 			return false;

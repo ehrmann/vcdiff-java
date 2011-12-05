@@ -2,6 +2,8 @@ package com.googlecode.jvcdiff.codec;
 
 import static com.googlecode.jvcdiff.VCDiffCodeTableData.VCD_ADD;
 import static com.googlecode.jvcdiff.VCDiffCodeTableData.VCD_COPY;
+import static com.googlecode.jvcdiff.VCDiffCodeTableData.VCD_INSTRUCTION_END_OF_DATA;
+import static com.googlecode.jvcdiff.VCDiffCodeTableData.VCD_INSTRUCTION_ERROR;
 import static com.googlecode.jvcdiff.VCDiffCodeTableData.VCD_RUN;
 import static com.googlecode.jvcdiff.VCDiffCodeTableWriter.VCD_CHECKSUM;
 import static com.googlecode.jvcdiff.VCDiffCodeTableWriter.VCD_SOURCE;
@@ -12,6 +14,7 @@ import static com.googlecode.jvcdiff.codec.VCDiffHeaderParser.RESULT_SUCCESS;
 
 import java.io.ByteArrayOutputStream;
 import java.nio.ByteBuffer;
+import java.util.concurrent.atomic.AtomicInteger;
 import java.util.zip.Adler32;
 
 import org.slf4j.Logger;
@@ -50,7 +53,7 @@ public class VCDiffDeltaFileWindow {
 		interleaved_bytes_expected_ = 0;
 
 		has_checksum_ = false;
-		expected_checksum_ = 0;
+		expected_checksum_.set(0);
 	}
 
 	public void UseCodeTable(VCDiffCodeTableData code_table_data, short max_mode) {
@@ -83,7 +86,7 @@ public class VCDiffDeltaFileWindow {
 				return RESULT_ERROR;
 			default:
 				// Reset address cache between windows (RFC section 5.1)
-				parent_.addr_cache().Init()
+				parent_.addr_cache().Init();
 			}
 		} else {
 			// We are resuming a window that was partially decoded before a
@@ -93,8 +96,8 @@ public class VCDiffDeltaFileWindow {
 				LOGGER.error("Internal error: Resumed decoding of a delta file window when interleaved format is not being used");
 				return RESULT_ERROR;
 			}
-			UpdateInterleavedSectionPointers(parseable_chunk.UnparsedData(),
-					parseable_chunk.End());
+			// FIXME: ?
+			UpdateInterleavedSectionPointers(parseable_chunk.buf());
 			reader_.UpdatePointers(instructions_and_sizes_.UnparsedDataAddr(),
 					instructions_and_sizes_.End());
 		}
@@ -192,7 +195,7 @@ public class VCDiffDeltaFileWindow {
 				&source_segment_position)) {
 			return header_parser.GetResult();
 		}
-		has_checksum_ = parent_.AllowChecksum() && (win_indicator & VCD_CHECKSUM);
+		has_checksum_ = parent_.AllowChecksum() && ((win_indicator & VCD_CHECKSUM) != 0);
 		if (!header_parser.ParseWindowLengths(&target_window_length_)) {
 			return header_parser.GetResult();
 		}
@@ -201,7 +204,7 @@ public class VCDiffDeltaFileWindow {
 			return RESULT_ERROR;
 		}
 		header_parser.ParseDeltaIndicator();
-		int setup_return_code = SetUpWindowSections(&header_parser);
+		int setup_return_code = SetUpWindowSections(header_parser);
 		if (RESULT_SUCCESS != setup_return_code) {
 			return setup_return_code;
 		}
@@ -212,9 +215,9 @@ public class VCDiffDeltaFileWindow {
 			decoded_target.reserve(wanted_capacity);
 		}
 		// Get a pointer to the start of the source segment.
-		if (win_indicator & VCD_SOURCE) {
+		if ((win_indicator & VCD_SOURCE) != 0) {
 			source_segment_ptr_ = parent_.dictionary_ptr() + source_segment_position;
-		} else if (win_indicator & VCD_TARGET) {
+		} else if ((win_indicator & VCD_TARGET) != 0) {
 			// This assignment must happen after the reserve().
 			// decoded_target should not be resized again while processing this window,
 			// so source_segment_ptr_ should remain valid.
@@ -246,24 +249,23 @@ public class VCDiffDeltaFileWindow {
 	// if standard format is being used and there is not enough input data to read
 	// the entire window body.  Otherwise, returns RESULT_SUCCESS.
 	private int SetUpWindowSections(VCDiffHeaderParser header_parser) {
-		int add_and_run_data_length = 0;
-		int instructions_and_sizes_length = 0;
-		int addresses_length = 0;
+		AtomicInteger add_and_run_data_length = new AtomicInteger(0);
+		AtomicInteger instructions_and_sizes_length = new AtomicInteger(0);
+		AtomicInteger addresses_length = new AtomicInteger(0);
 		if (!header_parser.ParseSectionLengths(has_checksum_,
-				&add_and_run_data_length,
-				&instructions_and_sizes_length,
-				&addresses_length,
-				&expected_checksum_)) {
+				add_and_run_data_length,
+				instructions_and_sizes_length,
+				addresses_length,
+				expected_checksum_)) {
 			return header_parser.GetResult();
 		}
 		if (parent_.AllowInterleaved() &&
-				(add_and_run_data_length == 0) &&
-				(addresses_length == 0)) {
+				(add_and_run_data_length.get() == 0) &&
+				(addresses_length.get() == 0)) {
 			// The interleaved format is being used.
-			interleaved_bytes_expected_ =
-				static_cast<int>(instructions_and_sizes_length);
-				UpdateInterleavedSectionPointers(header_parser.UnparsedData(),
-						header_parser.End());
+			interleaved_bytes_expected_ = instructions_and_sizes_length.get();
+			UpdateInterleavedSectionPointers(header_parser.UnparsedData(),
+					header_parser.End());
 		} else {
 			// If interleaved format is not used, then the whole window contents
 			// must be available before decoding can begin.  If only part of
@@ -306,10 +308,9 @@ public class VCDiffDeltaFileWindow {
 			return RESULT_ERROR;
 		}
 		while (TargetBytesDecoded() < target_window_length_) {
-			int32_t decoded_size = VCD_INSTRUCTION_ERROR;
-			unsigned char mode = 0;
-			VCDiffInstructionType instruction =
-				reader_.GetNextInstruction(&decoded_size, &mode);
+			int decoded_size = VCD_INSTRUCTION_ERROR;
+			byte mode = 0;
+			int instruction = reader_.GetNextInstruction(&decoded_size, &mode);
 			switch (instruction) {
 			case VCD_INSTRUCTION_END_OF_DATA:
 				UpdateInstructionPointer(parseable_chunk);
@@ -319,7 +320,7 @@ public class VCDiffDeltaFileWindow {
 			default:
 				break;
 			}
-			final int size = static_cast<size_t>(decoded_size);
+			final int size = decoded_size;
 			// The value of "size" itself could be enormous (say, INT32_MAX)
 			// so check it individually against the limit to protect against
 			// overflow when adding it to something else.
@@ -366,24 +367,24 @@ public class VCDiffDeltaFileWindow {
 			adler32.update(target_window_start, 0, target_window_length_);
 			int checksum = (int)adler32.getValue();
 			adler32.reset();
-		
-			if (checksum != expected_checksum_) {
+
+			if (checksum != expected_checksum_.get()) {
 				LOGGER.error("Target data does not match checksum; this could mean that the wrong dictionary was used");
 				return RESULT_ERROR;
 			}
 		}
-		if (!instructions_and_sizes_.Empty()) {
+		if (instructions_and_sizes_.hasRemaining()) {
 			LOGGER.error("Excess instructions and sizes left over after decoding target window");
 			return RESULT_ERROR;
 		}
 		if (!IsInterleaved()) {
 			// Standard format is being used, with three separate sections for the
 			// instructions, data, and addresses.
-			if (!data_for_add_and_run_.Empty()) {
+			if (data_for_add_and_run_.hasRemaining()) {
 				LOGGER.error("Excess ADD/RUN data left over after decoding target window");
 				return RESULT_ERROR;
 			}
-			if (!addresses_for_copy_.Empty()) {
+			if (addresses_for_copy_.hasRemaining()) {
 				LOGGER.error("Excess COPY addresses left over after decoding target window");
 				return RESULT_ERROR;
 			}
@@ -415,7 +416,7 @@ public class VCDiffDeltaFileWindow {
 
 	// Decodes a single RUN instruction, updating parent_->decoded_target_.
 	private int DecodeRun(int size) {
-		if (data_for_add_and_run_.Empty()) {
+		if (!data_for_add_and_run_.hasRemaining()) {
 			return RESULT_END_OF_DATA;
 		}
 		// Write "size" copies of the next data byte
@@ -500,6 +501,18 @@ public class VCDiffDeltaFileWindow {
 		addresses_for_copy_ = instructions_and_sizes_;
 	}
 
+	private void UpdateInterleavedSectionPointers(ByteBuffer data) {
+		instructions_and_sizes_ = data.slice();
+
+		// Don't read past the end of currently-available data
+		if (instructions_and_sizes_.remaining() > interleaved_bytes_expected_) {
+			instructions_and_sizes_.limit(interleaved_bytes_expected_);
+		}
+
+		data_for_add_and_run_ = instructions_and_sizes_;
+		addresses_for_copy_ = instructions_and_sizes_;
+	}
+
 	// If true, the interleaved format described in AllowInterleaved() is used
 	// for the current delta file.  Only valid after ReadWindowHeader() has been
 	// called and returned a positive number (i.e., the whole header was parsed),
@@ -578,8 +591,8 @@ public class VCDiffDeltaFileWindow {
 	// checksum of the target window data.  This is an extension included in the
 	// VCDIFF 'S' (SDCH) format, but is not part of the RFC 3284 draft standard.
 	private boolean has_checksum_;
-	private int expected_checksum_;
-	
+	private final AtomicInteger expected_checksum_ = new AtomicInteger(0);
+
 	private final Adler32 adler32 = new Adler32(); 
 
 	private VCDiffCodeTableReader reader_;

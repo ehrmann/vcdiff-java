@@ -23,8 +23,8 @@ public class VCDiffCodeTableData implements Cloneable {
 
 	// The following values are not true instruction types, but rather
 	// special condition values for functions that return VCDiffInstructionType.
-	protected static final byte VCD_INSTRUCTION_ERROR = 4;
-	protected static final byte VCD_INSTRUCTION_END_OF_DATA = 5;
+	public static final byte VCD_INSTRUCTION_ERROR = 4;
+	public static final byte VCD_INSTRUCTION_END_OF_DATA = 5;
 
 	protected static final short kNoOpcode = 0x100;  // outside the opcode range 0x00 - 0xFF
 
@@ -240,7 +240,7 @@ public class VCDiffCodeTableData implements Cloneable {
 		return new VCDiffCodeTableData(this.inst1, this.inst2, this.size1, this.size2, this.mode1, this.mode2);
 	}
 
-	protected String VCDiffInstructionName(int inst) {
+	public static String VCDiffInstructionName(int inst) {
 		switch (inst) {
 		case VCD_NOOP:
 			return "NOOP";

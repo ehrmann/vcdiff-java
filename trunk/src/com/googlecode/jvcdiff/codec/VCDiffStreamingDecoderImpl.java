@@ -356,7 +356,7 @@ public class VCDiffStreamingDecoderImpl implements VCDiffStreamingDecoder {
 
 	public VCDiffAddressCache addr_cache() { return addr_cache_; }
 
-	ByteArrayOutputStream decoded_target() { return decoded_target_; }
+	DecoratedByteArrayOutputStream decoded_target() { return decoded_target_; }
 
 	public boolean allow_vcd_target() { return allow_vcd_target_; }
 

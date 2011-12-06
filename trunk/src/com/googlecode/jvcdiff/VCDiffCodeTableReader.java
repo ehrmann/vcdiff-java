@@ -74,7 +74,7 @@ public class VCDiffCodeTableReader {
 	// Init() may be called any number of times to reset the state of
 	// the object.
 	//
-	void Init(ByteBuffer instructions_and_sizes) {
+	public void Init(ByteBuffer instructions_and_sizes) {
 		instructions_and_sizes_ = instructions_and_sizes;
 		last_instruction_start_ = -1;
 		pending_second_instruction_ = kNoOpcode;

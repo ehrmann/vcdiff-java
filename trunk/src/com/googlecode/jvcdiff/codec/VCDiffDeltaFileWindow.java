@@ -70,7 +70,7 @@ public class VCDiffDeltaFileWindow {
 	// parseable_chunk->Advance() is called to point to the input data position
 	// just after the data that has been decoded.
 	//
-	public int DecodeWindow(IoBuffer parseable_chunk) {
+	public int DecodeWindow(ByteBuffer parseable_chunk) {
 		// TODO
 		/*
 		if (!parent_) {
@@ -97,9 +97,8 @@ public class VCDiffDeltaFileWindow {
 				return RESULT_ERROR;
 			}
 			// FIXME: ?
-			UpdateInterleavedSectionPointers(parseable_chunk.buf());
-			reader_.UpdatePointers(instructions_and_sizes_.UnparsedDataAddr(),
-					instructions_and_sizes_.End());
+			UpdateInterleavedSectionPointers(parseable_chunk);
+			reader_.UpdatePointers(instructions_and_sizes_.slice());
 		}
 		switch (DecodeBody(parseable_chunk)) {
 		case RESULT_END_OF_DATA:
@@ -161,7 +160,7 @@ public class VCDiffDeltaFileWindow {
 	// Otherwise, returns RESULT_SUCCESS and advances parseable_chunk past the
 	// parsed header.
 	//
-	private int ReadHeader(IoBuffer parseable_chunk) {
+	private int ReadHeader(ByteBuffer parseable_chunk) {
 		// Here are the elements of the delta window header to be parsed,
 		// from section 4 of the RFC:
 		//
@@ -182,7 +181,7 @@ public class VCDiffDeltaFileWindow {
 		//		                 Addresses section for COPYs      - array of bytes
 		//
 		ByteArrayOutputStream decoded_target = parent_.decoded_target();
-		VCDiffHeaderParser header_parser = new VCDiffHeaderParser(parseable_chunk.UnparsedData(), parseable_chunk.End());
+		VCDiffHeaderParser header_parser = new VCDiffHeaderParser(parseable_chunk.slice());
 		final AtomicInteger source_segment_position = new AtomicInteger(0);
 		final AtomicInteger win_indicator = new AtomicInteger(0);
 		if (!header_parser.ParseWinIndicatorAndSourceSegment(
@@ -194,7 +193,7 @@ public class VCDiffDeltaFileWindow {
 				source_segment_position)) {
 			return header_parser.GetResult();
 		}
-		has_checksum_ = parent_.AllowChecksum() && ((win_indicator & VCD_CHECKSUM) != 0);
+		has_checksum_ = parent_.AllowChecksum() && ((win_indicator.get() & VCD_CHECKSUM) != 0);
 		if (!header_parser.ParseWindowLengths(&target_window_length_)) {
 			return header_parser.GetResult();
 		}
@@ -226,7 +225,8 @@ public class VCDiffDeltaFileWindow {
 		}
 		// The whole window header was found and parsed successfully.
 		found_header_ = true;
-		parseable_chunk.Advance(header_parser.ParsedSize());
+
+		parseable_chunk.position(parseable_chunk.position() + header_parser.ParsedSize());
 		parent_.AddToTotalTargetWindowSize(target_window_length_);
 		return RESULT_SUCCESS;
 	}
@@ -299,7 +299,7 @@ public class VCDiffDeltaFileWindow {
 	// decoding.  Appends as much of the decoded target window as possible to
 	// parent->decoded_target().
 	//
-	private int DecodeBody(IoBuffer parseable_chunk) {
+	private int DecodeBody(ByteBuffer parseable_chunk) {
 		if (IsInterleaved() && (instructions_and_sizes_.UnparsedData() != parseable_chunk.UnparsedData())) {
 			LOGGER.error("Internal error: interleaved format is used, but the input pointer does not point to the instructions section");
 			return RESULT_ERROR;
@@ -433,8 +433,7 @@ public class VCDiffDeltaFileWindow {
 		final int decoded_address = parent_.addr_cache().DecodeAddress(
 				here_address,
 				mode,
-				addresses_for_copy_.UnparsedDataAddr(),
-				addresses_for_copy_.End());
+				addresses_for_copy_.slice());
 		switch (decoded_address) {
 		case RESULT_ERROR:
 			LOGGER.error("Unable to decode address for COPY");
@@ -466,17 +465,20 @@ public class VCDiffDeltaFileWindow {
 		}
 		address -= source_segment_length_.get();
 		// address is now based at start of target window
-		const char* const target_segment_ptr = parent_.decoded_target().data() +
-		target_window_start_pos_;
+		// const char* const target_segment_ptr = parent_.decoded_target().data() + target_window_start_pos_;
+		
+		final ByteBuffer target_segment = parent_.decoded_target().toByteBuffer();
+		target_segment.position(target_window_start_pos_);
+		
 		while (size > (target_bytes_decoded - address)) {
 			// Recursive copy that extends into the yet-to-be-copied target data
 			final int partial_copy_size = target_bytes_decoded - address;
-			CopyBytes(target_segment_ptr, address, partial_copy_size);
+			CopyBytes(target_segment.array(), target_segment.arrayOffset() + target_segment.position() + address, partial_copy_size);
 			target_bytes_decoded += partial_copy_size;
 			address += partial_copy_size;
 			size -= partial_copy_size;
 		}
-		CopyBytes(target_segment_ptr, address, size);
+		CopyBytes(target_segment.array(),  target_segment.arrayOffset() + target_segment.position() + address, size);
 		return RESULT_SUCCESS;
 	}
 
@@ -540,7 +542,7 @@ public class VCDiffDeltaFileWindow {
 	// instructions/sizes section.  If interleaved format is used, then
 	// decrement the number of expected bytes in the instructions/sizes section
 	// by the number of instruction/size bytes parsed.
-	private void UpdateInstructionPointer(IoBuffer parseable_chunk) {
+	private void UpdateInstructionPointer(ByteBuffer parseable_chunk) {
 		if (IsInterleaved()) {
 			int bytes_parsed = instructions_and_sizes_.position();
 			// Reduce expected instruction segment length by bytes parsed

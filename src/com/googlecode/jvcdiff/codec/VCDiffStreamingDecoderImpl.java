@@ -169,7 +169,7 @@ public class VCDiffStreamingDecoderImpl implements VCDiffStreamingDecoder {
 		}
 		if (RESULT_SUCCESS == result) {
 			while (parseable_chunk.hasRemaining()) {
-				result = delta_window_.DecodeWindow(parseable_chunk);
+				result = delta_window_.DecodeWindow(parseable_chunk.buf());
 				if (RESULT_SUCCESS != result) {
 					break;
 				}

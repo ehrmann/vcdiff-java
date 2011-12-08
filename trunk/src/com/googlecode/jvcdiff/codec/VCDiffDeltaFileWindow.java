@@ -22,6 +22,7 @@ import org.slf4j.LoggerFactory;
 
 import com.googlecode.jvcdiff.VCDiffCodeTableData;
 import com.googlecode.jvcdiff.VCDiffCodeTableReader;
+import com.googlecode.jvcdiff.codec.VCDiffStreamingDecoderImpl.DecoratedByteArrayOutputStream;
 import com.googlecode.jvcdiff.mina_buffer.IoBuffer;
 
 public class VCDiffDeltaFileWindow {
@@ -180,7 +181,7 @@ public class VCDiffDeltaFileWindow {
 		//		                 Instructions and sizes section   - array of bytes
 		//		                 Addresses section for COPYs      - array of bytes
 		//
-		ByteArrayOutputStream decoded_target = parent_.decoded_target();
+		DecoratedByteArrayOutputStream decoded_target = parent_.decoded_target();
 		VCDiffHeaderParser header_parser = new VCDiffHeaderParser(parseable_chunk.slice());
 		final AtomicInteger source_segment_position = new AtomicInteger(0);
 		final AtomicInteger win_indicator = new AtomicInteger(0);
@@ -216,12 +217,14 @@ public class VCDiffDeltaFileWindow {
 		
 		// Get a pointer to the start of the source segment.
 		if ((win_indicator.get() & VCD_SOURCE) != 0) {
-			source_segment_ptr_ = parent_.dictionary_ptr() + source_segment_position.get();
+			source_segment_ptr_ = ByteBuffer.wrap(parent_.dictionary_ptr());
+			source_segment_ptr_.position(source_segment_position.get());
 		} else if ((win_indicator.get() & VCD_TARGET) != 0) {
 			// This assignment must happen after the reserve().
 			// decoded_target should not be resized again while processing this window,
 			// so source_segment_ptr_ should remain valid.
-			source_segment_ptr_ = decoded_target.data() + source_segment_position.get();
+			source_segment_ptr_ = decoded_target.toByteBuffer();
+			source_segment_ptr_.position(source_segment_position.get());
 		}
 		// The whole window header was found and parsed successfully.
 		found_header_ = true;
@@ -451,14 +454,16 @@ public class VCDiffDeltaFileWindow {
 		int address = decoded_address;
 		if ((address + size) <= source_segment_length_.get()) {
 			// Copy all data from source segment
-			CopyBytes(source_segment_ptr_, address, size);
+			CopyBytes(source_segment_ptr_.array(),
+					source_segment_ptr_.arrayOffset() + source_segment_ptr_.position() + address, size);
 			return RESULT_SUCCESS;
 		}
 		// Copy some data from target window...
 		if (address < source_segment_length_.get()) {
 			// ... plus some data from source segment
 			final int partial_copy_size = source_segment_length_.get() - address;
-			CopyBytes(source_segment_ptr_, address, partial_copy_size);
+			CopyBytes(source_segment_ptr_.array(),
+					source_segment_ptr_.arrayOffset() + source_segment_ptr_.position() + address, partial_copy_size);
 			target_bytes_decoded += partial_copy_size;
 			address += partial_copy_size;
 			size -= partial_copy_size;
@@ -564,7 +569,7 @@ public class VCDiffDeltaFileWindow {
 	// has been read, but the window has not yet finished decoding; or
 	// (b) the window did not specify a source segment.
 	//private const char* source_segment_ptr_;
-	private char* source_segment_ptr_;
+	private ByteBuffer source_segment_ptr_;
 	private final AtomicInteger source_segment_length_ = new AtomicInteger(0);
 
 	// The delta encoding window sections as defined in RFC section 4.3.

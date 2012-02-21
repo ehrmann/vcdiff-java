@@ -510,7 +510,7 @@ public class VCDiffStreamingDecoderImpl implements VCDiffStreamingDecoder {
 		custom_code_table_decoder_.StartDecoding(codeTableBytes);
 		custom_code_table_decoder_.SetPlannedTargetFileSize(codeTableBytes.length);
 
-		return header_parser.ParsedSize();
+		return header_parser.getBuffer().position();
 	}
 
 	// If a custom code table was specified in the header section that was parsed

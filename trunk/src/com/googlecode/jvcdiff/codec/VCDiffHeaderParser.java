@@ -21,8 +21,6 @@ public class VCDiffHeaderParser {
 	public static final byte VCD_DECOMPRESS = 0x01;
 	public static final byte VCD_CODETABLE = 0x02;
 
-	
-	protected ParseableChunk parseable_chunk_;
 
 	// Contains the result code of the last Parse...() operation that failed
 	// (RESULT_ERROR or RESULT_END_OF_DATA).  If no Parse...() method has been
@@ -38,7 +36,6 @@ public class VCDiffHeaderParser {
 	protected ByteBuffer buffer;
 
 	public VCDiffHeaderParser(ByteBuffer buffer) {
-		this.parseable_chunk_ = new ParseableChunk();
 		this.return_code_ = RESULT_SUCCESS;
 		this.delta_encoding_length_ = 0;
 		this.buffer = buffer;
@@ -77,7 +74,7 @@ public class VCDiffHeaderParser {
 		if (RESULT_SUCCESS != return_code_) {
 			return null;
 		}
-		if (parseable_chunk_.Empty()) {
+		if (!buffer.hasRemaining()) {
 			return_code_ = RESULT_END_OF_DATA;
 			return null;
 		}
@@ -221,22 +218,8 @@ public class VCDiffHeaderParser {
 		return return_code_;
 	}
 
-	// The following functions just pass their arguments to the underlying
-	// ParseableChunk object.
-	public int End() {
-		return parseable_chunk_.End();
-	}
-
-	public int UnparsedSize() {
-		return parseable_chunk_.UnparsedSize();
-	}
-
-	public int ParsedSize() {
-		return parseable_chunk_.ParsedSize();
-	}
-
-	public int UnparsedData() {
-		return parseable_chunk_.UnparsedData();
+	public ByteBuffer getBuffer() {
+		return buffer;
 	}
 
 	// Parses two variable-length integers representing the source segment length

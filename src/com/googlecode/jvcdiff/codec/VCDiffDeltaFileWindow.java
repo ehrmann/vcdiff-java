@@ -12,7 +12,6 @@ import static com.googlecode.jvcdiff.codec.VCDiffHeaderParser.RESULT_END_OF_DATA
 import static com.googlecode.jvcdiff.codec.VCDiffHeaderParser.RESULT_ERROR;
 import static com.googlecode.jvcdiff.codec.VCDiffHeaderParser.RESULT_SUCCESS;
 
-import java.io.ByteArrayOutputStream;
 import java.nio.ByteBuffer;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.zip.Adler32;
@@ -23,7 +22,6 @@ import org.slf4j.LoggerFactory;
 import com.googlecode.jvcdiff.VCDiffCodeTableData;
 import com.googlecode.jvcdiff.VCDiffCodeTableReader;
 import com.googlecode.jvcdiff.codec.VCDiffStreamingDecoderImpl.DecoratedByteArrayOutputStream;
-import com.googlecode.jvcdiff.mina_buffer.IoBuffer;
 
 public class VCDiffDeltaFileWindow {
 	private static final Logger LOGGER = LoggerFactory.getLogger(VCDiffDeltaFileWindow.class);
@@ -195,7 +193,7 @@ public class VCDiffDeltaFileWindow {
 			return header_parser.GetResult();
 		}
 		has_checksum_ = parent_.AllowChecksum() && ((win_indicator.get() & VCD_CHECKSUM) != 0);
-		if (!header_parser.ParseWindowLengths(&target_window_length_)) {
+		if ((target_window_length_ = header_parser.ParseWindowLengths()) == null) {
 			return header_parser.GetResult();
 		}
 		if (parent_.TargetWindowWouldExceedSizeLimits(target_window_length_)) {
@@ -229,7 +227,7 @@ public class VCDiffDeltaFileWindow {
 		// The whole window header was found and parsed successfully.
 		found_header_ = true;
 
-		parseable_chunk.position(parseable_chunk.position() + header_parser.ParsedSize());
+		parseable_chunk.position(parseable_chunk.position() + header_parser.getBuffer().position());
 		parent_.AddToTotalTargetWindowSize(target_window_length_);
 		return RESULT_SUCCESS;
 	}
@@ -268,22 +266,32 @@ public class VCDiffDeltaFileWindow {
 				(addresses_length.get() == 0)) {
 			// The interleaved format is being used.
 			interleaved_bytes_expected_ = instructions_and_sizes_length.get();
-			UpdateInterleavedSectionPointers(header_parser.UnparsedData(),
-					header_parser.End());
+			UpdateInterleavedSectionPointers(header_parser.getBuffer());
 		} else {
 			// If interleaved format is not used, then the whole window contents
 			// must be available before decoding can begin.  If only part of
 			// the current window is available, then report end of data
 			// and re-parse the whole header when DecodeChunk() is called again.
-			if (header_parser.UnparsedSize() < (add_and_run_data_length.get() +
+			if (header_parser.getBuffer().remaining() < (add_and_run_data_length.get() +
 					instructions_and_sizes_length.get() +
 					addresses_length.get())) {
 				return RESULT_END_OF_DATA;
 			}
-			data_for_add_and_run_.Init(header_parser.UnparsedData(), add_and_run_data_length);
-			instructions_and_sizes_.Init(data_for_add_and_run_.End(), instructions_and_sizes_length);
-			addresses_for_copy_.Init(instructions_and_sizes_.End(), addresses_length);
-			if (addresses_for_copy_.End() != header_parser.EndOfDeltaWindow()) {
+			
+			data_for_add_and_run_ = header_parser.getBuffer().slice();
+			data_for_add_and_run_.position(add_and_run_data_length.get());
+			
+			instructions_and_sizes_ = data_for_add_and_run_.slice();
+			instructions_and_sizes_.position(instructions_and_sizes_length.get());
+			
+			addresses_for_copy_ = instructions_and_sizes_.slice();
+			addresses_for_copy_.position(instructions_and_sizes_length.get());
+			
+			data_for_add_and_run_.flip();
+			instructions_and_sizes_.flip();
+			addresses_for_copy_.flip();
+			
+			if (addresses_for_copy_.arrayOffset() + addresses_for_copy_.limit() != header_parser.EndOfDeltaWindow()) {
 				LOGGER.error("The end of the instructions section does not match the end of the delta window");
 				return RESULT_ERROR;
 			}
@@ -303,7 +311,10 @@ public class VCDiffDeltaFileWindow {
 	// parent->decoded_target().
 	//
 	private int DecodeBody(ByteBuffer parseable_chunk) {
-		if (IsInterleaved() && (instructions_and_sizes_.UnparsedData() != parseable_chunk.UnparsedData())) {
+		if (IsInterleaved() &&
+				(instructions_and_sizes_.array() != parseable_chunk.array() ||
+						instructions_and_sizes_.arrayOffset() + instructions_and_sizes_.position() != parseable_chunk.arrayOffset() + parseable_chunk.position())) {
+				
 			LOGGER.error("Internal error: interleaved format is used, but the input pointer does not point to the instructions section");
 			return RESULT_ERROR;
 		}
@@ -393,7 +404,7 @@ public class VCDiffDeltaFileWindow {
 			}
 			// Reached the end of the window.  Update the ParseableChunk to point to the
 			// end of the addresses section, which is the last section in the window.
-			parseable_chunk.SetPosition(addresses_for_copy_.End());
+			setPosition(parseable_chunk, addresses_for_copy_);
 		} else {
 			// Interleaved format is being used.
 			UpdateInstructionPointer(parseable_chunk);
@@ -494,18 +505,6 @@ public class VCDiffDeltaFileWindow {
 	// and data.  These pointers must be reset every time that work resumes on a
 	// delta window,  because the input data string may have been changed or
 	// resized since DecodeBody() last returned.
-	private void UpdateInterleavedSectionPointers(byte[] data, int offset, int length) {
-		// Don't read past the end of currently-available data
-		if (length > interleaved_bytes_expected_) {
-			instructions_and_sizes_ = ByteBuffer.wrap(data, offset, interleaved_bytes_expected_);
-		} else {
-			instructions_and_sizes_ = ByteBuffer.wrap(data, offset, length);
-		}
-
-		data_for_add_and_run_ = instructions_and_sizes_;
-		addresses_for_copy_ = instructions_and_sizes_;
-	}
-
 	private void UpdateInterleavedSectionPointers(ByteBuffer data) {
 		instructions_and_sizes_ = data.slice();
 
@@ -556,6 +555,22 @@ public class VCDiffDeltaFileWindow {
 		}
 	}
 
+	private static boolean byteBufferEquals(ByteBuffer a, ByteBuffer b) {
+		if (!a.hasArray() || !b.hasArray()) {
+			return false;
+		} else if (a.array() != b.array()) {
+			return false;
+		} else if (a.arrayOffset() + a.position() != b.arrayOffset() + b.position()) {
+			return false;
+		} else {
+			return true;
+		}
+	}
+	
+	private static void setPosition(ByteBuffer destination, ByteBuffer source) {
+		destination.position((source.arrayOffset() + source.position()) - source.arrayOffset());
+	}
+	
 	// The parent object which was passed to Init().
 	private final VCDiffStreamingDecoderImpl parent_;
 
@@ -587,7 +602,7 @@ public class VCDiffDeltaFileWindow {
 	private int interleaved_bytes_expected_;
 
 	// The expected length of the target window once it has been decoded.
-	private int target_window_length_;
+	private Integer target_window_length_;
 
 	// The index in decoded_target at which the first byte of the current
 	// target window was/will be written.

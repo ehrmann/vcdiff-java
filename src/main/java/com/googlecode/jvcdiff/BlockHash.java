@@ -19,11 +19,11 @@
 
 package com.googlecode.jvcdiff;
 
-import java.nio.ByteBuffer;
-import java.util.Arrays;
-
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+
+import java.nio.ByteBuffer;
+import java.util.Arrays;
 
 // A generic hash table which will be used to keep track of byte runs
 // of size kBlockSize in both the incrementally processed target data

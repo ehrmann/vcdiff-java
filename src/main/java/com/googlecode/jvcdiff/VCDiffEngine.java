@@ -1,13 +1,12 @@
 package com.googlecode.jvcdiff;
 
-import java.io.IOException;
-import java.nio.ByteBuffer;
-import java.util.Arrays;
-
+import com.googlecode.jvcdiff.BlockHash.Match;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import com.googlecode.jvcdiff.BlockHash.Match;
+import java.io.IOException;
+import java.nio.ByteBuffer;
+import java.util.Arrays;
 
 /**
  * All methods in this class are thread-safe.

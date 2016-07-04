@@ -1,11 +1,8 @@
 package com.googlecode.jvcdiff;
 
-import static com.googlecode.jvcdiff.VCDiffCodeTableData.VCD_COPY;
-import static com.googlecode.jvcdiff.VCDiffCodeTableData.VCD_LAST_INSTRUCTION_TYPE;
-import static com.googlecode.jvcdiff.VCDiffCodeTableData.VCD_NOOP;
-import static com.googlecode.jvcdiff.VCDiffCodeTableData.kNoOpcode;
-
 import java.util.Arrays;
+
+import static com.googlecode.jvcdiff.VCDiffCodeTableData.*;
 
 
 /**

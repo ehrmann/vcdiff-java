@@ -1,27 +1,18 @@
 package com.googlecode.jvcdiff.codec;
 
-import static com.googlecode.jvcdiff.VCDiffCodeTableData.VCD_ADD;
-import static com.googlecode.jvcdiff.VCDiffCodeTableData.VCD_COPY;
-import static com.googlecode.jvcdiff.VCDiffCodeTableData.VCD_INSTRUCTION_END_OF_DATA;
-import static com.googlecode.jvcdiff.VCDiffCodeTableData.VCD_INSTRUCTION_ERROR;
-import static com.googlecode.jvcdiff.VCDiffCodeTableData.VCD_RUN;
-import static com.googlecode.jvcdiff.VCDiffCodeTableWriter.VCD_CHECKSUM;
-import static com.googlecode.jvcdiff.VCDiffCodeTableWriter.VCD_SOURCE;
-import static com.googlecode.jvcdiff.VCDiffCodeTableWriter.VCD_TARGET;
-import static com.googlecode.jvcdiff.codec.VCDiffHeaderParser.RESULT_END_OF_DATA;
-import static com.googlecode.jvcdiff.codec.VCDiffHeaderParser.RESULT_ERROR;
-import static com.googlecode.jvcdiff.codec.VCDiffHeaderParser.RESULT_SUCCESS;
+import com.googlecode.jvcdiff.VCDiffCodeTableData;
+import com.googlecode.jvcdiff.VCDiffCodeTableReader;
+import com.googlecode.jvcdiff.codec.VCDiffStreamingDecoderImpl.DecoratedByteArrayOutputStream;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.nio.ByteBuffer;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.zip.Adler32;
 
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
-import com.googlecode.jvcdiff.VCDiffCodeTableData;
-import com.googlecode.jvcdiff.VCDiffCodeTableReader;
-import com.googlecode.jvcdiff.codec.VCDiffStreamingDecoderImpl.DecoratedByteArrayOutputStream;
+import static com.googlecode.jvcdiff.VCDiffCodeTableData.*;
+import static com.googlecode.jvcdiff.VCDiffCodeTableWriter.*;
+import static com.googlecode.jvcdiff.codec.VCDiffHeaderParser.*;
 
 public class VCDiffDeltaFileWindow {
 	private static final Logger LOGGER = LoggerFactory.getLogger(VCDiffDeltaFileWindow.class);

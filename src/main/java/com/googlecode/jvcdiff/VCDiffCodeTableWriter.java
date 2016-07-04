@@ -1,18 +1,15 @@
 package com.googlecode.jvcdiff;
 
-import static com.googlecode.jvcdiff.VCDiffCodeTableData.VCD_ADD;
-import static com.googlecode.jvcdiff.VCDiffCodeTableData.VCD_COPY;
-import static com.googlecode.jvcdiff.VCDiffCodeTableData.kNoOpcode;
+import com.googlecode.jvcdiff.mina_buffer.IoBuffer;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
 import java.io.OutputStream;
 import java.util.EnumSet;
 import java.util.concurrent.atomic.AtomicInteger;
 
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
-import com.googlecode.jvcdiff.mina_buffer.IoBuffer;
+import static com.googlecode.jvcdiff.VCDiffCodeTableData.*;
 
 /**
  * @author David Ehrmann

@@ -1,23 +1,18 @@
 package com.googlecode.jvcdiff.codec;
 
-import static com.googlecode.jvcdiff.codec.VCDiffHeaderParser.RESULT_ERROR;
-import static com.googlecode.jvcdiff.codec.VCDiffHeaderParser.RESULT_SUCCESS;
-import static com.googlecode.jvcdiff.codec.VCDiffHeaderParser.RESULT_END_OF_DATA;
-import static com.googlecode.jvcdiff.codec.VCDiffHeaderParser.VCD_CODETABLE;
-import static com.googlecode.jvcdiff.codec.VCDiffHeaderParser.VCD_DECOMPRESS;
+import com.googlecode.jvcdiff.VCDiffAddressCache;
+import com.googlecode.jvcdiff.VCDiffAddressCacheImpl;
+import com.googlecode.jvcdiff.VCDiffCodeTableData;
+import com.googlecode.jvcdiff.mina_buffer.IoBuffer;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.OutputStream;
 import java.nio.ByteBuffer;
 
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
-import com.googlecode.jvcdiff.VCDiffAddressCache;
-import com.googlecode.jvcdiff.VCDiffAddressCacheImpl;
-import com.googlecode.jvcdiff.VCDiffCodeTableData;
-import com.googlecode.jvcdiff.mina_buffer.IoBuffer;
+import static com.googlecode.jvcdiff.codec.VCDiffHeaderParser.*;
 
 public class VCDiffStreamingDecoderImpl implements VCDiffStreamingDecoder {
 	private static final Logger LOGGER = LoggerFactory.getLogger(VCDiffStreamingDecoderImpl.class);

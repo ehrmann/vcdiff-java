@@ -1,14 +1,13 @@
 package com.googlecode.jvcdiff.codec;
 
-import java.nio.ByteBuffer;
-import java.util.concurrent.atomic.AtomicInteger;
-
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
 import com.googlecode.jvcdiff.VarInt;
 import com.googlecode.jvcdiff.VarInt.VarIntEndOfBufferException;
 import com.googlecode.jvcdiff.VarInt.VarIntParseException;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
+import java.nio.ByteBuffer;
+import java.util.concurrent.atomic.AtomicInteger;
 
 public class VCDiffHeaderParser {
 

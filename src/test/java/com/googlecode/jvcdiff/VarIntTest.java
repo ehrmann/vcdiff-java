@@ -1,18 +1,16 @@
 package com.googlecode.jvcdiff;
 
-import static org.junit.Assert.assertArrayEquals;
+import com.googlecode.jvcdiff.VarInt.VarIntEndOfBufferException;
+import com.googlecode.jvcdiff.VarInt.VarIntParseException;
+import org.junit.Test;
 
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.util.Random;
 
-import junit.framework.Assert;
-
-import org.junit.Test;
-
-import com.googlecode.jvcdiff.VarInt.VarIntEndOfBufferException;
-import com.googlecode.jvcdiff.VarInt.VarIntParseException;
+import static org.junit.Assert.assertArrayEquals;
+import static org.junit.Assert.assertEquals;
 
 public class VarIntTest {
 	@Test
@@ -22,27 +20,27 @@ public class VarIntTest {
 		buffer.clear();
 		VarInt.putInt(buffer, 0);
 		buffer.flip();
-		Assert.assertEquals(0, VarInt.getInt(buffer));
+		assertEquals(0, VarInt.getInt(buffer));
 
 		buffer.clear();
 		VarInt.putInt(buffer, Integer.MAX_VALUE);
 		buffer.flip();
-		Assert.assertEquals(Integer.MAX_VALUE, VarInt.getInt(buffer));
+		assertEquals(Integer.MAX_VALUE, VarInt.getInt(buffer));
 
 		buffer.clear();
 		VarInt.putInt(buffer, Integer.MIN_VALUE);
 		buffer.flip();
-		Assert.assertEquals(Integer.MIN_VALUE, VarInt.getInt(buffer));
+		assertEquals(Integer.MIN_VALUE, VarInt.getInt(buffer));
 
 		buffer.clear();
 		VarInt.putInt(buffer, 1);
 		buffer.flip();
-		Assert.assertEquals(1, VarInt.getInt(buffer));
+		assertEquals(1, VarInt.getInt(buffer));
 
 		buffer.clear();
 		VarInt.putInt(buffer, -1);
 		buffer.flip();
-		Assert.assertEquals(-1, VarInt.getInt(buffer));
+		assertEquals(-1, VarInt.getInt(buffer));
 	}
 
 	@Test
@@ -57,16 +55,16 @@ public class VarIntTest {
 			int testVal = random.nextInt();
 			VarInt.putInt(buffer, testVal);
 			VarInt.writeInt(out, testVal);
-			Assert.assertEquals(buffer.position() - startPos, VarInt.calculateIntLength(testVal));
+			assertEquals(buffer.position() - startPos, VarInt.calculateIntLength(testVal));
 		}
 
 		buffer.flip();
 
-		Assert.assertEquals(0, buffer.compareTo(ByteBuffer.wrap(out.toByteArray())));
+		assertEquals(0, buffer.compareTo(ByteBuffer.wrap(out.toByteArray())));
 
 		random = new Random(0x42);
 		while (buffer.hasRemaining()) {
-			Assert.assertEquals(random.nextInt(), VarInt.getInt(buffer));
+			assertEquals(random.nextInt(), VarInt.getInt(buffer));
 		}
 	}
 
@@ -77,27 +75,27 @@ public class VarIntTest {
 		buffer.clear();
 		VarInt.putLong(buffer, 0);
 		buffer.flip();
-		Assert.assertEquals(0, VarInt.getLong(buffer));
+		assertEquals(0, VarInt.getLong(buffer));
 
 		buffer.clear();
 		VarInt.putLong(buffer, Long.MAX_VALUE);
 		buffer.flip();
-		Assert.assertEquals(Long.MAX_VALUE, VarInt.getLong(buffer));
+		assertEquals(Long.MAX_VALUE, VarInt.getLong(buffer));
 
 		buffer.clear();
 		VarInt.putLong(buffer, Long.MIN_VALUE);
 		buffer.flip();
-		Assert.assertEquals(Long.MIN_VALUE, VarInt.getLong(buffer));
+		assertEquals(Long.MIN_VALUE, VarInt.getLong(buffer));
 
 		buffer.clear();
 		VarInt.putLong(buffer, 1);
 		buffer.flip();
-		Assert.assertEquals(1, VarInt.getLong(buffer));
+		assertEquals(1, VarInt.getLong(buffer));
 
 		buffer.clear();
 		VarInt.putLong(buffer, -1);
 		buffer.flip();
-		Assert.assertEquals(-1, VarInt.getLong(buffer));
+		assertEquals(-1, VarInt.getLong(buffer));
 	}
 
 	@Test
@@ -112,16 +110,16 @@ public class VarIntTest {
 			long testVal = random.nextLong();
 			VarInt.putLong(buffer, testVal);
 			VarInt.writeLong(out, testVal);
-			Assert.assertEquals(buffer.position() - startPos, VarInt.calculateLongLength(testVal));
+			assertEquals(buffer.position() - startPos, VarInt.calculateLongLength(testVal));
 		}
 
 		buffer.flip();
 
-		Assert.assertEquals(0, buffer.compareTo(ByteBuffer.wrap(out.toByteArray())));
+		assertEquals(0, buffer.compareTo(ByteBuffer.wrap(out.toByteArray())));
 
 		random = new Random(0x42);
 		while (buffer.hasRemaining()) {
-			Assert.assertEquals(random.nextLong(), VarInt.getLong(buffer));
+			assertEquals(random.nextLong(), VarInt.getLong(buffer));
 		}
 	}
 

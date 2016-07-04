@@ -1,11 +1,10 @@
 package com.googlecode.jvcdiff;
 
-import static com.googlecode.jvcdiff.VCDiffAddressCache.VCD_FIRST_NEAR_MODE;
-import static com.googlecode.jvcdiff.VCDiffAddressCache.VCD_HERE_MODE;
-import static com.googlecode.jvcdiff.VCDiffAddressCache.VCD_SELF_MODE;
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertTrue;
+import com.googlecode.jvcdiff.VarInt.VarIntEndOfBufferException;
+import com.googlecode.jvcdiff.VarInt.VarIntParseException;
+import org.junit.Assert;
+import org.junit.Test;
+import org.junit.runners.Suite.SuiteClasses;
 
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
@@ -13,12 +12,8 @@ import java.nio.ByteBuffer;
 import java.nio.charset.Charset;
 import java.util.Arrays;
 
-import org.junit.Assert;
-import org.junit.Test;
-import org.junit.runners.Suite.SuiteClasses;
-
-import com.googlecode.jvcdiff.VarInt.VarIntEndOfBufferException;
-import com.googlecode.jvcdiff.VarInt.VarIntParseException;
+import static com.googlecode.jvcdiff.VCDiffAddressCache.*;
+import static org.junit.Assert.*;
 
 @SuiteClasses({VCDiffEngineTest.VCDiffEngineTestImpl.class, VCDiffEngineTest.WeaselsToMoonpiesTest.class})
 public abstract class VCDiffEngineTest {

@@ -1,16 +1,16 @@
 package com.googlecode.jvcdiff;
 
+import com.googlecode.jvcdiff.VarInt.VarIntEndOfBufferException;
+import com.googlecode.jvcdiff.VarInt.VarIntParseException;
+import org.junit.Assert;
+import org.junit.Test;
+
 import java.nio.ByteBuffer;
 import java.util.Arrays;
 import java.util.Random;
 import java.util.concurrent.atomic.AtomicInteger;
 
-import junit.framework.Assert;
-
-import org.junit.Test;
-
-import com.googlecode.jvcdiff.VarInt.VarIntEndOfBufferException;
-import com.googlecode.jvcdiff.VarInt.VarIntParseException;
+import static org.junit.Assert.assertEquals;
 
 public class VCDiffAddressCacheTest {
 	@Test
@@ -77,16 +77,16 @@ public class VCDiffAddressCacheTest {
 		VCDiffAddressCacheImpl cache = new VCDiffAddressCacheImpl();
 		cache.Init();
 
-		Assert.assertEquals(VCDiffAddressCache.kDefaultNearCacheSize, cache.near_addresses_.length);
-		Assert.assertEquals(VCDiffAddressCache.kDefaultSameCacheSize * 256, cache.same_addresses_.length);
+		assertEquals(VCDiffAddressCache.kDefaultNearCacheSize, cache.near_addresses_.length);
+		assertEquals(VCDiffAddressCache.kDefaultSameCacheSize * 256, cache.same_addresses_.length);
 
 		int test_address = 0;
 		// Check that caches are initially set to zero
 		for (test_address = 0; test_address < cache.near_addresses_.length; ++test_address) {
-			Assert.assertEquals(0, cache.near_addresses_[test_address]);
+			assertEquals(0, cache.near_addresses_[test_address]);
 		}
 		for (test_address = 0; test_address < cache.same_addresses_.length; ++test_address) {
-			Assert.assertEquals(0, cache.same_addresses_[test_address]);
+			assertEquals(0, cache.same_addresses_[test_address]);
 		}
 	}
 
@@ -99,17 +99,17 @@ public class VCDiffAddressCacheTest {
 			cache.UpdateCache(test_address);
 		}
 
-		Assert.assertEquals(9, cache.near_addresses_[0]);   // slot 0: 1 => 5 => 9
-		Assert.assertEquals(10, cache.near_addresses_[1]);  // slot 1: 2 => 6 => 10
-		Assert.assertEquals(7, cache.near_addresses_[2]);   // slot 2: 3 => 7
-		Assert.assertEquals(8, cache.near_addresses_[3]);   // slot 3: 4 => 8
-		Assert.assertEquals(0, cache.same_addresses_[0]);
+		assertEquals(9, cache.near_addresses_[0]);   // slot 0: 1 => 5 => 9
+		assertEquals(10, cache.near_addresses_[1]);  // slot 1: 2 => 6 => 10
+		assertEquals(7, cache.near_addresses_[2]);   // slot 2: 3 => 7
+		assertEquals(8, cache.near_addresses_[3]);   // slot 3: 4 => 8
+		assertEquals(0, cache.same_addresses_[0]);
 
 		for (int test_address = 1; test_address <= 10; ++test_address) {
-			Assert.assertEquals(test_address, cache.same_addresses_[test_address]);
+			assertEquals(test_address, cache.same_addresses_[test_address]);
 		}
 		for (int test_address = 11; test_address < 256 * 3; ++test_address) {
-			Assert.assertEquals(0, cache.same_addresses_[test_address]);
+			assertEquals(0, cache.same_addresses_[test_address]);
 		}
 	}
 
@@ -119,10 +119,10 @@ public class VCDiffAddressCacheTest {
 		cache_.Init();
 
 		cache_.UpdateCache(Integer.MAX_VALUE);
-		Assert.assertEquals(Integer.MAX_VALUE, cache_.near_addresses_[0]);
-		Assert.assertEquals(Integer.MAX_VALUE, cache_.same_addresses_[Integer.MAX_VALUE % (256 * 3)]);
-		Assert.assertEquals(0, cache_.same_addresses_[(Integer.MAX_VALUE - 256) % (256 * 3)]);
-		Assert.assertEquals(0, cache_.same_addresses_[(Integer.MAX_VALUE - 512) % (256 * 3)]);
+		assertEquals(Integer.MAX_VALUE, cache_.near_addresses_[0]);
+		assertEquals(Integer.MAX_VALUE, cache_.same_addresses_[Integer.MAX_VALUE % (256 * 3)]);
+		assertEquals(0, cache_.same_addresses_[(Integer.MAX_VALUE - 256) % (256 * 3)]);
+		assertEquals(0, cache_.same_addresses_[(Integer.MAX_VALUE - 512) % (256 * 3)]);
 	}
 
 	@Test
@@ -140,21 +140,21 @@ public class VCDiffAddressCacheTest {
 
 		buffer.flip();
 
-		Assert.assertEquals(0xFFFF, VarInt.getInt(buffer));	// SELF mode: addr 0x0000FFFF
-		Assert.assertEquals(3, buffer.position());
+		assertEquals(0xFFFF, VarInt.getInt(buffer));	// SELF mode: addr 0x0000FFFF
+		assertEquals(3, buffer.position());
 
-		Assert.assertEquals(0x10, VarInt.getInt(buffer));	// HERE mode: here - 0x10 = 0x10000000
-		Assert.assertEquals(4, buffer.position());
+		assertEquals(0x10, VarInt.getInt(buffer));	// HERE mode: here - 0x10 = 0x10000000
+		assertEquals(4, buffer.position());
 
-		Assert.assertEquals(0x04, VarInt.getInt(buffer));	// NEAR cache #1:
-		Assert.assertEquals(5, buffer.position());
+		assertEquals(0x04, VarInt.getInt(buffer));	// NEAR cache #1:
+		assertEquals(5, buffer.position());
 
 		// last addr + 0x4 = 0x10000004
 
-		Assert.assertEquals(0x32, VarInt.getInt(buffer));	// HERE mode: here - 0x32 = 0x0FFFFFFE
-		Assert.assertEquals(6, buffer.position());
+		assertEquals(0x32, VarInt.getInt(buffer));	// HERE mode: here - 0x32 = 0x0FFFFFFE
+		assertEquals(6, buffer.position());
 
-		Assert.assertEquals(0x04, buffer.get());			// SAME cache #1: 0x10000004 hits
+		assertEquals(0x04, buffer.get());			// SAME cache #1: 0x10000004 hits
 	}
 
 	@Test
@@ -173,26 +173,26 @@ public class VCDiffAddressCacheTest {
 		VCDiffAddressCacheImpl cache = new VCDiffAddressCacheImpl();
 		cache.Init();
 
-		Assert.assertEquals(0xCAFE, cache.DecodeAddress(0x10000, VCDiffAddressCache.VCD_SELF_MODE, buffer));
-		Assert.assertEquals(3, buffer.position());
+		assertEquals(0xCAFE, cache.DecodeAddress(0x10000, VCDiffAddressCache.VCD_SELF_MODE, buffer));
+		assertEquals(3, buffer.position());
 
-		Assert.assertEquals(0x20000 - 0xCAFE, cache.DecodeAddress(0x20000, VCDiffAddressCache.VCD_HERE_MODE, buffer));
-		Assert.assertEquals(6, buffer.position());
+		assertEquals(0x20000 - 0xCAFE, cache.DecodeAddress(0x20000, VCDiffAddressCache.VCD_HERE_MODE, buffer));
+		assertEquals(6, buffer.position());
 
-		Assert.assertEquals(0xDAFE, cache.DecodeAddress(0x30000, VCDiffAddressCache.VCD_FIRST_NEAR_MODE, buffer));
-		Assert.assertEquals(8, buffer.position());
+		assertEquals(0xDAFE, cache.DecodeAddress(0x30000, VCDiffAddressCache.VCD_FIRST_NEAR_MODE, buffer));
+		assertEquals(8, buffer.position());
 
-		Assert.assertEquals(0xCAFE, cache.DecodeAddress(0x40000, (short)(cache.FirstSameMode() + (0xCA % 3)), buffer));
-		Assert.assertEquals(9, buffer.position());	// a byte, not a Varint
+		assertEquals(0xCAFE, cache.DecodeAddress(0x40000, (short)(cache.FirstSameMode() + (0xCA % 3)), buffer));
+		assertEquals(9, buffer.position());	// a byte, not a Varint
 
-		Assert.assertEquals(0xFE, cache.DecodeAddress( 0x50000, VCDiffAddressCache.VCD_SELF_MODE, buffer));
-		Assert.assertEquals(11, buffer.position());
+		assertEquals(0xFE, cache.DecodeAddress( 0x50000, VCDiffAddressCache.VCD_SELF_MODE, buffer));
+		assertEquals(11, buffer.position());
 
 		// NEAR mode #0 has been overwritten by fifth computed addr (wrap around)
-		Assert.assertEquals(0x10FE, cache.DecodeAddress(0x60000, VCDiffAddressCache.VCD_FIRST_NEAR_MODE, buffer));
-		Assert.assertEquals(13, buffer.position());
+		assertEquals(0x10FE, cache.DecodeAddress(0x60000, VCDiffAddressCache.VCD_FIRST_NEAR_MODE, buffer));
+		assertEquals(13, buffer.position());
 
-		Assert.assertEquals(0, buffer.remaining());
+		assertEquals(0, buffer.remaining());
 	}
 
 	@Test
@@ -200,20 +200,20 @@ public class VCDiffAddressCacheTest {
 		AtomicInteger encoded_addr = new AtomicInteger();
 		VCDiffAddressCacheImpl zero_cache = new VCDiffAddressCacheImpl((short)0, (short)0);
 
-		Assert.assertEquals(VCDiffAddressCache.VCD_SELF_MODE, zero_cache.EncodeAddress(0x0000FFFF, 0x10000000, encoded_addr));
-		Assert.assertEquals(0xFFFF, encoded_addr.get());
+		assertEquals(VCDiffAddressCache.VCD_SELF_MODE, zero_cache.EncodeAddress(0x0000FFFF, 0x10000000, encoded_addr));
+		assertEquals(0xFFFF, encoded_addr.get());
 
-		Assert.assertEquals(VCDiffAddressCache.VCD_HERE_MODE, zero_cache.EncodeAddress(0x10000000, 0x10000010, encoded_addr));
-		Assert.assertEquals(0x10, encoded_addr.get());
+		assertEquals(VCDiffAddressCache.VCD_HERE_MODE, zero_cache.EncodeAddress(0x10000000, 0x10000010, encoded_addr));
+		assertEquals(0x10, encoded_addr.get());
 
-		Assert.assertEquals(VCDiffAddressCache.VCD_HERE_MODE, zero_cache.EncodeAddress(0x10000004, 0x10000020, encoded_addr));
-		Assert.assertEquals(0x1C, encoded_addr.get());
+		assertEquals(VCDiffAddressCache.VCD_HERE_MODE, zero_cache.EncodeAddress(0x10000004, 0x10000020, encoded_addr));
+		assertEquals(0x1C, encoded_addr.get());
 
-		Assert.assertEquals(VCDiffAddressCache.VCD_HERE_MODE, zero_cache.EncodeAddress(0x0FFFFFFE, 0x10000030, encoded_addr));
-		Assert.assertEquals(0x32, encoded_addr.get());
+		assertEquals(VCDiffAddressCache.VCD_HERE_MODE, zero_cache.EncodeAddress(0x0FFFFFFE, 0x10000030, encoded_addr));
+		assertEquals(0x32, encoded_addr.get());
 
-		Assert.assertEquals(VCDiffAddressCache.VCD_HERE_MODE, zero_cache.EncodeAddress(0x10000004, 0x10000040, encoded_addr));
-		Assert.assertEquals(0x3C, encoded_addr.get());
+		assertEquals(VCDiffAddressCache.VCD_HERE_MODE, zero_cache.EncodeAddress(0x10000004, 0x10000040, encoded_addr));
+		assertEquals(0x3C, encoded_addr.get());
 	}
 
 	@Test
@@ -227,16 +227,16 @@ public class VCDiffAddressCacheTest {
 
 		buffer.flip();
 
-		Assert.assertEquals(0xCAFE, zero_cache.DecodeAddress(0x10000, VCDiffAddressCache.VCD_SELF_MODE, buffer));
-		Assert.assertEquals(3, buffer.position());
+		assertEquals(0xCAFE, zero_cache.DecodeAddress(0x10000, VCDiffAddressCache.VCD_SELF_MODE, buffer));
+		assertEquals(3, buffer.position());
 
-		Assert.assertEquals(0x20000 - 0xCAFE, zero_cache.DecodeAddress(0x20000, VCDiffAddressCache.VCD_HERE_MODE, buffer));
-		Assert.assertEquals(6, buffer.position());
+		assertEquals(0x20000 - 0xCAFE, zero_cache.DecodeAddress(0x20000, VCDiffAddressCache.VCD_HERE_MODE, buffer));
+		assertEquals(6, buffer.position());
 
-		Assert.assertEquals(0xDAFE, zero_cache.DecodeAddress(0x30000, VCDiffAddressCache.VCD_SELF_MODE, buffer));
-		Assert.assertEquals(9, buffer.position());
+		assertEquals(0xDAFE, zero_cache.DecodeAddress(0x30000, VCDiffAddressCache.VCD_SELF_MODE, buffer));
+		assertEquals(9, buffer.position());
 
-		Assert.assertEquals(0, buffer.remaining());
+		assertEquals(0, buffer.remaining());
 	}
 
 	@Test(expected = IllegalArgumentException.class)
@@ -269,7 +269,7 @@ public class VCDiffAddressCacheTest {
 		VCDiffAddressCacheImpl cache = new VCDiffAddressCacheImpl();
 		cache.Init();
 
-		Assert.assertEquals(VCDiffAddressCache.RESULT_ERROR, cache.DecodeAddress(0x10000000, (short)(cache.LastMode() + 1), buffer));
+		assertEquals(VCDiffAddressCache.RESULT_ERROR, cache.DecodeAddress(0x10000000, (short)(cache.LastMode() + 1), buffer));
 	}
 
 	@Test(expected = IllegalArgumentException.class)
@@ -281,7 +281,7 @@ public class VCDiffAddressCacheTest {
 		VCDiffAddressCacheImpl cache = new VCDiffAddressCacheImpl();
 		cache.Init();
 
-		Assert.assertEquals(VCDiffAddressCache.RESULT_ERROR, cache.DecodeAddress(0x10000000, (short)0xFF, buffer));
+		assertEquals(VCDiffAddressCache.RESULT_ERROR, cache.DecodeAddress(0x10000000, (short)0xFF, buffer));
 	}
 
 	@Test(expected = IllegalArgumentException.class)
@@ -309,7 +309,7 @@ public class VCDiffAddressCacheTest {
 		// a window that has no source segment and that (erroneously)
 		// uses a COPY instruction as its first instruction.  This should
 		// cause an error to be reported, not a debug check failure.
-		Assert.assertEquals(VCDiffAddressCache.RESULT_ERROR, cache.DecodeAddress(0, VCDiffAddressCache.VCD_SELF_MODE, buffer));
+		assertEquals(VCDiffAddressCache.RESULT_ERROR, cache.DecodeAddress(0, VCDiffAddressCache.VCD_SELF_MODE, buffer));
 	}
 
 	@Test
@@ -321,8 +321,8 @@ public class VCDiffAddressCacheTest {
 		VCDiffAddressCacheImpl cache = new VCDiffAddressCacheImpl();
 		cache.Init();
 
-		Assert.assertEquals(VCDiffAddressCache.RESULT_ERROR, cache.DecodeAddress(0x1000, VCDiffAddressCache.VCD_SELF_MODE, buffer));
-		Assert.assertEquals(0, buffer.position());
+		assertEquals(VCDiffAddressCache.RESULT_ERROR, cache.DecodeAddress(0x1000, VCDiffAddressCache.VCD_SELF_MODE, buffer));
+		assertEquals(0, buffer.position());
 	}
 
 	@Test
@@ -334,8 +334,8 @@ public class VCDiffAddressCacheTest {
 		VCDiffAddressCacheImpl cache = new VCDiffAddressCacheImpl();
 		cache.Init();
 
-		Assert.assertEquals(VCDiffAddressCache.RESULT_ERROR, cache.DecodeAddress(0x10000, VCDiffAddressCache.VCD_HERE_MODE, buffer));
-		Assert.assertEquals(0, buffer.position());
+		assertEquals(VCDiffAddressCache.RESULT_ERROR, cache.DecodeAddress(0x10000, VCDiffAddressCache.VCD_HERE_MODE, buffer));
+		assertEquals(0, buffer.position());
 	}
 
 	@Test
@@ -348,14 +348,14 @@ public class VCDiffAddressCacheTest {
 		VCDiffAddressCacheImpl cache = new VCDiffAddressCacheImpl();
 		cache.Init();
 
-		Assert.assertEquals(0xCAFE, cache.DecodeAddress(0x10000, VCDiffAddressCache.VCD_SELF_MODE, buffer));
-		Assert.assertEquals(3, buffer.position());
+		assertEquals(0xCAFE, cache.DecodeAddress(0x10000, VCDiffAddressCache.VCD_SELF_MODE, buffer));
+		assertEquals(3, buffer.position());
 
 		// Now decode a NEAR mode address of base address 0xCAFE
 		// (the first decoded address) + offset 0x7FFFFFFF.  This will cause
 		// an integer overflow and should signal an error.
-		Assert.assertEquals(VCDiffAddressCache.RESULT_ERROR, cache.DecodeAddress(0x10000000, VCDiffAddressCache.VCD_FIRST_NEAR_MODE, buffer));
-		Assert.assertEquals(3, buffer.position());
+		assertEquals(VCDiffAddressCache.RESULT_ERROR, cache.DecodeAddress(0x10000000, VCDiffAddressCache.VCD_FIRST_NEAR_MODE, buffer));
+		assertEquals(3, buffer.position());
 	}
 
 	// A Varint should contain at most 9 bytes that have their continuation bit
@@ -372,8 +372,8 @@ public class VCDiffAddressCacheTest {
 		VCDiffAddressCacheImpl cache = new VCDiffAddressCacheImpl();
 		cache.Init();
 
-		Assert.assertEquals(VCDiffAddressCache.RESULT_ERROR, cache.DecodeAddress(0x10000000, VCDiffAddressCache.VCD_SELF_MODE, buffer));
-		Assert.assertEquals(0, buffer.position());
+		assertEquals(VCDiffAddressCache.RESULT_ERROR, cache.DecodeAddress(0x10000000, VCDiffAddressCache.VCD_SELF_MODE, buffer));
+		assertEquals(0, buffer.position());
 	}
 
 	// If only part of a Varint appears in the data to be decoded,
@@ -388,15 +388,15 @@ public class VCDiffAddressCacheTest {
 		VCDiffAddressCacheImpl cache = new VCDiffAddressCacheImpl();
 		cache.Init();
 
-		Assert.assertEquals(VCDiffAddressCache.RESULT_END_OF_DATA, cache.DecodeAddress(0x10000000, VCDiffAddressCache.VCD_SELF_MODE, buffer));
-		Assert.assertEquals(0, buffer.position());
+		assertEquals(VCDiffAddressCache.RESULT_END_OF_DATA, cache.DecodeAddress(0x10000000, VCDiffAddressCache.VCD_SELF_MODE, buffer));
+		assertEquals(0, buffer.position());
 
 		// Now add the missing last byte (supposedly read from a stream of data)
 		// and verify that the Varint is now valid.
 		buffer.limit(4);
 
-		Assert.assertEquals(0xFDFBF01, cache.DecodeAddress(0x10000000, VCDiffAddressCache.VCD_SELF_MODE, buffer));
-		Assert.assertEquals(4, buffer.position());
+		assertEquals(0xFDFBF01, cache.DecodeAddress(0x10000000, VCDiffAddressCache.VCD_SELF_MODE, buffer));
+		assertEquals(4, buffer.position());
 	}
 
 	@Test(expected = IllegalArgumentException.class)
@@ -420,8 +420,8 @@ public class VCDiffAddressCacheTest {
 		VCDiffAddressCacheImpl cache = new VCDiffAddressCacheImpl();
 		cache.Init();
 
-		Assert.assertEquals(VCDiffAddressCache.RESULT_ERROR, cache.DecodeAddress(0x10000, VCDiffAddressCache.VCD_HERE_MODE, buffer));
-		Assert.assertEquals(0, buffer.position());
+		assertEquals(VCDiffAddressCache.RESULT_ERROR, cache.DecodeAddress(0x10000, VCDiffAddressCache.VCD_HERE_MODE, buffer));
+		assertEquals(0, buffer.position());
 	}
 
 	@Test
@@ -434,11 +434,11 @@ public class VCDiffAddressCacheTest {
 		VCDiffAddressCacheImpl cache = new VCDiffAddressCacheImpl();
 		cache.Init();
 
-		Assert.assertEquals(0xCAFE, cache.DecodeAddress(0x10000, VCDiffAddressCache.VCD_SELF_MODE, buffer));
-		Assert.assertEquals(3, buffer.position());
+		assertEquals(0xCAFE, cache.DecodeAddress(0x10000, VCDiffAddressCache.VCD_SELF_MODE, buffer));
+		assertEquals(3, buffer.position());
 
-		Assert.assertEquals(VCDiffAddressCache.RESULT_ERROR, cache.DecodeAddress(0x10000, VCDiffAddressCache.VCD_FIRST_NEAR_MODE, buffer));
-		Assert.assertEquals(3, buffer.position());
+		assertEquals(VCDiffAddressCache.RESULT_ERROR, cache.DecodeAddress(0x10000, VCDiffAddressCache.VCD_FIRST_NEAR_MODE, buffer));
+		assertEquals(3, buffer.position());
 	}
 
 	@Test
@@ -506,10 +506,10 @@ public class VCDiffAddressCacheTest {
 			large_address_stream.rewind();
 			here_address = 1;
 			for (int i = 0; i < verify_stream.length; ++i) {
-				Assert.assertEquals(verify_stream[i], cache.DecodeAddress(here_address, mode_stream[i], large_address_stream));
+				assertEquals(verify_stream[i], cache.DecodeAddress(here_address, mode_stream[i], large_address_stream));
 				here_address += 4;
 			}
-			Assert.assertEquals(0, large_address_stream.remaining());
+			assertEquals(0, large_address_stream.remaining());
 		}
 	}
 
@@ -518,7 +518,7 @@ public class VCDiffAddressCacheTest {
 
 		AtomicInteger encoded_addr = new AtomicInteger(0);
 
-		Assert.assertEquals(mode, cache_.EncodeAddress(address, here_address, encoded_addr));
+		assertEquals(mode, cache_.EncodeAddress(address, here_address, encoded_addr));
 		if (cache_.WriteAddressAsVarintForMode(mode)) {
 			VarInt.putInt(buffer, encoded_addr.get());
 		} else {
@@ -526,6 +526,6 @@ public class VCDiffAddressCacheTest {
 			buffer.put((byte)encoded_addr.get());
 		}
 
-		Assert.assertEquals(size, buffer.position() - startPosition);
+		assertEquals(size, buffer.position() - startPosition);
 	}
 }

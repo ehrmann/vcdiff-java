@@ -1,16 +1,11 @@
 package com.googlecode.jvcdiff;
 
-import static com.googlecode.jvcdiff.VCDiffCodeTableData.VCD_ADD;
-import static com.googlecode.jvcdiff.VCDiffCodeTableData.VCD_COPY;
-import static com.googlecode.jvcdiff.VCDiffCodeTableData.VCD_NOOP;
-import static com.googlecode.jvcdiff.VCDiffCodeTableData.VCD_RUN;
-import static com.googlecode.jvcdiff.VCDiffCodeTableData.VCD_LAST_INSTRUCTION_TYPE;
-import static com.googlecode.jvcdiff.VCDiffCodeTableData.kNoOpcode;
+import org.junit.Assert;
+import org.junit.Test;
+
+import static com.googlecode.jvcdiff.VCDiffCodeTableData.*;
 import static com.googlecode.jvcdiff.VCDiffInstructionMap.DEFAULT_INSTRUCTION_MAP;
 import static org.junit.Assert.assertEquals;
-import junit.framework.Assert;
-
-import org.junit.Test;
 
 
 public class VCDiffInstructionMapTest {

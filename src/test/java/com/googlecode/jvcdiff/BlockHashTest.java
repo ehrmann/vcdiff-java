@@ -1,13 +1,12 @@
 package com.googlecode.jvcdiff;
 
-import java.io.UnsupportedEncodingException;
-import java.nio.ByteBuffer;
-import java.util.Arrays;
-
+import com.googlecode.jvcdiff.BlockHash.Match;
 import org.junit.Assert;
 import org.junit.Test;
 
-import com.googlecode.jvcdiff.BlockHash.Match;
+import java.io.UnsupportedEncodingException;
+import java.nio.ByteBuffer;
+import java.util.Arrays;
 
 public class BlockHashTest {
 	private static final int kBlockSize = BlockHash.kBlockSize;

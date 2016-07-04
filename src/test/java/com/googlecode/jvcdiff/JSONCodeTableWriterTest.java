@@ -1,12 +1,12 @@
 package com.googlecode.jvcdiff;
 
-import java.io.IOException;
-import java.io.StringWriter;
-import java.util.EnumSet;
-
 import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Test;
+
+import java.io.IOException;
+import java.io.StringWriter;
+import java.util.EnumSet;
 
 
 public class JSONCodeTableWriterTest {

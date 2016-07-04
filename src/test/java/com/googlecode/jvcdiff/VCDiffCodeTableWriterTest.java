@@ -1,22 +1,17 @@
 package com.googlecode.jvcdiff;
 
-import static com.googlecode.jvcdiff.VCDiffCodeTableData.VCD_COPY;
-import static com.googlecode.jvcdiff.VCDiffCodeTableData.VCD_LAST_INSTRUCTION_TYPE;
-import static com.googlecode.jvcdiff.VCDiffCodeTableData.VCD_NOOP;
-import static com.googlecode.jvcdiff.VCDiffCodeTableWriter.VCD_CHECKSUM;
-import static com.googlecode.jvcdiff.VCDiffCodeTableWriter.VCD_SOURCE;
-import static org.junit.Assert.assertArrayEquals;
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertTrue;
+import org.junit.Assert;
+import org.junit.Before;
+import org.junit.Test;
 
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.nio.charset.Charset;
 
-import junit.framework.Assert;
-
-import org.junit.Before;
-import org.junit.Test;
+import static com.googlecode.jvcdiff.VCDiffCodeTableData.*;
+import static com.googlecode.jvcdiff.VCDiffCodeTableWriter.VCD_CHECKSUM;
+import static com.googlecode.jvcdiff.VCDiffCodeTableWriter.VCD_SOURCE;
+import static org.junit.Assert.*;
 
 public class VCDiffCodeTableWriterTest {
 

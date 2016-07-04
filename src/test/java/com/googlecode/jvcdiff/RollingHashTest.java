@@ -1,13 +1,13 @@
 package com.googlecode.jvcdiff;
 
+import com.googlecode.jvcdiff.RollingHash.RollingHashUtil;
+import org.junit.Assert;
+import org.junit.Test;
+
 import java.util.Random;
 import java.util.zip.CRC32;
 
-import junit.framework.Assert;
-
-import org.junit.Test;
-
-import com.googlecode.jvcdiff.RollingHash.RollingHashUtil;
+import static org.junit.Assert.assertEquals;
 
 public class RollingHashTest {
 	static final int kBase = RollingHash.RollingHashUtil.kBase;
@@ -18,11 +18,11 @@ public class RollingHashTest {
 	static final int kLargestBlockSize = 128;
 
 	public void TestModBase(long operand) {
-		Assert.assertEquals(0L, operand & ~0xFFFFFFFFL);
+		assertEquals(0L, operand & ~0xFFFFFFFFL);
 
-		Assert.assertEquals((0xffffffffL & operand) % kBase, RollingHashUtil.ModBase(operand & 0xFFFFFFFFL));
-		Assert.assertEquals((0x100000000L - ((0xFFFFFFFFL & operand) % kBase)) & 0xFFFFFFFFL, RollingHashUtil.FindModBaseInverse(operand));
-		Assert.assertEquals(0, (int)(RollingHashUtil.ModBase(operand) + RollingHashUtil.FindModBaseInverse(operand)));
+		assertEquals((0xffffffffL & operand) % kBase, RollingHashUtil.ModBase(operand & 0xFFFFFFFFL));
+		assertEquals((0x100000000L - ((0xFFFFFFFFL & operand) % kBase)) & 0xFFFFFFFFL, RollingHashUtil.FindModBaseInverse(operand));
+		assertEquals(0, (int)(RollingHashUtil.ModBase(operand) + RollingHashUtil.FindModBaseInverse(operand)));
 	}
 
 	public void TestHashFirstTwoBytes(byte first_value, byte second_value) {
@@ -31,8 +31,8 @@ public class RollingHashTest {
 		buf[0] = first_value;
 		buf[1] = second_value;
 
-		Assert.assertEquals(RollingHashUtil.HashFirstTwoBytes(buf, 0), RollingHashUtil.HashStep(RollingHashUtil.HashStep(0, first_value), second_value));
-		Assert.assertEquals(RollingHashUtil.HashFirstTwoBytes(buf, 0), RollingHashUtil.HashStep(first_value & 0xff, second_value));
+		assertEquals(RollingHashUtil.HashFirstTwoBytes(buf, 0), RollingHashUtil.HashStep(RollingHashUtil.HashStep(0, first_value), second_value));
+		assertEquals(RollingHashUtil.HashFirstTwoBytes(buf, 0), RollingHashUtil.HashStep(first_value & 0xff, second_value));
 	}
 
 	public void UpdateHashMatchesHashForBlockSize(int kBlockSize, Random random) {
@@ -51,7 +51,7 @@ public class RollingHashTest {
 						buffer_[i]);
 				// Hash() calculates the hash value from scratch.  Verify that both
 				// methods return the same hash value.
-				Assert.assertEquals(running_hash, hasher.Hash(buffer_, i + 1 - kBlockSize, buffer_.length - (i + 1 - kBlockSize)));
+				assertEquals(running_hash, hasher.Hash(buffer_, i + 1 - kBlockSize, buffer_.length - (i + 1 - kBlockSize)));
 			}
 		}
 	}
@@ -127,7 +127,7 @@ public class RollingHashTest {
 
 	@Test
 	public void KBaseIsAPowerOfTwo() {
-		Assert.assertEquals(0, kBase & (kBase - 1));
+		assertEquals(0, kBase & (kBase - 1));
 	}
 
 	@Test
@@ -190,7 +190,7 @@ public class RollingHashTest {
 
 		CRC32 crc32 = new CRC32();
 		crc32.update(buffer);
-		Assert.assertEquals(0x83402f90, (int)crc32.getValue());
+		assertEquals(0x83402f90, (int)crc32.getValue());
 
 		// These are the results the C++ code produced.
 		int[] expectedHashes = new int[] {
@@ -206,7 +206,7 @@ public class RollingHashTest {
 		
 		for (int windowSize = 16, i = 0; i < expectedHashes.length; i++, windowSize <<= 1) {
 			RollingHash hasher = new RollingHash(windowSize);
-			Assert.assertEquals(expectedHashes[i], hasher.Hash(buffer, 0, buffer.length));
+			assertEquals(expectedHashes[i], hasher.Hash(buffer, 0, buffer.length));
 		}
 	}
 }

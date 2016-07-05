@@ -170,7 +170,7 @@ public abstract class VCDiffAddressCache {
 	 * Interprets the next value in the address_stream using the provided mode,
 	 * which may need to access the SAME or NEAR address cache.
 	 * @param here_address
-	 * @param mode
+	 * @param vcDiffMode
 	 * @param address_stream
 	 * @param offset
 	 * @return If successful, the new offset will be returned.

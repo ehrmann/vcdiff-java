@@ -66,8 +66,11 @@ public class VCDiffHeaderParser {
 
     private ByteBuffer delta_encoding_start_;
 
+    private ParseException parseException = null;
+    private BufferUnderflowException bufferUnderflowException = null;
+
     public VCDiffHeaderParser(ByteBuffer buffer) {
-        this.buffer = buffer;
+        this.buffer = buffer.duplicate();
     }
 
     // One of these functions should be called for each element of the header.
@@ -100,26 +103,61 @@ public class VCDiffHeaderParser {
     //       return header_parser.GetResult();
     //     }
     //
-    public byte ParseByte() throws BufferUnderflowException {
+    public byte ParseByte() throws BufferUnderflowException, ParseException {
+        throwExistingException();
         return buffer.get();
     }
 
     public int ParseInt32(String variable_description) throws BufferUnderflowException, ParseException {
+        throwExistingException();
+        buffer.mark();
         try {
             return VarInt.getInt(buffer);
         } catch (VarInt.VarIntEndOfBufferException e) {
-            throw new BufferUnderflowException();
+            buffer.reset();
+            bufferUnderflowException = new BufferUnderflowException();
+            throw bufferUnderflowException;
         } catch (VarInt.VarIntParseException e) {
-            throw new ParseException();
+            parseException = new ParseException();
+            buffer.reset();
+            throw parseException;
+        }
+    }
+
+    // When an unsigned 32-bit integer is expected, parse a signed 64-bit value
+    // instead, then check the value limit.  The uint32_t type can't be parsed
+    // directly because two negative values are given special meanings (RESULT_ERROR
+    // and RESULT_END_OF_DATA) and could not be expressed in an unsigned format.
+    public int ParseUInt32(String variable_description) throws BufferUnderflowException, ParseException {
+        throwExistingException();
+        buffer.mark();
+
+        try {
+            long parsedValue = VarInt.getLong(buffer);
+            if ((parsedValue & 0xffffffff00000000L) != 0) {
+                LOGGER.error("Value of {} ({}) is too large for unsigned 32-bit integer", variable_description, parsedValue);
+                parseException = new ParseException();
+                buffer.reset();
+                throw parseException;
+            }
+            return (int) parsedValue;
+        } catch (VarInt.VarIntEndOfBufferException e) {
+            bufferUnderflowException = new BufferUnderflowException();
+            buffer.reset();
+            throw bufferUnderflowException;
+        } catch (VarInt.VarIntParseException e) {
+            parseException = new ParseException();
+            buffer.reset();
+            throw parseException;
         }
     }
 
     public int ParseChecksum(String variable_description) throws BufferUnderflowException, ParseException {
-        return ParseInt32(variable_description);
+        return ParseUInt32(variable_description);
     }
 
-    public long ParseSize(String variable_description) throws BufferUnderflowException, ParseException {
-        return ParseInt32(variable_description) & 0xffffffffL;
+    public int ParseSize(String variable_description) throws BufferUnderflowException, ParseException {
+        return ParseInt32(variable_description);
     }
 
     // Parses the first three elements of the delta window header:
@@ -159,7 +197,6 @@ public class VCDiffHeaderParser {
                                                                long decoded_target_size,
                                                                boolean allow_vcd_target)
             throws BufferUnderflowException, ParseException {
-
         byte win_indicator = this.ParseByte();
         int source_target_flags = win_indicator & (VCD_SOURCE | VCD_TARGET);
 
@@ -278,6 +315,17 @@ public class VCDiffHeaderParser {
         return new SectionLengths(add_and_run_data_length, instructions_and_sizes_length, addresses_length, checksum);
     }
 
+    protected ByteBuffer unparsedData() {
+        return buffer.asReadOnlyBuffer();
+    }
+
+    private void throwExistingException() throws BufferUnderflowException, ParseException {
+        if (bufferUnderflowException != null) {
+            throw bufferUnderflowException;
+        } else if (parseException != null) {
+            throw parseException;
+        }
+    }
 
     private DeltaWindowHeader ParseSourceSegmentLengthAndPosition(long from_size, byte win_indicator,
                                                                   String from_boundary_name,

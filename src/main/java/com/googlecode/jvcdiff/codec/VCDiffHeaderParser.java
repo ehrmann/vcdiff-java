@@ -7,7 +7,9 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.nio.ByteBuffer;
-import java.util.concurrent.atomic.AtomicInteger;
+
+import static com.googlecode.jvcdiff.VCDiffCodeTableWriter.VCD_SOURCE;
+import static com.googlecode.jvcdiff.VCDiffCodeTableWriter.VCD_TARGET;
 
 public class VCDiffHeaderParser {
 
@@ -20,6 +22,10 @@ public class VCDiffHeaderParser {
 	public static final byte VCD_DECOMPRESS = 0x01;
 	public static final byte VCD_CODETABLE = 0x02;
 
+    public static final byte VCD_DATACOMP = 0x01;
+    public static final byte VCD_INSTCOMP = 0x02;
+    public static final byte VCD_ADDRCOMP = 0x04;
+
 
 	// Contains the result code of the last Parse...() operation that failed
 	// (RESULT_ERROR or RESULT_END_OF_DATA).  If no Parse...() method has been
@@ -30,14 +36,15 @@ public class VCDiffHeaderParser {
 	// Will be zero until ParseWindowLengths() has been called.  After
 	// ParseWindowLengths() has been called successfully, this contains the
 	// parsed length of the delta encoding.
-	protected int delta_encoding_length_;
+	protected Integer delta_encoding_length_;
 
 	protected ByteBuffer buffer;
+    protected ByteBuffer delta_encoding_start_;
 
 	public VCDiffHeaderParser(ByteBuffer buffer) {
 		this.return_code_ = RESULT_SUCCESS;
 		this.delta_encoding_length_ = 0;
-		this.buffer = buffer;
+		this.buffer = buffer.duplicate();
 	}
 
 	// One of these functions should be called for each element of the header.
@@ -80,35 +87,61 @@ public class VCDiffHeaderParser {
 		return buffer.get();
 	}
 
-	public Integer ParseInt32() {
+	public Integer ParseInt32(String variable_description) {
 		if (RESULT_SUCCESS != return_code_) {
 			return null;
 		}
-		int parsed_value = 0;
+
+        buffer.mark();
 		try {
-			parsed_value = VarInt.getInt(buffer);
+			return VarInt.getInt(buffer);
 		} catch (VarIntParseException e) {
+            return_code_ = RESULT_ERROR;
+            buffer.reset();
 			return null;
 		} catch (VarIntEndOfBufferException e) {
+            LOGGER.error("Expected {}; found invalid variable-length integer", variable_description);
+            return_code_ = RESULT_END_OF_DATA;
+            buffer.reset();
 			return null;
-		}
-
-		switch (parsed_value) {
-		case RESULT_ERROR:
-			LOGGER.error("Expected " /*+ variable_description*/ + "; found invalid variable-length integer");
-			return_code_ = RESULT_ERROR;
-			return null;
-		case RESULT_END_OF_DATA:
-			return_code_ = RESULT_END_OF_DATA;
-			return null;
-		default:
-			return parsed_value;
 		}
 	}
 
-	public Long ParseUInt32() {
-		return null;
-		// TODO:
+	// When an unsigned 32-bit integer is expected, parse a signed 64-bit value
+	// instead, then check the value limit.  The uint32_t type can't be parsed
+	// directly because two negative values are given special meanings (RESULT_ERROR
+	// and RESULT_END_OF_DATA) and could not be expressed in an unsigned format.
+	public Integer ParseUInt32(String variable_description) {
+        if (RESULT_SUCCESS != return_code_) {
+            return null;
+        }
+		try {
+            buffer.mark();
+			long parsedValue = VarInt.getLong(buffer);
+			if ((parsedValue & 0xffffffff00000000L) != 0) {
+				LOGGER.error("Value of {} ({}) is too large for unsigned 32-bit integer", variable_description, parsedValue);
+				return_code_ = RESULT_ERROR;
+				buffer.reset();
+			} else {
+                return (int) parsedValue;
+            }
+		} catch (VarInt.VarIntEndOfBufferException e) {
+			return_code_ = RESULT_END_OF_DATA;
+			buffer.reset();
+		} catch (VarInt.VarIntParseException e) {
+            return_code_ = RESULT_ERROR;
+            buffer.reset();
+		}
+
+        return null;
+	}
+
+	public Integer ParseChecksum(String variable_description) {
+		return ParseUInt32(variable_description);
+	}
+
+	public Integer ParseSize(String variable_description) {
+		return ParseInt32(variable_description);
 	}
 
 	// Parses the first three elements of the delta window header:
@@ -144,15 +177,43 @@ public class VCDiffHeaderParser {
 	// source_segment_length (output): The parsed length of the source segment.
 	// source_segment_position (output): The parsed zero-based index in the
 	//     source/target file from which the source segment is to be taken.
-	public boolean ParseWinIndicatorAndSourceSegment(int dictionary_size,
-			int decoded_target_size,
-			boolean allow_vcd_target,
-			AtomicInteger win_indicator,
-			AtomicInteger source_segment_length,
-			AtomicInteger source_segment_position) {
-		// TODO
-		return false;
-	}
+    public DeltaWindowHeader ParseWinIndicatorAndSourceSegment(int dictionary_size,
+                                                               int decoded_target_size,
+                                                               boolean allow_vcd_target) {
+        Byte win_indicator = this.ParseByte();
+        if (win_indicator == null) {
+            return null;
+        }
+
+        int source_target_flags = win_indicator & (VCD_SOURCE | VCD_TARGET);
+        switch (source_target_flags) {
+            case VCD_SOURCE:
+                return ParseSourceSegmentLengthAndPosition(
+                        dictionary_size,
+                        win_indicator,
+                        "end of dictionary",
+                        "dictionary"
+                );
+            case VCD_TARGET:
+                if (!allow_vcd_target) {
+                    LOGGER.error("Delta file contains VCD_TARGET flag, which is not allowed by current decoder settings");
+                    return_code_ = RESULT_ERROR;
+                    return null;
+                }
+                return ParseSourceSegmentLengthAndPosition(
+                        decoded_target_size,
+                        win_indicator,
+                        "current target position",
+                        "target file"
+                );
+            case VCD_SOURCE | VCD_TARGET:
+                LOGGER.error("Win_Indicator must not have both VCD_SOURCE and VCD_TARGET set");
+                return_code_ = RESULT_ERROR;
+                return null;
+            default:
+                return new DeltaWindowHeader(win_indicator, -1, -1);
+        }
+    }
 
 	// Parses the following two elements of the delta window header:
 	//
@@ -162,16 +223,30 @@ public class VCDiffHeaderParser {
 	// Return conditions and values are the same as for
 	// ParseWinIndicatorAndSourceSegment(), above.
 	public Integer ParseWindowLengths() {
-		// TODO
-		return 0;
+        if (delta_encoding_start_ != null) {
+            LOGGER.error("Internal error: VCDiffHeaderParser.ParseWindowLengths was called twice for the same delta window");
+            return_code_ = RESULT_ERROR;
+            return null;
+        }
+
+        delta_encoding_length_ = ParseSize("length of the delta encoding");
+        if (delta_encoding_length_ == null) {
+            return null;
+        }
+
+        delta_encoding_start_ = buffer.duplicate();
+        return ParseSize("size of the target window");
 	}
 
 	// May only be called after ParseWindowLengths() has returned RESULT_SUCCESS.
 	// Returns a pointer to the end of the delta window (which might not point to
 	// a valid memory location if there is insufficient input data.)
-	public int EndOfDeltaWindow() {
-		// TODO
-		return 0;
+	public Integer EndOfDeltaWindow() {
+        if (delta_encoding_start_ == null) {
+            LOGGER.error("Internal error: VCDiffHeaderParser.GetDeltaWindowEnd was called before ParseWindowLengths");
+            return null;
+        }
+        return delta_encoding_start_.position() + delta_encoding_length_;
 	}
 
 	// Parses the following element of the delta window header:
@@ -183,8 +258,15 @@ public class VCDiffHeaderParser {
 	// value of that field.  It may return RESULT_SUCCESS, RESULT_ERROR, or
 	// RESULT_END_OF_DATA as with the other Parse...() functions.
 	public boolean ParseDeltaIndicator() {
-		// TODO:	
-		return false;
+        Byte deltaIndicator = ParseByte();
+        if (deltaIndicator == null) {
+            return false;
+        }
+        if ((deltaIndicator & (VCD_DATACOMP | VCD_INSTCOMP | VCD_ADDRCOMP)) != 0) {
+            LOGGER.error("Secondary compression of delta file sections is not supported");
+            return false;
+        }
+        return true;
 	}
 
 	// Parses the following 3 elements of the delta window header:
@@ -200,14 +282,35 @@ public class VCDiffHeaderParser {
 	// Return conditions and values are the same as for
 	// ParseWinIndicatorAndSourceSegment(), above.
 	//
-	public boolean ParseSectionLengths(boolean has_checksum,
-			AtomicInteger add_and_run_data_length,
-			AtomicInteger instructions_and_sizes_length,
-			AtomicInteger addresses_length,
-			AtomicInteger checksum) {
-		// TODO
-		return false;
-	}
+    public SectionLengths ParseSectionLengths(boolean has_checksum) {
+        Integer add_and_run_data_length = ParseSize("length of data for ADDs and RUNs");
+        Integer instructions_and_sizes_length = ParseSize("length of instructions section");
+        Integer addresses_length = ParseSize("length of addresses for COPYs");
+        Integer checksum = null;
+        if (has_checksum) {
+            checksum = ParseChecksum("Adler32 checksum value");
+        }
+        if (RESULT_SUCCESS != return_code_) {
+            return null;
+        }
+        if (delta_encoding_start_ == null) {
+            LOGGER.error("Internal error: VCDiffHeaderParser.ParseSectionLengths was called before ParseWindowLengths");
+            return_code_ = RESULT_ERROR;
+            return null;
+        }
+
+        long delta_encoding_header_length = buffer.position() - delta_encoding_start_.position();
+        long expected_delta_encoding_length = delta_encoding_header_length + add_and_run_data_length +
+                instructions_and_sizes_length + addresses_length;
+
+        if (delta_encoding_length_ != expected_delta_encoding_length) {
+            LOGGER.error("The length of the delta encoding does not match the size of the header plus the sizes of the data sections");
+            return_code_ = RESULT_ERROR;
+            return null;
+        }
+
+        return new SectionLengths(add_and_run_data_length, instructions_and_sizes_length, addresses_length, checksum != null ? checksum : 0);
+    }
 
 	// If one of the Parse... functions returned false, this function
 	// can be used to find the result code (RESULT_ERROR or RESULT_END_OF_DATA)
@@ -217,8 +320,8 @@ public class VCDiffHeaderParser {
 		return return_code_;
 	}
 
-	public ByteBuffer getBuffer() {
-		return buffer;
+	public ByteBuffer unparsedData() {
+		return buffer.duplicate().asReadOnlyBuffer();
 	}
 
 	// Parses two variable-length integers representing the source segment length
@@ -239,12 +342,65 @@ public class VCDiffHeaderParser {
 	// source_segment_position (output): The parsed zero-based index in the
 	//     source/target file from which the source segment is to be taken.
 	//
-	protected boolean ParseSourceSegmentLengthAndPosition(int from_size,
-			Appendable from_boundary_name,
-			Appendable from_name,
-			AtomicInteger source_segment_length,
-			AtomicInteger source_segment_position) {
-		// TODO:
-		return false;
-	}
+    private DeltaWindowHeader ParseSourceSegmentLengthAndPosition(long from_size, byte win_indicator,
+                                                                  String from_boundary_name,
+                                                                  String from_name) {
+        // Verify the length and position values
+        Integer source_segment_length = ParseSize("source segment length");
+        if (source_segment_length == null) {
+            return null;
+        }
+        // Guard against overflow by checking source length first
+        if (source_segment_length > from_size) {
+            LOGGER.error( "Source segment length ({}) is larger than {} ({})",
+                    source_segment_length, from_name, from_size);
+            return_code_ = RESULT_ERROR;
+            return null;
+        }
+
+        Integer source_segment_position = ParseSize("source segment position");
+        if (source_segment_position == null) {
+            return null;
+        }
+        if ((source_segment_position >= from_size) && (source_segment_length > 0)) {
+            LOGGER.error("Source segment position ({}) is past {} ({})",
+                    source_segment_position, from_boundary_name, from_size);
+            return_code_ = RESULT_ERROR;
+            return null;
+        }
+        int source_segment_end = source_segment_position + source_segment_length;
+        if (source_segment_end > from_size) {
+            LOGGER.error("Source segment end position ({}) is past {} ({})",
+                    source_segment_end, from_boundary_name, from_size);
+            return_code_ = RESULT_ERROR;
+            return null;
+        }
+        return new DeltaWindowHeader(win_indicator, source_segment_length, source_segment_position);
+    }
+
+    public static final class DeltaWindowHeader {
+        public final byte win_indicator;
+        public final int source_segment_length;
+        public final int source_segment_position;
+
+        public DeltaWindowHeader(byte win_indicator, int source_segment_length, int source_segment_position) {
+            this.win_indicator = win_indicator;
+            this.source_segment_length = source_segment_length;
+            this.source_segment_position = source_segment_position;
+        }
+    }
+
+    public static final class SectionLengths {
+        public final int add_and_run_data_length;
+        public final int instructions_and_sizes_length;
+        public final int addresses_length;
+        public final int checksum;
+
+        public SectionLengths(int add_and_run_data_length, int instructions_and_sizes_length, int addresses_length, int checksum) {
+            this.add_and_run_data_length = add_and_run_data_length;
+            this.instructions_and_sizes_length = instructions_and_sizes_length;
+            this.addresses_length = addresses_length;
+            this.checksum = checksum;
+        }
+    }
 }

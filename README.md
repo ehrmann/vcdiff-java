@@ -2,9 +2,6 @@ An in-progress Java implementation of [VCDIFF](https://github.com/google/open-vc
 
 # TODO:
 ```
-./src/headerparser.cc
-./src/headerparser.h
-./src/headerparser_test.cc
 
 ./src/google/format_extension_flags.h
 

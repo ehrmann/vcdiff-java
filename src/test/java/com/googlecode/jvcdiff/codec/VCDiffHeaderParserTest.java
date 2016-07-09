@@ -13,11 +13,12 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package com.googlecode.jvcdiff;
+package com.googlecode.jvcdiff.codec;
 
+import com.googlecode.jvcdiff.VarInt;
+import org.junit.Assert;
 import org.junit.Test;
 
-import java.nio.BufferUnderflowException;
 import java.nio.ByteBuffer;
 import java.util.ArrayList;
 import java.util.List;
@@ -40,21 +41,21 @@ public class VCDiffHeaderParserTest {
         assertNotSame(buffer, parser.unparsedData());
     }
 
-    private void VerifyByte(byte expected_value) throws Exception {
+    private void VerifyByte(byte expected_value) {
         ByteBuffer unparsedData = parser.unparsedData();
         byte decoded_byte = parser.ParseByte();
         assertEquals(expected_value, decoded_byte);
         assertEquals(unparsedData.remaining() - 1, parser.unparsedData().remaining());
     }
 
-    private void VerifyInt32(int expected_value) throws VCDiffHeaderParser.ParseException {
+    private void VerifyInt32(int expected_value) {
         ByteBuffer prior_position = parser.unparsedData();
         int decoded_integer = parser.ParseInt32("decoded int32");
         assertEquals(expected_value, decoded_integer);
-        assertEquals(prior_position.remaining(), parser.unparsedData().remaining() + VarInt.calculateIntLength(decoded_integer));
+        Assert.assertEquals(prior_position.remaining(), parser.unparsedData().remaining() + VarInt.calculateIntLength(decoded_integer));
     }
 
-    private void VerifyUInt32(int expected_value) throws Exception {
+    private void VerifyUInt32(int expected_value) {
         ByteBuffer prior_position = parser.unparsedData();
         int decoded_integer = parser.ParseUInt32("decoded uint32");
         assertEquals(expected_value, decoded_integer);
@@ -62,7 +63,7 @@ public class VCDiffHeaderParserTest {
 
     }
 
-    private void VerifyChecksum(int expected_value) throws Exception {
+    private void VerifyChecksum(int expected_value) {
         ByteBuffer prior_position = parser.unparsedData();
         int decoded_checksum = parser.ParseChecksum("decoded checksum");
         assertEquals(expected_value, decoded_checksum);
@@ -70,7 +71,7 @@ public class VCDiffHeaderParserTest {
     }
 
     @Test
-    public void ParseRandomBytes() throws Exception {
+    public void ParseRandomBytes() {
         ByteBuffer encoded_buffer_ = ByteBuffer.allocate(kTestSize * 8);
         List<Byte> byte_values = new ArrayList<Byte>();
         for (int i = 0; i < kTestSize; ++i) {
@@ -85,16 +86,15 @@ public class VCDiffHeaderParserTest {
         for (int position = 0; position < kTestSize; ++position) {
             VerifyByte(byte_values.get(position));
         }
-        try {
-            parser.ParseByte();
-            fail();
-        } catch (BufferUnderflowException ignored) { }
+
+        assertNull(parser.ParseByte());
+        assertEquals(VCDiffHeaderParser.RESULT_END_OF_DATA, parser.GetResult());
 
         assertEquals(0, parser.unparsedData().remaining());
     }
 
     @Test
-    public void ParseRandomInt32() throws Exception {
+    public void ParseRandomInt32() {
         ByteBuffer encoded_buffer_ = ByteBuffer.allocate(kTestSize * 8);
         List<Integer> integer_values = new ArrayList<Integer>();
         for (int i = 0; i < kTestSize; ++i) {
@@ -110,16 +110,13 @@ public class VCDiffHeaderParserTest {
             VerifyInt32(integer_values.get(i));
         }
 
-        try {
-            parser.ParseInt32("decoded integer");
-            fail();
-        } catch (BufferUnderflowException ignored) { }
-
+        assertNull(parser.ParseInt32("decoded integer"));
+        assertEquals(VCDiffHeaderParser.RESULT_END_OF_DATA, parser.GetResult());
         assertEquals(0, parser.unparsedData().remaining());
     }
 
     @Test
-    public void ParseRandomUInt32() throws Exception {
+    public void ParseRandomUInt32() {
         ByteBuffer buffer = ByteBuffer.allocate(kTestSize * 8);
         List<Integer> integer_values = new ArrayList<Integer>();
         for (int i = 0; i < kTestSize; ++i) {
@@ -135,16 +132,13 @@ public class VCDiffHeaderParserTest {
             VerifyUInt32(integer_values.get(i));
         }
 
-        try {
-            parser.ParseUInt32("decoded integer");
-            fail();
-        } catch (BufferUnderflowException ignored) { }
-
+        assertNull(parser.ParseUInt32("decoded integer"));
+        assertEquals(VCDiffHeaderParser.RESULT_END_OF_DATA, parser.GetResult());
         assertEquals(0, parser.unparsedData().remaining());
     }
 
     @Test
-    public void ParseRandomChecksum() throws Exception {
+    public void ParseRandomChecksum() {
         ByteBuffer buffer = ByteBuffer.allocate(kTestSize * 8);
         List<Integer> checksum_values = new ArrayList<Integer>();
 
@@ -161,16 +155,13 @@ public class VCDiffHeaderParserTest {
             VerifyChecksum(checksum_values.get(i));
         }
 
-        try {
-            parser.ParseChecksum("decoded checksum");
-            fail();
-        } catch (BufferUnderflowException ignored) { }
-
+        assertNull(parser.ParseChecksum("decoded checksum"));
+        assertEquals(VCDiffHeaderParser.RESULT_END_OF_DATA, parser.GetResult());
         assertEquals(0, parser.unparsedData().remaining());
     }
 
     @Test
-    public void ParseMixed() throws Exception {
+    public void ParseMixed() {
         ByteBuffer buffer = ByteBuffer.allocate(64);
 
         VarInt.putLong(buffer, 0xCAFECAFE & 0xFFFFFFFFL);
@@ -188,11 +179,8 @@ public class VCDiffHeaderParserTest {
         VerifyInt32(0x02020202);
         VerifyChecksum(0xCAFECAFE);
 
-        try {
-            parser.ParseInt32("incomplete Varint");
-            fail();
-        } catch (BufferUnderflowException ignored) { }
-
+        parser.ParseInt32("incomplete Varint");
+        assertEquals(VCDiffHeaderParser.RESULT_END_OF_DATA, parser.GetResult());
         assertEquals(2, parser.unparsedData().remaining());
     }
 
@@ -211,20 +199,13 @@ public class VCDiffHeaderParserTest {
         ByteBuffer backup = buffer.duplicate();
         StartParsing(buffer);
 
-        try {
-            parser.ParseInt32("invalid Varint");
-            fail();
-        } catch (VCDiffHeaderParser.ParseException ignored) { }
+        assertNull(parser.ParseInt32("invalid Varint"));
 
         assertEquals(backup, parser.unparsedData());
 
         // After the parse failure, any other call to Parse... should return an error,
         // even though there is still a byte that could be read as valid.
-
-        try {
-            parser.ParseByte();
-            fail();
-        } catch (VCDiffHeaderParser.ParseException ignored) { }
+        assertNull(parser.ParseByte());
 
         assertEquals(backup, parser.unparsedData());
     }

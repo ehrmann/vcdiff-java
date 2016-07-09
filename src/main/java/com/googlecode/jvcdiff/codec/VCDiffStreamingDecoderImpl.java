@@ -476,11 +476,11 @@ public class VCDiffStreamingDecoderImpl implements VCDiffStreamingDecoder {
 		Integer same_cache_size = null;
 
 		VCDiffHeaderParser header_parser = new VCDiffHeaderParser(ByteBuffer.wrap(data_start, offset, length));
-		if ((near_cache_size = header_parser.ParseInt32()) == null) {
+		if ((near_cache_size = header_parser.ParseInt32("size of near cache")) == null) {
 			LOGGER.warn("Failed to parse size of near cache");
 			return header_parser.GetResult();
 		}
-		if ((same_cache_size = header_parser.ParseInt32()) == null) {
+		if ((same_cache_size = header_parser.ParseInt32("size of same cache")) == null) {
 			LOGGER.warn("Failed to parse size of same cache");
 			return header_parser.GetResult();
 		}
@@ -505,7 +505,7 @@ public class VCDiffStreamingDecoderImpl implements VCDiffStreamingDecoder {
 		custom_code_table_decoder_.StartDecoding(codeTableBytes);
 		custom_code_table_decoder_.SetPlannedTargetFileSize(codeTableBytes.length);
 
-		return header_parser.getBuffer().position();
+		return header_parser.unparsedData().position();
 	}
 
 	// If a custom code table was specified in the header section that was parsed

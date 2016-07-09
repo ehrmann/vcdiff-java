@@ -172,18 +172,20 @@ public class VCDiffDeltaFileWindow {
 		//
 		DecoratedByteArrayOutputStream decoded_target = parent_.decoded_target();
 		VCDiffHeaderParser header_parser = new VCDiffHeaderParser(parseable_chunk.slice());
-		final AtomicInteger source_segment_position = new AtomicInteger(0);
-		final AtomicInteger win_indicator = new AtomicInteger(0);
-		if (!header_parser.ParseWinIndicatorAndSourceSegment(
+
+		DeltaWindowHeader deltaWindowHeader = header_parser.ParseWinIndicatorAndSourceSegment(
 				parent_.dictionary_size(),
 				decoded_target.size(),
-				parent_.allow_vcd_target(),
-				win_indicator,
-				source_segment_length_,
-				source_segment_position)) {
+				parent_.allow_vcd_target()
+		);
+
+		if (deltaWindowHeader == null) {
 			return header_parser.GetResult();
 		}
-		has_checksum_ = parent_.AllowChecksum() && ((win_indicator.get() & VCD_CHECKSUM) != 0);
+
+        this.source_segment_length_.set(deltaWindowHeader.source_segment_length);
+
+		has_checksum_ = parent_.AllowChecksum() && ((deltaWindowHeader.win_indicator & VCD_CHECKSUM) != 0);
 		if ((target_window_length_ = header_parser.ParseWindowLengths()) == null) {
 			return header_parser.GetResult();
 		}
@@ -205,20 +207,20 @@ public class VCDiffDeltaFileWindow {
 		*/
 		
 		// Get a pointer to the start of the source segment.
-		if ((win_indicator.get() & VCD_SOURCE) != 0) {
+		if ((deltaWindowHeader.win_indicator & VCD_SOURCE) != 0) {
 			source_segment_ptr_ = ByteBuffer.wrap(parent_.dictionary_ptr());
-			source_segment_ptr_.position(source_segment_position.get());
-		} else if ((win_indicator.get() & VCD_TARGET) != 0) {
+			source_segment_ptr_.position(deltaWindowHeader.source_segment_position);
+		} else if ((deltaWindowHeader.win_indicator & VCD_TARGET) != 0) {
 			// This assignment must happen after the reserve().
 			// decoded_target should not be resized again while processing this window,
 			// so source_segment_ptr_ should remain valid.
 			source_segment_ptr_ = decoded_target.toByteBuffer();
-			source_segment_ptr_.position(source_segment_position.get());
+			source_segment_ptr_.position(deltaWindowHeader.source_segment_position);
 		}
 		// The whole window header was found and parsed successfully.
 		found_header_ = true;
 
-		parseable_chunk.position(parseable_chunk.position() + header_parser.getBuffer().position());
+		parseable_chunk.position(parseable_chunk.position() + header_parser.unparsedData().position());
 		parent_.AddToTotalTargetWindowSize(target_window_length_);
 		return RESULT_SUCCESS;
 	}
@@ -242,41 +244,40 @@ public class VCDiffDeltaFileWindow {
 	// if standard format is being used and there is not enough input data to read
 	// the entire window body.  Otherwise, returns RESULT_SUCCESS.
 	private int SetUpWindowSections(VCDiffHeaderParser header_parser) {
-		AtomicInteger add_and_run_data_length = new AtomicInteger(0);
-		AtomicInteger instructions_and_sizes_length = new AtomicInteger(0);
-		AtomicInteger addresses_length = new AtomicInteger(0);
-		if (!header_parser.ParseSectionLengths(has_checksum_,
-				add_and_run_data_length,
-				instructions_and_sizes_length,
-				addresses_length,
-				expected_checksum_)) {
+        SectionLengths sectionLengths = header_parser.ParseSectionLengths(has_checksum_);
+		if (sectionLengths == null) {
 			return header_parser.GetResult();
 		}
+
+        if (has_checksum_) {
+            this.expected_checksum_.set(sectionLengths.checksum);
+        }
+
 		if (parent_.AllowInterleaved() &&
-				(add_and_run_data_length.get() == 0) &&
-				(addresses_length.get() == 0)) {
+				(sectionLengths.add_and_run_data_length == 0) &&
+				(sectionLengths.addresses_length == 0)) {
 			// The interleaved format is being used.
-			interleaved_bytes_expected_ = instructions_and_sizes_length.get();
-			UpdateInterleavedSectionPointers(header_parser.getBuffer());
+			interleaved_bytes_expected_ = sectionLengths.instructions_and_sizes_length;
+			UpdateInterleavedSectionPointers(header_parser.unparsedData());
 		} else {
 			// If interleaved format is not used, then the whole window contents
 			// must be available before decoding can begin.  If only part of
 			// the current window is available, then report end of data
 			// and re-parse the whole header when DecodeChunk() is called again.
-			if (header_parser.getBuffer().remaining() < (add_and_run_data_length.get() +
-					instructions_and_sizes_length.get() +
-					addresses_length.get())) {
+			if (header_parser.unparsedData().remaining() < (sectionLengths.add_and_run_data_length +
+                    sectionLengths.instructions_and_sizes_length +
+                    sectionLengths.addresses_length)) {
 				return RESULT_END_OF_DATA;
 			}
 			
-			data_for_add_and_run_ = header_parser.getBuffer().slice();
-			data_for_add_and_run_.position(add_and_run_data_length.get());
+			data_for_add_and_run_ = header_parser.unparsedData().slice();
+			data_for_add_and_run_.position(sectionLengths.add_and_run_data_length);
 			
 			instructions_and_sizes_ = data_for_add_and_run_.slice();
-			instructions_and_sizes_.position(instructions_and_sizes_length.get());
+			instructions_and_sizes_.position(sectionLengths.instructions_and_sizes_length);
 			
 			addresses_for_copy_ = instructions_and_sizes_.slice();
-			addresses_for_copy_.position(instructions_and_sizes_length.get());
+			addresses_for_copy_.position(sectionLengths.instructions_and_sizes_length);
 			
 			data_for_add_and_run_.flip();
 			instructions_and_sizes_.flip();

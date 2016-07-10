@@ -38,7 +38,7 @@ public class VCDiffStreamingDecoderImpl implements VCDiffStreamingDecoder {
 	// It will also be used to concatenate those unparsed bytes with the data
 	// supplied to the next call to DecodeChunk(), so that they appear in
 	// contiguous memory.
-	private final IoBuffer unparsed_bytes_ = IoBuffer.allocate(256);
+	private IoBuffer unparsed_bytes_ = IoBuffer.allocate(0);
 
 	// The portion of the target file that has been decoded so far.  This will be
 	// used to fill the output string for DecodeChunk(), and will also be used to
@@ -136,7 +136,7 @@ public class VCDiffStreamingDecoderImpl implements VCDiffStreamingDecoder {
 			return;
 		}
 
-		unparsed_bytes_.clear();
+		unparsed_bytes_ = IoBuffer.allocate(0);
 		decoded_target_.reset();  // delta_window_.Reset() depends on this
 		Reset();
 		dictionary_ptr_ = dictionary_ptr;
@@ -149,11 +149,14 @@ public class VCDiffStreamingDecoderImpl implements VCDiffStreamingDecoder {
 			Reset();
 			return false;
 		}
+        // TODO: there's a lot of room for optimization here
 		IoBuffer parseable_chunk;
-		if (unparsed_bytes_.limit() > 0) {
-			unparsed_bytes_.put(data, offset, len);
-			parseable_chunk = unparsed_bytes_.duplicate();
-			parseable_chunk.flip();
+		if (unparsed_bytes_.remaining() > 0) {
+            parseable_chunk = IoBuffer.allocate(unparsed_bytes_.remaining() + len);
+            parseable_chunk.put(unparsed_bytes_);
+            parseable_chunk.put(data, offset, len);
+            parseable_chunk.flip();
+            unparsed_bytes_ = parseable_chunk.duplicate();
 		} else {
 			parseable_chunk = IoBuffer.wrap(data, offset, len);
 		}
@@ -184,9 +187,8 @@ public class VCDiffStreamingDecoderImpl implements VCDiffStreamingDecoder {
 			Reset();  // Don't allow further DecodeChunk calls
 			return false;
 		}
-		unparsed_bytes_.clear();
-		unparsed_bytes_.put(parseable_chunk);
-		unparsed_bytes_.flip();
+
+        unparsed_bytes_ = parseable_chunk;
 		AppendNewOutputText(output_string);
 		return true;
 	}
@@ -398,7 +400,12 @@ public class VCDiffStreamingDecoderImpl implements VCDiffStreamingDecoder {
 			return RESULT_SUCCESS;
 		}
 		int data_size = data.remaining();
-		final DeltaFileHeader header = new DeltaFileHeader(data.slice());
+
+        IoBuffer paddedHeaderData = IoBuffer.allocate(DeltaFileHeader.SERIALIZED_SIZE);
+        paddedHeaderData.put(data.slice().limit(Math.min(DeltaFileHeader.SERIALIZED_SIZE, data.remaining())));
+        paddedHeaderData.rewind();
+
+		final DeltaFileHeader header = new DeltaFileHeader(paddedHeaderData);
 		boolean wrong_magic_number = false;
 		switch (data_size) {
 		// Verify only the bytes that are available.
@@ -412,17 +419,17 @@ public class VCDiffStreamingDecoderImpl implements VCDiffStreamingDecoder {
 			}
 			// fall through
 		case 3:
-			if (header.header3 != 0xC4) {  // magic value 'D' | 0x80
+			if (header.header3 != (byte) 0xC4) {  // magic value 'D' | 0x80
 				wrong_magic_number = true;
 			}
 			// fall through
 		case 2:
-			if (header.header2 != 0xC3) {  // magic value 'C' | 0x80
+			if (header.header2 != (byte) 0xC3) {  // magic value 'C' | 0x80
 				wrong_magic_number = true;
 			}
 			// fall through
 		case 1:
-			if (header.header1 != 0xD6) {  // magic value 'V' | 0x80
+			if (header.header1 != (byte) 0xD6) {  // magic value 'V' | 0x80
 				wrong_magic_number = true;
 			}
 			// fall through
@@ -569,10 +576,10 @@ public class VCDiffStreamingDecoderImpl implements VCDiffStreamingDecoder {
 		ByteBuffer decoded_target_buffer = decoded_target_.toByteBuffer();
 		decoded_target_buffer.position(decoded_target_output_position_);
 
-		output_string.write(
-				decoded_target_buffer.array(),
-				decoded_target_buffer.arrayOffset() + decoded_target_buffer.position(),
-				decoded_target_buffer.remaining());
+        // TODO: optimize
+        while (decoded_target_buffer.hasRemaining()) {
+            output_string.write(decoded_target_buffer.get());
+        }
 
 		decoded_target_output_position_ = decoded_target_buffer.limit();
 	}

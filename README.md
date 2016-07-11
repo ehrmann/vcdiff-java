@@ -8,10 +8,6 @@ An in-progress Java implementation of [VCDIFF](https://github.com/google/open-vc
 ./src/google/vcdecoder.h
 ./src/google/vcencoder.
 
-./src/vcdecoder.cc
-
-./src/vcdecoder1_test.cc
-./src/vcdecoder2_test.cc
 ./src/vcdecoder3_test.cc
 ./src/vcdecoder4_test.cc
 ./src/vcdecoder5_test.cc

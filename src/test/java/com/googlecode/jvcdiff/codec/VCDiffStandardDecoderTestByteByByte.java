@@ -101,7 +101,7 @@ public class VCDiffStandardDecoderTestByteByByte extends VCDiffDecoderTest {
     }
 
     // Remove one byte from the length of the chunk to process, and
-// verify that an error is returned for FinishDecoding().
+    // verify that an error is returned for FinishDecoding().
     @Test
     public void FinishAfterDecodingPartialWindow() throws Exception {
         delta_file_ = Arrays.copyOf(delta_file_, delta_file_.length - 1);

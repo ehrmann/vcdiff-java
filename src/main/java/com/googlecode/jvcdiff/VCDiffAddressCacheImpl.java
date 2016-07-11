@@ -191,7 +191,7 @@ public class VCDiffAddressCacheImpl extends VCDiffAddressCache {
 	// Checks the given decoded address for validity.  Returns true if the
 	// address is valid; otherwise, prints an error message to the log and
 	// returns false.
-	static boolean IsDecodedAddressValid(int decoded_address, int here_address) {
+	private static boolean IsDecodedAddressValid(int decoded_address, int here_address) {
 		if (decoded_address < 0) {
 			LOGGER.warn("Decoded address {} is invalid", decoded_address);
 			return false;
@@ -243,7 +243,8 @@ public class VCDiffAddressCacheImpl extends VCDiffAddressCache {
 	@Override
 	public int DecodeAddress(int here_address, short vcDiffMode, ByteBuffer addressStream) {
 		if (here_address < 0) {
-			throw new IllegalArgumentException("DecodeAddress was passed a negative value for here_address: " + here_address);
+			LOGGER.warn("DecodeAddress was passed a negative value for here_address: {}", here_address);
+			return RESULT_ERROR;
 		}
 
 		if (addressStream.remaining() == 0) {

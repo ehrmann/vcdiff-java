@@ -156,8 +156,8 @@ public class BlockHashTest {
             padded_text_index = block_size - 1;
         }
 
-        for (int i = 0; i < bytes_without_spaces.length; ++i) {
-            padded_text[padded_text_index] = bytes_without_spaces[i];
+        for (byte bytes_without_space : bytes_without_spaces) {
+            padded_text[padded_text_index] = bytes_without_space;
             padded_text_index += block_size;
         }
 
@@ -447,14 +447,12 @@ public class BlockHashTest {
         try {
             th_.AddAllBlocksThroughIndex(index_of_fourth_e - 3);
             Assert.fail();
-        } catch (IllegalArgumentException e) {
-        }
+        } catch (IllegalArgumentException ignored) { }
 
         try {
             th_.AddAllBlocksThroughIndex(index_of_first_e + 1);
             Assert.fail();
-        } catch (IllegalArgumentException e) {
-        }
+        } catch (IllegalArgumentException ignored) { }
 
         Assert.assertEquals(block_of_first_e, th_.FirstMatchingBlock((int) hashed_e, test_string_e, 0));
         Assert.assertEquals(block_of_second_e, th_.NextMatchingBlock(block_of_first_e, test_string_e, 0));

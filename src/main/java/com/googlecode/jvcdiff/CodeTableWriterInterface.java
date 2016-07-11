@@ -22,7 +22,7 @@ public interface CodeTableWriterInterface<OUT> {
 	 * Writes the header to the output string.
 	 * @param format_extensions
 	 */
-	public void WriteHeader(OUT out, EnumSet<VCDiffFormatExtensionFlags> format_extensions) throws IOException;
+	void WriteHeader(OUT out, EnumSet<VCDiffFormatExtensionFlags> format_extensions) throws IOException;
 
 	/**
 	 * Encode an ADD opcode with the "size" bytes starting at data
@@ -30,21 +30,21 @@ public interface CodeTableWriterInterface<OUT> {
 	 * @param offset
 	 * @param length
 	 */
-	public void Add(byte[] data, int offset, int length);
+	void Add(byte[] data, int offset, int length);
 
 	/**
 	 * Encode a COPY opcode with args "offset" (into dictionary) and "size" bytes.
 	 * @param offset
 	 * @param size
 	 */
-	public void Copy(int offset, int size);
+	void Copy(int offset, int size);
 
 	/**
 	 * Encode a RUN opcode for "size" copies of the value "byte".
 	 * @param size
 	 * @param b
 	 */
-	public void Run(int size, byte b);
+	void Run(int size, byte b);
 
 	/**
 	 * Appends the encoded delta window to the output
@@ -52,24 +52,24 @@ public interface CodeTableWriterInterface<OUT> {
 	 * '\0' characters.
 	 * @param checksum
 	 */
-	public void AddChecksum(int checksum);
+	void AddChecksum(int checksum);
 
 	/**
 	 * Appends the encoded delta window to the output
 	 * string.  The output string is not null-terminated and may contain embedded
 	 * '\0' characters.
 	 */
-	public void Output(OUT out) throws IOException;
+	void Output(OUT out) throws IOException;
 
 	/**
 	 * Finishes encoding.
 	 */
-	public void FinishEncoding(OUT out) throws IOException;
+	void FinishEncoding(OUT out) throws IOException;
 
 	/**
 	 * Returns the number of target bytes processed, which is the sum of all the
 	 * size arguments passed to Add(), Copy(), and Run().
 	 * @return
 	 */
-	public int target_length();
+	int target_length();
 }

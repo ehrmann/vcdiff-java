@@ -255,14 +255,13 @@ public class VCDiffCodeTableWriter implements CodeTableWriterInterface<OutputStr
 
 	public int getDeltaWindowSize() {
 		final int length_of_the_delta_encoding = CalculateLengthOfTheDeltaEncoding();
-		final int delta_window_size =
-			length_of_the_delta_encoding +
-			1 +  // Win_Indicator
-			CalculateLengthOfSizeAsVarint(dictionary_size_) +
-			CalculateLengthOfSizeAsVarint(0) +
-			CalculateLengthOfSizeAsVarint(length_of_the_delta_encoding);
-
-		return delta_window_size;
+		return
+				length_of_the_delta_encoding +
+						1 +  // Win_Indicator
+						CalculateLengthOfSizeAsVarint(dictionary_size_) +
+						CalculateLengthOfSizeAsVarint(0) +
+						CalculateLengthOfSizeAsVarint(length_of_the_delta_encoding)
+				;
 	}
 
 	/**

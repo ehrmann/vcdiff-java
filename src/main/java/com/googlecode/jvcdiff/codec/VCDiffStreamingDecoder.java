@@ -11,7 +11,7 @@ public interface VCDiffStreamingDecoder {
 	 * contents are not copied, and the client is responsible for ensuring that
 	 * dictionary_ptr is valid until FinishDecoding is called.
 	 */
-	public abstract void StartDecoding(byte[] dictionary_ptr);
+	void StartDecoding(byte[] dictionary_ptr);
 
 	/**
 	 * Accepts "data[0,len-1]" as additional data received in the
@@ -30,7 +30,7 @@ public interface VCDiffStreamingDecoder {
 	 * of the number of calls to DecodeChunk().
 	 * @throws IOException 
 	 */
-	public abstract boolean DecodeChunk(byte[] data, int offset, int length, OutputStream output_string) throws IOException;
+	boolean DecodeChunk(byte[] data, int offset, int length, OutputStream output_string) throws IOException;
 
 	/**
 	 * Finishes decoding after all data has been received.  Returns true
@@ -40,7 +40,7 @@ public interface VCDiffStreamingDecoder {
 	 *
 	 * @return
 	 */
-	public abstract boolean FinishDecoding();
+	boolean FinishDecoding();
 
 	// *** Adjustable parameters ***
 
@@ -60,7 +60,7 @@ public interface VCDiffStreamingDecoder {
 	 * not change the limit.  Setting the limit to 0 will cause all decode
 	 * operations of non-empty target files to fail.
 	 */
-	public abstract boolean SetMaximumTargetFileSize(int new_maximum_target_file_size);
+	boolean SetMaximumTargetFileSize(int new_maximum_target_file_size);
 
 	/**
 	 * Specifies the maximum allowable target *window* size.  (A target file is
@@ -68,7 +68,7 @@ public interface VCDiffStreamingDecoder {
 	 * delta window that would cause it to create a target window larger
 	 * than this limit, it will log an error and stop decoding.
 	 */
-	public abstract boolean SetMaximumTargetWindowSize(int new_maximum_target_window_size);
+	boolean SetMaximumTargetWindowSize(int new_maximum_target_window_size);
 
 	/**
 	 * This interface must be called before StartDecoding().  If its argument
@@ -78,6 +78,6 @@ public interface VCDiffStreamingDecoder {
 	 * considered an error, and the decoder does not need to keep in memory any
 	 * decoded target data prior to the current window.
 	 */
-	public abstract void SetAllowVcdTarget(boolean allow_vcd_target);
+	void SetAllowVcdTarget(boolean allow_vcd_target);
 
 }

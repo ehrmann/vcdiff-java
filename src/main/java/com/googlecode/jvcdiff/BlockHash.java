@@ -551,7 +551,7 @@ public class BlockHash {
 			// Add this entry at the end of the chain of matching blocks
 			final int last_matching_block = last_block_table[first_matching_block];
 			if (next_block_table[last_matching_block] != -1) {
-				LOGGER.error("Internal error in BlockHash::AddBlock(): first matching block = {}, last matching block = {}, next block should be -1 but is {}", new Object[] { first_matching_block, last_matching_block, next_block_table[last_matching_block] });
+				LOGGER.error("Internal error in BlockHash::AddBlock(): first matching block = {}, last matching block = {}, next block should be -1 but is {}", first_matching_block, last_matching_block, next_block_table[last_matching_block]);
 				return;
 			}
 			next_block_table[last_matching_block] = block_number;

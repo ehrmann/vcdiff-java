@@ -296,14 +296,14 @@ public class VCDiffStreamingDecoderImpl implements VCDiffStreamingDecoder {
 				planned_target_file_size_ - total_of_target_window_sizes_;
 			if (window_size > remaining_planned_target_file_size) {
 				LOGGER.error("Length of target window ({} bytes) plus previous windows ({} bytes) would exceed planned size of {} bytes",
-						new Object[] { window_size, total_of_target_window_sizes_, planned_target_file_size_ });
+                        window_size, total_of_target_window_sizes_, planned_target_file_size_);
 				return true;
 			}
 		}
 		int remaining_maximum_target_bytes = maximum_target_file_size_ - total_of_target_window_sizes_;
 		if (window_size > remaining_maximum_target_bytes) {
 			LOGGER.error("Length of target window ({} bytes) plus previous windows ({} bytes) would exceed maximum target file size of {} bytes",
-					new Object[] { window_size, total_of_target_window_sizes_, maximum_target_file_size_} );
+                    window_size, total_of_target_window_sizes_, maximum_target_file_size_);
 			return true;
 		}
 		return false;
@@ -479,8 +479,8 @@ public class VCDiffStreamingDecoderImpl implements VCDiffStreamingDecoder {
 	private int InitCustomCodeTable(byte[] data_start, int offset, int length) {
 		// A custom code table is being specified.  Parse the variable-length
 		// cache sizes and begin parsing the encoded custom code table.
-		Integer near_cache_size = null;
-		Integer same_cache_size = null;
+		Integer near_cache_size;
+		Integer same_cache_size;
 
 		VCDiffHeaderParser header_parser = new VCDiffHeaderParser(ByteBuffer.wrap(data_start, offset, length));
 		if ((near_cache_size = header_parser.ParseInt32("size of near cache")) == null) {
@@ -590,13 +590,11 @@ public class VCDiffStreamingDecoderImpl implements VCDiffStreamingDecoder {
 	// allow_vcd_target is false.  In that case, there is no need to retain
 	// target data from any window except the current window.
 	private void FlushDecodedTarget(OutputStream output_string) throws IOException {
-		ByteBuffer decoded_target_buffer = decoded_target_.toByteBuffer();
-		decoded_target_buffer.position(decoded_target_output_position_);
-
-		output_string.write(
-				decoded_target_buffer.array(),
-				decoded_target_buffer.arrayOffset() + decoded_target_buffer.position(),
-				decoded_target_buffer.remaining());
+        output_string.write(
+                decoded_target_.getBuffer(),
+                decoded_target_output_position_,
+                decoded_target_.size() - decoded_target_output_position_
+        );
 
 		decoded_target_.reset();
 		delta_window_.set_target_window_start_pos(0);
@@ -615,5 +613,9 @@ public class VCDiffStreamingDecoderImpl implements VCDiffStreamingDecoder {
 		public synchronized ByteBuffer toByteBuffer() {
 			return ByteBuffer.wrap(buf, 0, count).asReadOnlyBuffer();
 		}
+
+        public byte[] getBuffer() {
+            return buf;
+        }
 	}
 }

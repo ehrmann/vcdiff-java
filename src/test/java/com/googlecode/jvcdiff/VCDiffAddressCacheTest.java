@@ -300,7 +300,6 @@ public class VCDiffAddressCacheTest {
         assertEquals(VCDiffAddressCache.RESULT_ERROR, cache.DecodeAddress(0x10000000, (short) 0xFF, buffer));
     }
 
-    @Test(expected = IllegalArgumentException.class)
     public void DecodeZeroOrNegativeHereAddress1() {
         ByteBuffer buffer = ByteBuffer.allocate(2048);
         VarInt.putInt(buffer, 0xCAFE);
@@ -308,7 +307,7 @@ public class VCDiffAddressCacheTest {
 
         VCDiffAddressCacheImpl cache = new VCDiffAddressCacheImpl();
         cache.Init();
-        cache.DecodeAddress(-1, VCDiffAddressCache.VCD_SELF_MODE, buffer);
+        assertEquals(VCDiffAddressCache.RESULT_ERROR, cache.DecodeAddress(-1, VCDiffAddressCache.VCD_SELF_MODE, buffer));
     }
 
     @Test

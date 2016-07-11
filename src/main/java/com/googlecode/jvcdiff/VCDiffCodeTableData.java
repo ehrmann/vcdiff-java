@@ -267,27 +267,27 @@ public class VCDiffCodeTableData implements Cloneable {
 
 		// Check upper and lower limits of inst and mode.
 		if (inst > VCD_LAST_INSTRUCTION_TYPE || inst < 0) {
-			LOGGER.warn("VCDiff: Bad code table; opcode {} has invalid {} instruction type {}", new Object[] { opcode, first_or_second, inst });
+			LOGGER.warn("VCDiff: Bad code table; opcode {} has invalid {} instruction type {}", opcode, first_or_second, inst);
 			no_errors_found = false;
 		}
 		if (mode > max_mode || mode < 0) {
-			LOGGER.warn("VCDiff: Bad code table; opcode {} has invalid {} mode {}", new Object[] { opcode, first_or_second, mode });
+			LOGGER.warn("VCDiff: Bad code table; opcode {} has invalid {} mode {}", opcode, first_or_second, mode);
 			no_errors_found = false;
 		}
 		// A NOOP instruction must have size 0
 		// (and mode 0, which is included in the next rule)
 		if ((inst == VCD_NOOP) && (size != 0)) {
-			LOGGER.warn("VCDiff: Bad code table; opcode {} has {} instruction NOOP with nonzero size {}", new Object[] { opcode, first_or_second, size });
+			LOGGER.warn("VCDiff: Bad code table; opcode {} has {} instruction NOOP with nonzero size {}", opcode, first_or_second, size);
 			no_errors_found = false;
 		}
 		// Size is less than 0
 		if (size < 0) {
-			LOGGER.warn("VCDiff: Bad code table; opcode {} has {} instruction with size less than zero {}", new Object[] { opcode, first_or_second, size });
+			LOGGER.warn("VCDiff: Bad code table; opcode {} has {} instruction with size less than zero {}", opcode, first_or_second, size);
 			no_errors_found = false;
 		}
 		// A nonzero mode can only be used with a COPY instruction
 		if ((inst != VCD_COPY) && (mode != 0)) {
-			LOGGER.warn("VCDiff: Bad code table; opcode {} has non-COPY {} instruction with nonzero mode {}", new Object[] { opcode, first_or_second, mode });
+			LOGGER.warn("VCDiff: Bad code table; opcode {} has non-COPY {} instruction with nonzero mode {}", opcode, first_or_second, mode);
 			no_errors_found = false;
 		}
 

@@ -71,8 +71,8 @@ public abstract class VCDiffEngineTest {
             padded_text_index = block_size - 1;
         }
 
-        for (int i = 0; i < bytes_without_spaces.length; ++i) {
-            padded_text[padded_text_index] = bytes_without_spaces[i];
+        for (byte bytes_without_space : bytes_without_spaces) {
+            padded_text[padded_text_index] = bytes_without_space;
             padded_text_index += block_size;
         }
 

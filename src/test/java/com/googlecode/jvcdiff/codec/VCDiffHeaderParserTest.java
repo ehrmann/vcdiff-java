@@ -98,7 +98,7 @@ public class VCDiffHeaderParserTest {
         ByteBuffer encoded_buffer_ = ByteBuffer.allocate(kTestSize * 8);
         List<Integer> integer_values = new ArrayList<Integer>();
         for (int i = 0; i < kTestSize; ++i) {
-            int random_integer = random.nextInt();
+            int random_integer = random.nextInt() & Integer.MAX_VALUE;
             VarInt.putInt(encoded_buffer_, random_integer);
             integer_values.add(random_integer);
         }

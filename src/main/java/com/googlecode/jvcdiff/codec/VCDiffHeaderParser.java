@@ -38,7 +38,7 @@ public class VCDiffHeaderParser {
 	// parsed length of the delta encoding.
 	protected Integer delta_encoding_length_;
 
-	protected ByteBuffer buffer;
+	protected final ByteBuffer buffer;
     protected ByteBuffer delta_encoding_start_;
 
 	public VCDiffHeaderParser(ByteBuffer buffer) {
@@ -264,6 +264,7 @@ public class VCDiffHeaderParser {
         }
         if ((deltaIndicator & (VCD_DATACOMP | VCD_INSTCOMP | VCD_ADDRCOMP)) != 0) {
             LOGGER.error("Secondary compression of delta file sections is not supported");
+            return_code_ = RESULT_ERROR;
             return false;
         }
         return true;

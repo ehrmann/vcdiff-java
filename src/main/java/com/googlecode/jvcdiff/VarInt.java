@@ -11,19 +11,24 @@ public class VarInt {
 		int result = 0;
 
 		while (true) {
-			if (!buffer.hasRemaining()) {
-				throw new VarIntEndOfBufferException();
-			}
-			if (buffer.position() - startPosition >= 5) {
-				throw new VarIntParseException("Data too long for a 32-bit int");
-			}
+            if (!buffer.hasRemaining()) {
+                throw new VarIntEndOfBufferException();
+            }
+            if (buffer.position() - startPosition >= 5) {
+                throw new VarIntParseException("Data too long for a 32-bit int");
+            }
 
-			byte b = buffer.get();
-			result += b & 0x7F;
+            byte b = buffer.get();
+            result += b & 0x7F;
 
-			if ((b & 0x80) == 0) {
-				return result;
-			}
+            if ((b & 0x80) == 0) {
+                return result;
+            }
+            if (result > (Integer.MAX_VALUE >> 7)) {
+                // Shifting result by 7 bits would produce a number too large
+                // to be stored in a non-negative int (an overflow)
+                throw new VarIntParseException("Value too large to fit in an int");
+            }
 
 			result <<= 7;
 		}
@@ -45,8 +50,16 @@ public class VarInt {
 			result += b & 0x7F;
 
 			if ((b & 0x80) == 0) {
+                if (result < 0) {
+                    new Exception().printStackTrace();
+                }
 				return result;
 			}
+            if (result > (Long.MAX_VALUE >> 7)) {
+                // Shifting result by 7 bits would produce a number too large
+                // to be stored in a non-negative int (an overflow)
+                throw new VarIntParseException("Value too large to fit in an int");
+            }
 			
 			result <<= 7;
 		}
@@ -131,6 +144,6 @@ public class VarInt {
 	
 	public static class VarIntEndOfBufferException extends Exception {
 		private static final long serialVersionUID = -2989212562402509511L;
-		protected VarIntEndOfBufferException() { };
+		protected VarIntEndOfBufferException() { }
 	}
 }

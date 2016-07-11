@@ -103,6 +103,7 @@ public class RollingHashTest {
     }
 
     private void BM_DefaultHash(int kBlockSize, int iterations, byte[] buffer) {
+        // TODO: why is result_array never read?
         RollingHash hasher = new RollingHash(kBlockSize);
         long result_array[] = new long[kUpdateHashBlocks];
         for (int iter = 0; iter < iterations; ++iter) {
@@ -114,7 +115,7 @@ public class RollingHashTest {
 
     private void BM_UpdateHash(int kBlockSize, int iterations, byte[] buffer) {
         RollingHash hasher = new RollingHash(kBlockSize);
-
+        // TODO: why is result_array never read?
         long[] result_array = new long[kUpdateHashBlocks];
         for (int iter = 0; iter < iterations; ++iter) {
             long running_hash = hasher.Hash(buffer, 0, buffer.length);

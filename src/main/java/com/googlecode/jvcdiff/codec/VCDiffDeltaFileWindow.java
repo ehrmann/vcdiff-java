@@ -2,6 +2,7 @@ package com.googlecode.jvcdiff.codec;
 
 import com.googlecode.jvcdiff.VCDiffCodeTableData;
 import com.googlecode.jvcdiff.VCDiffCodeTableReader;
+import com.googlecode.jvcdiff.VarInt;
 import com.googlecode.jvcdiff.codec.VCDiffStreamingDecoderImpl.DecoratedByteArrayOutputStream;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -88,7 +89,7 @@ public class VCDiffDeltaFileWindow {
 			}
 			// FIXME: ?
 			UpdateInterleavedSectionPointers(parseable_chunk);
-			reader_.UpdatePointers(instructions_and_sizes_.slice());
+			reader_.UpdatePointers(instructions_and_sizes_);
 		}
 		switch (DecodeBody(parseable_chunk)) {
 		case RESULT_END_OF_DATA:
@@ -249,8 +250,20 @@ public class VCDiffDeltaFileWindow {
 			return header_parser.GetResult();
 		}
 
+        // KLUDGE: this code knows what the structure of the data looks like
+        int parsed_delta_encoding_length =
+                VarInt.calculateIntLength(target_window_length_)
+                        + 1
+                        + VarInt.calculateIntLength(sectionLengths.add_and_run_data_length)
+                        + VarInt.calculateIntLength(sectionLengths.addresses_length)
+                        + VarInt.calculateIntLength(sectionLengths.instructions_and_sizes_length)
+                        + sectionLengths.add_and_run_data_length
+                        + sectionLengths.addresses_length
+                        + sectionLengths.instructions_and_sizes_length;
+
         if (has_checksum_) {
             this.expected_checksum_.set(sectionLengths.checksum);
+            parsed_delta_encoding_length += VarInt.calculateIntLength(sectionLengths.checksum);
         }
 
 		if (parent_.AllowInterleaved() &&
@@ -277,18 +290,19 @@ public class VCDiffDeltaFileWindow {
 			instructions_and_sizes_.position(sectionLengths.instructions_and_sizes_length);
 			
 			addresses_for_copy_ = instructions_and_sizes_.slice();
-			addresses_for_copy_.position(sectionLengths.instructions_and_sizes_length);
+			addresses_for_copy_.position(sectionLengths.addresses_length);
 			
 			data_for_add_and_run_.flip();
 			instructions_and_sizes_.flip();
 			addresses_for_copy_.flip();
-			
-			if (addresses_for_copy_.arrayOffset() + addresses_for_copy_.limit() != header_parser.EndOfDeltaWindow()) {
+
+            if (header_parser.delta_encoding_length_ != parsed_delta_encoding_length) {
 				LOGGER.error("The end of the instructions section does not match the end of the delta window");
 				return RESULT_ERROR;
 			}
 		}
-		reader_.Init(instructions_and_sizes_.slice());
+
+		reader_.Init(instructions_and_sizes_);
 		return RESULT_SUCCESS;
 	}
 
@@ -303,6 +317,7 @@ public class VCDiffDeltaFileWindow {
 	// parent->decoded_target().
 	//
 	private int DecodeBody(ByteBuffer parseable_chunk) {
+        // FIXME: the ByteBuffer logic is probably bad
 		if (IsInterleaved() &&
 				(instructions_and_sizes_.array() != parseable_chunk.array() ||
 						instructions_and_sizes_.arrayOffset() + instructions_and_sizes_.position() != parseable_chunk.arrayOffset() + parseable_chunk.position())) {
@@ -330,7 +345,7 @@ public class VCDiffDeltaFileWindow {
 			if ((size > target_window_length_) ||
 					((size + TargetBytesDecoded()) > target_window_length_)) {
 				LOGGER.error("{} with size {} plus existing {} bytes of target data exceeds length of target window ({} bytes)",
-						new Object[] { VCDiffCodeTableData.VCDiffInstructionName(instruction), size, TargetBytesDecoded(), target_window_length_ });
+                        VCDiffCodeTableData.VCDiffInstructionName(instruction), size, TargetBytesDecoded(), target_window_length_);
 				return RESULT_ERROR;
 			}
 			int result = RESULT_SUCCESS;
@@ -396,7 +411,14 @@ public class VCDiffDeltaFileWindow {
 			}
 			// Reached the end of the window.  Update the ParseableChunk to point to the
 			// end of the addresses section, which is the last section in the window.
-			setPosition(parseable_chunk, addresses_for_copy_);
+
+            // FIXME:
+			// setPosition(parseable_chunk, addresses_for_copy_);
+            parseable_chunk.position(
+                    parseable_chunk.position() +
+                            instructions_and_sizes_.limit() +
+                            data_for_add_and_run_.limit() +
+                            addresses_for_copy_.limit());
 		} else {
 			// Interleaved format is being used.
 			UpdateInstructionPointer(parseable_chunk);
@@ -415,8 +437,7 @@ public class VCDiffDeltaFileWindow {
 			return RESULT_END_OF_DATA;
 		}
 		// Write the next "size" data bytes
-		CopyBytes(data_for_add_and_run_.array(), data_for_add_and_run_.arrayOffset() + data_for_add_and_run_.position(), size);
-		data_for_add_and_run_.position(data_for_add_and_run_.position() + size);
+        CopyBytes(data_for_add_and_run_, size);
 		return RESULT_SUCCESS;
 	}
 
@@ -439,7 +460,7 @@ public class VCDiffDeltaFileWindow {
 		final int decoded_address = parent_.addr_cache().DecodeAddress(
 				here_address,
 				mode,
-				addresses_for_copy_.slice());
+				addresses_for_copy_);
 		switch (decoded_address) {
 		case RESULT_ERROR:
 			LOGGER.error("Unable to decode address for COPY");
@@ -454,19 +475,19 @@ public class VCDiffDeltaFileWindow {
 			}
 			break;
 		}
+
+        // TODO: source_segment_length should be source_segment_ptr_.remaining()
 		int address = decoded_address;
 		if ((address + size) <= source_segment_length_.get()) {
 			// Copy all data from source segment
-			CopyBytes(source_segment_ptr_.array(),
-					source_segment_ptr_.arrayOffset() + source_segment_ptr_.position() + address, size);
+			CopyBytes((ByteBuffer) source_segment_ptr_.slice().position(address), size);
 			return RESULT_SUCCESS;
 		}
 		// Copy some data from target window...
 		if (address < source_segment_length_.get()) {
 			// ... plus some data from source segment
 			final int partial_copy_size = source_segment_length_.get() - address;
-			CopyBytes(source_segment_ptr_.array(),
-					source_segment_ptr_.arrayOffset() + source_segment_ptr_.position() + address, partial_copy_size);
+			CopyBytes((ByteBuffer) source_segment_ptr_.slice().position(address), partial_copy_size);
 			target_bytes_decoded += partial_copy_size;
 			address += partial_copy_size;
 			size -= partial_copy_size;
@@ -475,18 +496,23 @@ public class VCDiffDeltaFileWindow {
 		// address is now based at start of target window
 		// const char* const target_segment_ptr = parent_.decoded_target().data() + target_window_start_pos_;
 		
-		final ByteBuffer target_segment = parent_.decoded_target().toByteBuffer();
+		ByteBuffer target_segment = parent_.decoded_target().toByteBuffer();
 		target_segment.position(target_window_start_pos_);
 		
 		while (size > (target_bytes_decoded - address)) {
 			// Recursive copy that extends into the yet-to-be-copied target data
 			final int partial_copy_size = target_bytes_decoded - address;
-			CopyBytes(target_segment.array(), target_segment.arrayOffset() + target_segment.position() + address, partial_copy_size);
+            // TODO: does target_segment need to be recreated each time?
+            CopyBytes((ByteBuffer) target_segment.slice().position(address), partial_copy_size);
 			target_bytes_decoded += partial_copy_size;
 			address += partial_copy_size;
 			size -= partial_copy_size;
+
+            // This might not be needed, but refresh target_segment since bytes were just copied into target
+            target_segment = parent_.decoded_target().toByteBuffer();
+            target_segment.position(target_window_start_pos_);
 		}
-		CopyBytes(target_segment.array(),  target_segment.arrayOffset() + target_segment.position() + address, size);
+        CopyBytes((ByteBuffer) target_segment.slice().position(address), size);
 		return RESULT_SUCCESS;
 	}
 
@@ -520,11 +546,14 @@ public class VCDiffDeltaFileWindow {
 		return (addresses_for_copy_ == instructions_and_sizes_ && data_for_add_and_run_ == instructions_and_sizes_);
 	}
 
-	// Executes a single COPY or ADD instruction, appending data to
-	// parent_->decoded_target().
-	private void CopyBytes(byte[] data, int offset, int size) {
-		parent_.decoded_target().write(data, offset, size);
-	}
+    // Executes a single COPY or ADD instruction, appending data to
+    // parent_->decoded_target().
+    private void CopyBytes(ByteBuffer buffer, int size) {
+        // TODO: optimize
+        while (size-- > 0) {
+            parent_.decoded_target().write(buffer.get());
+        }
+    }
 
 	// Executes a single RUN instruction, appending data to
 	// parent_->decoded_target().
@@ -608,5 +637,5 @@ public class VCDiffDeltaFileWindow {
 
 	private final Adler32 adler32 = new Adler32(); 
 
-	private VCDiffCodeTableReader reader_;
+	private VCDiffCodeTableReader reader_ = new VCDiffCodeTableReader();
 }

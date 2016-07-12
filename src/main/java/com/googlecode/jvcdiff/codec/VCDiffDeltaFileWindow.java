@@ -62,13 +62,6 @@ public class VCDiffDeltaFileWindow {
 	// just after the data that has been decoded.
 	//
 	public int DecodeWindow(ByteBuffer parseable_chunk) {
-		// TODO
-		/*
-		if (!parent_) {
-			LOGGER.error("Internal error: VCDiffDeltaFileWindow::DecodeWindow() called before VCDiffDeltaFileWindow::Init()";
-			return RESULT_ERROR;
-		}
-		 */
 		if (!found_header_) {
 			switch (ReadHeader(parseable_chunk)) {
 			case RESULT_END_OF_DATA:
@@ -199,8 +192,8 @@ public class VCDiffDeltaFileWindow {
 		if (RESULT_SUCCESS != setup_return_code) {
 			return setup_return_code;
 		}
-		// Reserve enough space in the output string for the current target window.
 		/*
+		// Reserve enough space in the output string for the current target window.
 		final int wanted_capacity = target_window_start_pos_ + target_window_length_;
 		if (decoded_target.capacity() < wanted_capacity) {
 			decoded_target.reserve(wanted_capacity);
@@ -282,7 +275,7 @@ public class VCDiffDeltaFileWindow {
                     sectionLengths.addresses_length)) {
 				return RESULT_END_OF_DATA;
 			}
-			
+
 			data_for_add_and_run_ = header_parser.unparsedData().slice();
 			data_for_add_and_run_.position(sectionLengths.add_and_run_data_length);
 			
@@ -291,7 +284,7 @@ public class VCDiffDeltaFileWindow {
 			
 			addresses_for_copy_ = instructions_and_sizes_.slice();
 			addresses_for_copy_.position(sectionLengths.addresses_length);
-			
+
 			data_for_add_and_run_.flip();
 			instructions_and_sizes_.flip();
 			addresses_for_copy_.flip();
@@ -317,11 +310,8 @@ public class VCDiffDeltaFileWindow {
 	// parent->decoded_target().
 	//
 	private int DecodeBody(ByteBuffer parseable_chunk) {
-        // FIXME: the ByteBuffer logic is probably bad
-		if (IsInterleaved() &&
-				(instructions_and_sizes_.array() != parseable_chunk.array() ||
-						instructions_and_sizes_.arrayOffset() + instructions_and_sizes_.position() != parseable_chunk.arrayOffset() + parseable_chunk.position())) {
-				
+        // remaining() isn't perfect, here
+		if (IsInterleaved() && instructions_and_sizes_.remaining() != parseable_chunk.remaining()) {
 			LOGGER.error("Internal error: interleaved format is used, but the input pointer does not point to the instructions section");
 			return RESULT_ERROR;
 		}
@@ -380,12 +370,8 @@ public class VCDiffDeltaFileWindow {
 			return RESULT_ERROR;
 		}
 		
-		final ByteBuffer target_window = parent_.decoded_target().toByteBuffer();
-		target_window.position(target_window_start_pos_);
-		target_window.limit(target_window_start_pos_ + target_window_length_);
-		
 		if (has_checksum_) {
-			adler32.update(target_window.array(), target_window.arrayOffset() + target_window.position(), target_window.remaining());
+			adler32.update(parent_.decoded_target().getBuffer(), target_window_start_pos_, target_window_length_);
 			int checksum = (int)adler32.getValue();
 			adler32.reset();
 
@@ -412,8 +398,6 @@ public class VCDiffDeltaFileWindow {
 			// Reached the end of the window.  Update the ParseableChunk to point to the
 			// end of the addresses section, which is the last section in the window.
 
-            // FIXME:
-			// setPosition(parseable_chunk, addresses_for_copy_);
             parseable_chunk.position(
                     parseable_chunk.position() +
                             instructions_and_sizes_.limit() +
@@ -520,9 +504,9 @@ public class VCDiffDeltaFileWindow {
 	// the header and on resuming after a RESULT_END_OF_DATA was returned from a
 	// previous call to DecodeBody().  It sets up all three section pointers to
 	// reference the same interleaved stream of instructions, sizes, addresses,
-	// and data.  These pointers must be reset every time that work resumes on a
-	// delta window,  because the input data string may have been changed or
-	// resized since DecodeBody() last returned.
+    // and data.  These pointers must be reset every time that work resumes on a
+    // delta window,  because the input data string may have been changed or
+    // resized since DecodeBody() last returned.
 	private void UpdateInterleavedSectionPointers(ByteBuffer data) {
 		instructions_and_sizes_ = data.slice();
 
@@ -537,13 +521,13 @@ public class VCDiffDeltaFileWindow {
 
 	// If true, the interleaved format described in AllowInterleaved() is used
 	// for the current delta file.  Only valid after ReadWindowHeader() has been
-	// called and returned a positive number (i.e., the whole header was parsed),
-	// but before the window has finished decoding.
+    // called and returned a positive number (i.e., the whole header was parsed),
+    // but before the window has finished decoding.
 	//
 	private boolean IsInterleaved() {
 		// If the sections are interleaved, both addresses_for_copy_ and
 		// data_for_add_and_run_ should point at instructions_and_sizes_.
-		return (addresses_for_copy_ == instructions_and_sizes_ && data_for_add_and_run_ == instructions_and_sizes_);
+		return addresses_for_copy_ == instructions_and_sizes_ && data_for_add_and_run_ == instructions_and_sizes_;
 	}
 
     // Executes a single COPY or ADD instruction, appending data to
@@ -574,22 +558,6 @@ public class VCDiffDeltaFileWindow {
 			interleaved_bytes_expected_ -= bytes_parsed;
 			parseable_chunk.position(parseable_chunk.position() + bytes_parsed);
 		}
-	}
-
-	private static boolean byteBufferEquals(ByteBuffer a, ByteBuffer b) {
-		if (!a.hasArray() || !b.hasArray()) {
-			return false;
-		} else if (a.array() != b.array()) {
-			return false;
-		} else if (a.arrayOffset() + a.position() != b.arrayOffset() + b.position()) {
-			return false;
-		} else {
-			return true;
-		}
-	}
-	
-	private static void setPosition(ByteBuffer destination, ByteBuffer source) {
-		destination.position((source.arrayOffset() + source.position()) - source.arrayOffset());
 	}
 	
 	// The parent object which was passed to Init().

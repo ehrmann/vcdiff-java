@@ -2,6 +2,8 @@ package com.googlecode.jvcdiff.codec;
 
 import com.googlecode.jvcdiff.mina_buffer.IoBuffer;
 
+import java.nio.ByteBuffer;
+
 public class DeltaFileHeader {
 	public static final int SERIALIZED_SIZE = 5;
 
@@ -11,7 +13,7 @@ public class DeltaFileHeader {
 	public final byte header4;  // 0x00 for standard format, 'S' if extensions used
 	public final byte hdr_indicator;
 
-	public DeltaFileHeader(IoBuffer buffer) {
+	public DeltaFileHeader(ByteBuffer buffer) {
 		header1 = buffer.get();
 		header2 = buffer.get();
 		header3 = buffer.get();

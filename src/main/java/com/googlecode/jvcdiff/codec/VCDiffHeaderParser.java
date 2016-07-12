@@ -96,11 +96,11 @@ public class VCDiffHeaderParser {
 		try {
 			return VarInt.getInt(buffer);
 		} catch (VarIntParseException e) {
+            LOGGER.error("Expected {}; found invalid variable-length integer", variable_description);
             return_code_ = RESULT_ERROR;
             buffer.reset();
 			return null;
 		} catch (VarIntEndOfBufferException e) {
-            LOGGER.error("Expected {}; found invalid variable-length integer", variable_description);
             return_code_ = RESULT_END_OF_DATA;
             buffer.reset();
 			return null;
@@ -129,6 +129,7 @@ public class VCDiffHeaderParser {
 			return_code_ = RESULT_END_OF_DATA;
 			buffer.reset();
 		} catch (VarInt.VarIntParseException e) {
+            LOGGER.error("Expected {}; found invalid variable-length integer", variable_description);
             return_code_ = RESULT_ERROR;
             buffer.reset();
 		}
@@ -211,7 +212,7 @@ public class VCDiffHeaderParser {
                 return_code_ = RESULT_ERROR;
                 return null;
             default:
-                return new DeltaWindowHeader(win_indicator, -1, -1);
+                return new DeltaWindowHeader(win_indicator, 0, 0);
         }
     }
 

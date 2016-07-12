@@ -1,10 +1,17 @@
 package com.googlecode.jvcdiff;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 import java.io.IOException;
 import java.io.OutputStream;
 import java.nio.ByteBuffer;
 
-public class VarInt {
+public final class VarInt {
+
+    private static final Logger LOGGER = LoggerFactory.getLogger(VarInt.class);
+
+    private VarInt() { }
 
 	public static int getInt(ByteBuffer buffer) throws VarIntParseException, VarIntEndOfBufferException {
 		final int startPosition = buffer.position();
@@ -66,6 +73,11 @@ public class VarInt {
 	}
 
 	public static void putInt(ByteBuffer dest, int val) {
+        if (val < 0) {
+            LOGGER.error("Negative value {} passed to VarintBE::EncodeInternal, which requires non-negative argument", val);
+            throw new IllegalArgumentException();
+        }
+
 		for (int shift = 28; shift >= 0; shift -= 7) {
 			int v2 = val >> shift;
 			if (v2 != 0 || shift == 0) {
@@ -76,6 +88,11 @@ public class VarInt {
 	}
 	
 	public static void writeInt(OutputStream out, int val) throws IOException {
+        if (val < 0) {
+            LOGGER.error("Negative value {} passed to VarintBE::EncodeInternal, which requires non-negative argument", val);
+            throw new IllegalArgumentException("Negative value");
+        }
+
 		for (int shift = 28; shift >= 0; shift -= 7) {
 			int v2 = val >> shift;
 			if (v2 != 0 || shift == 0) {
@@ -86,6 +103,11 @@ public class VarInt {
 	}
 	
 	public static void putLong(ByteBuffer dest, long val) {
+        if (val < 0) {
+            LOGGER.error("Negative value {} passed to VarintBE::EncodeInternal, which requires non-negative argument", val);
+            throw new IllegalArgumentException();
+        }
+
 		for (int shift = 63; shift >= 0; shift -= 7) {
 			long v2 = val >> shift;
 			if (v2 != 0 || shift == 0) {
@@ -96,6 +118,11 @@ public class VarInt {
 	}
 	
 	public static void writeLong(OutputStream out, long val) throws IOException {
+        if (val < 0) {
+            LOGGER.error("Negative value {} passed to VarintBE::EncodeInternal, which requires non-negative argument", val);
+            throw new IllegalArgumentException();
+        }
+
 		for (int shift = 63; shift >= 0; shift -= 7) {
 			long v2 = val >> shift;
 			if (v2 != 0 || shift == 0) {

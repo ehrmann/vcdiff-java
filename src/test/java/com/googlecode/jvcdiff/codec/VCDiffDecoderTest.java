@@ -21,7 +21,6 @@ import org.junit.Before;
 import java.io.ByteArrayOutputStream;
 import java.nio.ByteBuffer;
 import java.nio.charset.Charset;
-import java.util.Arrays;
 import java.util.zip.Adler32;
 
 import static com.googlecode.jvcdiff.VCDiffCodeTableWriter.VCD_CHECKSUM;
@@ -118,11 +117,7 @@ public abstract class VCDiffDecoderTest {
     // It can be called again by a test that has modified the contents of
     // delta_file_ and needs to restore them to their original state.
     protected void InitializeDeltaFile() {
-        delta_file_ = new byte[delta_file_header_.length + delta_window_header_.length + delta_window_body_.length];
-        ByteBuffer.wrap(delta_file_)
-                .put(delta_file_header_)
-                .put(delta_window_header_)
-                .put(delta_window_body_);
+        delta_file_ = ArraysExtra.concat(delta_file_header_, delta_window_header_, delta_window_body_);
     }
 
     // Assuming the length of the given string can be expressed as a VarintBE
@@ -156,18 +151,17 @@ public abstract class VCDiffDecoderTest {
 
     // This function adds an Adler32 checksum to the delta window header.
     protected void AddChecksum(int checksum) {
-        int checksumLength = VarInt.calculateIntLength(checksum);
-        int oldDeltaWindowHeaderLength = delta_window_header_.length;
+        byte[] checksumBytes = new byte[VarInt.calculateIntLength(checksum)];
+        VarInt.putInt(ByteBuffer.wrap(checksumBytes), checksum);
 
-        delta_window_header_ = Arrays.copyOf(delta_window_header_, oldDeltaWindowHeaderLength + checksumLength);
+        delta_window_header_ = ArraysExtra.concat(delta_window_header_, checksumBytes);
         delta_window_header_[0] |= VCD_CHECKSUM;
-        VarInt.putInt(ByteBuffer.wrap(delta_window_header_, oldDeltaWindowHeaderLength, checksumLength), checksum);
 
         // Adjust delta window size to include checksum.
         // This method wouldn't work if adding to the length caused the VarintBE
         // value to spill over into another byte.  Luckily, this test data happens
         // not to cause such an overflow.
-        delta_window_header_[4] += VarInt.calculateIntLength(checksum);
+        delta_window_header_[4] += checksumBytes.length;
     }
 
     // This function computes the Adler32 checksum for the expected target
@@ -182,42 +176,21 @@ public abstract class VCDiffDecoderTest {
     // (0x7FFFFFFF) at the given offset in the delta window.
     protected void WriteMaxVarintAtOffset(int offset, int bytes_to_replace) {
         byte[] kMaxVarint = { (byte) 0x87, (byte) 0xFF, (byte) 0xFF, (byte) 0xFF, 0x7F };
-        byte[] header = Arrays.copyOfRange(delta_file_, 0, delta_file_header_.length + offset);
-        byte[] trailer = Arrays.copyOfRange(delta_file_, delta_file_header_.length + offset + bytes_to_replace, delta_file_.length);
-
-        delta_file_  = new byte[header.length + kMaxVarint.length + trailer.length];
-        ByteBuffer.wrap(delta_file_)
-                .put(header)
-                .put(kMaxVarint)
-                .put(trailer);
+        delta_file_ = ArraysExtra.replace(delta_file_, delta_file_header_.length + offset, bytes_to_replace, kMaxVarint);
     }
 
     // Write a negative 32-bit VarintBE (0x80000000) at the given offset
     // in the delta window.
     protected void WriteNegativeVarintAtOffset(int offset, int bytes_to_replace) {
         byte[] kNegativeVarint = { (byte) 0x88, (byte) 0x80, (byte) 0x80, (byte) 0x80, 0x00 };
-        byte[] header = Arrays.copyOfRange(delta_file_, 0, delta_file_header_.length + offset);
-        byte[] trailer = Arrays.copyOfRange(delta_file_, delta_file_header_.length + offset + bytes_to_replace, delta_file_.length);
-
-        delta_file_  = new byte[header.length + kNegativeVarint.length + trailer.length];
-        ByteBuffer.wrap(delta_file_)
-                .put(header)
-                .put(kNegativeVarint)
-                .put(trailer);
+        delta_file_ = ArraysExtra.replace(delta_file_, delta_file_header_.length + offset, bytes_to_replace, kNegativeVarint);
     }
 
     // Write a VarintBE that has too many continuation bytes
     // at the given offset in the delta window.
     protected void WriteInvalidVarintAtOffset(int offset, int bytes_to_replace) {
         byte[] kInvalidVarint = { (byte) 0x87, (byte) 0xFF, (byte) 0xFF, (byte) 0xFF, (byte) 0xFF, 0x7F };
-        byte[] header = Arrays.copyOfRange(delta_file_, 0, delta_file_header_.length + offset);
-        byte[] trailer = Arrays.copyOfRange(delta_file_, delta_file_header_.length + offset + bytes_to_replace, delta_file_.length);
-
-        delta_file_  = new byte[header.length + kInvalidVarint.length + trailer.length];
-        ByteBuffer.wrap(delta_file_)
-                .put(header)
-                .put(kInvalidVarint)
-                .put(trailer);
+        delta_file_ = ArraysExtra.replace(delta_file_, delta_file_header_.length + offset, bytes_to_replace, kInvalidVarint);
     }
 
     // This function iterates through a list of fuzzers (bit masks used to corrupt
@@ -307,6 +280,48 @@ public abstract class VCDiffDecoderTest {
             UseInterleavedFileHeader();
             delta_window_header_ = kWindowHeader;
             delta_window_body_ = kWindowBody;
+        }
+    }
+
+    protected static final class ArraysExtra {
+        private ArraysExtra() { }
+
+        protected static byte[] concat(byte[] first, byte[]... rest) {
+            int length = first.length;
+            for (byte[] array : rest) {
+                length += array.length;
+            }
+
+            byte[] result = new byte[length];
+
+            ByteBuffer buffer = ByteBuffer.wrap(result);
+            buffer.put(first);
+            for (byte[] array : rest) {
+                buffer.put(array);
+            }
+
+            return result;
+        }
+
+        protected static byte[] replace(byte[] original, int originalOffset, int originalLength,
+                                        byte[] replacement) {
+            return replace(original, originalOffset, originalLength, replacement, 0, replacement.length);
+        }
+
+        protected static byte[] replace(byte[] original, int originalOffset, int originalLength,
+                                        byte[] replacement, int replacementOffset, int replacementLength) {
+            byte[] result = new byte[original.length - originalLength + replacementLength];
+
+            ByteBuffer buffer = ByteBuffer.wrap(result);
+            buffer.put(ByteBuffer.wrap(original, 0, originalOffset));
+            buffer.put(ByteBuffer.wrap(replacement, replacementOffset, replacementLength));
+            buffer.put(ByteBuffer.wrap(original, originalOffset + originalLength, original.length - originalOffset - originalLength));
+
+            if (buffer.hasRemaining()) {
+                throw new RuntimeException();
+            }
+
+            return result;
         }
     }
 

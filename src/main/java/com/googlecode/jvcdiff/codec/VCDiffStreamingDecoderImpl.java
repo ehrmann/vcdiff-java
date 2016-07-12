@@ -38,7 +38,7 @@ public class VCDiffStreamingDecoderImpl implements VCDiffStreamingDecoder {
 	// It will also be used to concatenate those unparsed bytes with the data
 	// supplied to the next call to DecodeChunk(), so that they appear in
 	// contiguous memory.
-	private IoBuffer unparsed_bytes_ = IoBuffer.allocate(0);
+	private ByteBuffer unparsed_bytes_ = ByteBuffer.allocate(0);
 
 	// The portion of the target file that has been decoded so far.  This will be
 	// used to fill the output string for DecodeChunk(), and will also be used to
@@ -46,8 +46,6 @@ public class VCDiffStreamingDecoderImpl implements VCDiffStreamingDecoder {
 	// window can come from a range of addresses in the previously decoded target
 	// data, the entire target file needs to be available to the decoder, not just
 	// the current target window.
-
-	// Originally a String
 	private final DecoratedByteArrayOutputStream decoded_target_ = new DecoratedByteArrayOutputStream(512); //IoBuffer.allocate(512);
 
 	// The VCDIFF version byte (also known as "header4") from the
@@ -136,7 +134,7 @@ public class VCDiffStreamingDecoderImpl implements VCDiffStreamingDecoder {
 			return;
 		}
 
-		unparsed_bytes_ = IoBuffer.allocate(0);
+		unparsed_bytes_ = ByteBuffer.allocate(0);
 		decoded_target_.reset();  // delta_window_.Reset() depends on this
 		Reset();
 		dictionary_ptr_ = dictionary_ptr;
@@ -156,7 +154,7 @@ public class VCDiffStreamingDecoderImpl implements VCDiffStreamingDecoder {
             parseable_chunk.put(unparsed_bytes_);
             parseable_chunk.put(data, offset, len);
             parseable_chunk.flip();
-            unparsed_bytes_ = parseable_chunk.duplicate();
+            unparsed_bytes_ = parseable_chunk.duplicate().buf();
 		} else {
 			parseable_chunk = IoBuffer.wrap(data, offset, len);
 		}
@@ -188,7 +186,7 @@ public class VCDiffStreamingDecoderImpl implements VCDiffStreamingDecoder {
 			return false;
 		}
 
-        unparsed_bytes_ = parseable_chunk;
+        unparsed_bytes_ = parseable_chunk.buf();
 		AppendNewOutputText(output_string);
 		return true;
 	}
@@ -235,12 +233,7 @@ public class VCDiffStreamingDecoderImpl implements VCDiffStreamingDecoder {
 	}
 
 	public boolean SetMaximumTargetWindowSize(int new_maximum_target_window_size) {
-		if (new_maximum_target_window_size > kTargetSizeLimit) {
-			LOGGER.error("Specified maximum target window size {} exceeds limit of {} bytes",
-					new_maximum_target_window_size, kTargetSizeLimit);
-			return false;
-		}
-		maximum_target_window_size_ = new_maximum_target_window_size;
+        maximum_target_window_size_ = new_maximum_target_window_size;
 		return true;
 	}
 
@@ -401,8 +394,8 @@ public class VCDiffStreamingDecoderImpl implements VCDiffStreamingDecoder {
 		}
 		int data_size = data.remaining();
 
-        IoBuffer paddedHeaderData = IoBuffer.allocate(DeltaFileHeader.SERIALIZED_SIZE);
-        paddedHeaderData.put(data.slice().limit(Math.min(DeltaFileHeader.SERIALIZED_SIZE, data.remaining())));
+        ByteBuffer paddedHeaderData = ByteBuffer.allocate(DeltaFileHeader.SERIALIZED_SIZE);
+        paddedHeaderData.put(data.slice().limit(Math.min(DeltaFileHeader.SERIALIZED_SIZE, data.remaining())).buf());
         paddedHeaderData.rewind();
 
 		final DeltaFileHeader header = new DeltaFileHeader(paddedHeaderData);

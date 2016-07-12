@@ -2,9 +2,6 @@ package com.googlecode.jvcdiff.codec;
 
 import org.junit.Test;
 
-import java.nio.ByteBuffer;
-import java.util.Arrays;
-
 import static com.googlecode.jvcdiff.VCDiffCodeTableWriter.VCD_SOURCE;
 import static com.googlecode.jvcdiff.VCDiffCodeTableWriter.VCD_TARGET;
 import static org.junit.Assert.*;
@@ -225,9 +222,7 @@ public class VCDiffStandardDecoderTest extends VCDiffDecoderTest {
     public void CopyInstructionsShouldFailIfNoSourceSegment() throws Exception {
         // Replace the Win_Indicator and the source size and source offset with a
         // single 0 byte (a Win_Indicator for a window with no source segment.)
-        byte[] trailer = Arrays.copyOfRange(delta_window_header_, 4, delta_window_header_.length);
-        delta_window_header_ = new byte[1 + trailer.length];
-        ByteBuffer.wrap(delta_window_header_).put((byte) 0).put(trailer);
+        delta_window_header_ = ArraysExtra.replace(delta_window_header_, 0, 4, new byte[1]);
 
         InitializeDeltaFile();
         decoder_.StartDecoding(dictionary_);
@@ -396,11 +391,7 @@ public class VCDiffStandardDecoderTest extends VCDiffDecoderTest {
     @Test
     public void TargetWindowSizeZero() throws Exception {
         byte[] zero_size = { 0x00 };
-        byte[] header = Arrays.copyOfRange(delta_file_, 0, delta_file_header_.length + 5);
-        byte[] trailer = Arrays.copyOfRange(delta_file_, delta_file_header_.length + 5 + 2, delta_file_.length);
-
-        delta_file_ = new byte[header.length + zero_size.length + trailer.length];
-        ByteBuffer.wrap(delta_file_).put(header).put(zero_size).put(trailer);
+        delta_file_ = ArraysExtra.replace(delta_file_, delta_file_header_.length + 5, 2, zero_size);
 
         decoder_.StartDecoding(dictionary_);
         assertFalse(decoder_.DecodeChunk(delta_file_,

@@ -44,6 +44,7 @@ public class VCDiffHeaderParser {
 	public VCDiffHeaderParser(ByteBuffer buffer) {
 		this.return_code_ = RESULT_SUCCESS;
 		this.delta_encoding_length_ = 0;
+        // TODO: or slice?
 		this.buffer = buffer.duplicate();
 	}
 

@@ -286,7 +286,7 @@ public abstract class VCDiffDecoderTest {
     protected static final class ArraysExtra {
         private ArraysExtra() { }
 
-        protected static byte[] concat(byte[] first, byte[]... rest) {
+        public static byte[] concat(byte[] first, byte[]... rest) {
             int length = first.length;
             for (byte[] array : rest) {
                 length += array.length;
@@ -303,12 +303,12 @@ public abstract class VCDiffDecoderTest {
             return result;
         }
 
-        protected static byte[] replace(byte[] original, int originalOffset, int originalLength,
+        public static byte[] replace(byte[] original, int originalOffset, int originalLength,
                                         byte[] replacement) {
             return replace(original, originalOffset, originalLength, replacement, 0, replacement.length);
         }
 
-        protected static byte[] replace(byte[] original, int originalOffset, int originalLength,
+        public static byte[] replace(byte[] original, int originalOffset, int originalLength,
                                         byte[] replacement, int replacementOffset, int replacementLength) {
             byte[] result = new byte[original.length - originalLength + replacementLength];
 

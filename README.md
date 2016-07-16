@@ -2,18 +2,9 @@ An in-progress Java implementation of [VCDIFF](https://github.com/google/open-vc
 
 # TODO:
 ```
-
 ./src/google/format_extension_flags.h
 
-./src/google/vcdecoder.h
-./src/google/vcencoder.
-
-./src/vcdecoder3_test.cc
-./src/vcdecoder4_test.cc
 ./src/vcdecoder5_test.cc
-
-./src/vcdecoder_test.cc
-./src/vcdecoder_test.h
 
 ./src/vcdiff_defs.h
 ./src/vcdiff_main.cc

@@ -3,7 +3,6 @@ package com.googlecode.jvcdiff.codec;
 import java.io.IOException;
 import java.io.OutputStream;
 
-
 /**
  * A simpler (non-streaming) interface to the VCDIFF decoder that can be used
  * if the entire delta file is available.
@@ -21,9 +20,6 @@ public class VCDiffDecoder {
 	 */
 	public boolean Decode(byte[] dictionary_ptr, byte[] encoding, int offset, int length, OutputStream target) throws IOException {
 		decoder_.StartDecoding(dictionary_ptr);
-		if (!decoder_.DecodeChunk(encoding, offset, length, target)) {
-			return false;
-		}
-		return decoder_.FinishDecoding();
+		return decoder_.DecodeChunk(encoding, offset, length, target) && decoder_.FinishDecoding();
 	}
 }

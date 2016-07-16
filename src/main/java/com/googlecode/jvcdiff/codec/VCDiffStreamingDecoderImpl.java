@@ -440,7 +440,7 @@ public class VCDiffStreamingDecoderImpl implements VCDiffStreamingDecoder {
 		}
 		if ((header.hdr_indicator & VCD_CODETABLE) != 0) {
 			int bytes_parsed = InitCustomCodeTable(data.array(), data.arrayOffset() + data.position() + DeltaFileHeader.SERIALIZED_SIZE,
-					data.remaining() - DeltaFileHeader.SERIALIZED_SIZE);
+						data.remaining() - DeltaFileHeader.SERIALIZED_SIZE);
 			switch (bytes_parsed) {
 			case RESULT_ERROR:
 				return RESULT_ERROR;
@@ -475,7 +475,7 @@ public class VCDiffStreamingDecoderImpl implements VCDiffStreamingDecoder {
 		Integer near_cache_size;
 		Integer same_cache_size;
 
-		VCDiffHeaderParser header_parser = new VCDiffHeaderParser(ByteBuffer.wrap(data_start, offset, length));
+		VCDiffHeaderParser header_parser = new VCDiffHeaderParser(ByteBuffer.wrap(data_start, offset, length).slice());
 		if ((near_cache_size = header_parser.ParseInt32("size of near cache")) == null) {
 			LOGGER.warn("Failed to parse size of near cache");
 			return header_parser.GetResult();
@@ -522,7 +522,7 @@ public class VCDiffStreamingDecoderImpl implements VCDiffStreamingDecoder {
 		if (custom_code_table_decoder_ == null) {
 			return RESULT_SUCCESS;
 		}
-		if (custom_code_table_ != null) {
+		if (custom_code_table_ == null) {
 			LOGGER.error("Internal error:  custom_code_table_decoder_ is set, but custom_code_table_ is NULL");
 			return RESULT_ERROR;
 		}

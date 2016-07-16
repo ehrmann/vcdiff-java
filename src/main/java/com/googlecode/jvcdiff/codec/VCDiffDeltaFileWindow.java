@@ -310,8 +310,8 @@ public class VCDiffDeltaFileWindow {
 	// parent->decoded_target().
 	//
 	private int DecodeBody(ByteBuffer parseable_chunk) {
-        // remaining() isn't perfect, here
-		if (IsInterleaved() && instructions_and_sizes_.remaining() != parseable_chunk.remaining()) {
+        // TODO: this was originally pointer comparison between instructions_and_sizes_ and parseable_chunk
+		if (IsInterleaved() && false) {
 			LOGGER.error("Internal error: interleaved format is used, but the input pointer does not point to the instructions section");
 			return RESULT_ERROR;
 		}

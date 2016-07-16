@@ -7,7 +7,7 @@ public class VCDiffCodeTableData implements Cloneable {
 
 	private static final Logger LOGGER = LoggerFactory.getLogger(VCDiffCodeTableData.class);
 
-	protected static final int kCodeTableSize = 256;
+	public static final int kCodeTableSize = 256;
 
 	public static final byte VCD_NOOP = 0;
 	public static final byte VCD_ADD  = 1;
@@ -182,12 +182,13 @@ public class VCDiffCodeTableData implements Cloneable {
 	
 	public static final int SERIALIZED_BYTE_SIZE = kDefaultCodeTableData.getBytes().length;
 
-	protected final byte inst1[] = new byte[kCodeTableSize];  // from enum VCDiffInstructionType
-	protected final byte inst2[] = new byte[kCodeTableSize];  // from enum VCDiffInstructionType
-	protected final byte size1[] = new byte[kCodeTableSize];
-	protected final byte size2[] = new byte[kCodeTableSize];
-	protected final byte mode1[] = new byte[kCodeTableSize];  // from enum VCDiffModes
-	protected final byte mode2[] = new byte[kCodeTableSize];  // from enum VCDiffModes
+	// FIXME: improve access modifiers
+	public final byte inst1[] = new byte[kCodeTableSize];  // from enum VCDiffInstructionType
+	public final byte inst2[] = new byte[kCodeTableSize];  // from enum VCDiffInstructionType
+	public final byte size1[] = new byte[kCodeTableSize];
+	public final byte size2[] = new byte[kCodeTableSize];
+	public final byte mode1[] = new byte[kCodeTableSize];  // from enum VCDiffModes
+	public final byte mode2[] = new byte[kCodeTableSize];  // from enum VCDiffModes
 
 	private volatile byte[] bytes = null;
 	

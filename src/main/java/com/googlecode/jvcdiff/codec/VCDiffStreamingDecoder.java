@@ -60,7 +60,7 @@ public interface VCDiffStreamingDecoder {
 	 * not change the limit.  Setting the limit to 0 will cause all decode
 	 * operations of non-empty target files to fail.
 	 */
-	boolean SetMaximumTargetFileSize(int new_maximum_target_file_size);
+	boolean SetMaximumTargetFileSize(long new_maximum_target_file_size);
 
 	/**
 	 * Specifies the maximum allowable target *window* size.  (A target file is

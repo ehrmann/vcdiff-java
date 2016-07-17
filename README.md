@@ -4,8 +4,6 @@ An in-progress Java implementation of [VCDIFF](https://github.com/google/open-vc
 ```
 ./src/google/format_extension_flags.h
 
-./src/vcdecoder5_test.cc
-
 ./src/vcdiff_defs.h
 ./src/vcdiff_main.cc
 ./src/vcdiff_test.sh

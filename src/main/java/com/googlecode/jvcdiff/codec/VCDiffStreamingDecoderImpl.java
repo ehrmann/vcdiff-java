@@ -80,14 +80,14 @@ public class VCDiffStreamingDecoderImpl implements VCDiffStreamingDecoder {
 	// of the enclosing delta file.
 	private int planned_target_file_size_;
 
-	private int maximum_target_file_size_ = kDefaultMaximumTargetFileSize;
+	private long maximum_target_file_size_ = kDefaultMaximumTargetFileSize;
 
 	private int maximum_target_window_size_ = kDefaultMaximumTargetFileSize;
 
 	// Contains the sum of the decoded sizes of all target windows seen so far,
 	// including the expected total size of the current target window in progress
 	// (even if some of the current target window has not yet been decoded.)
-	private int total_of_target_window_sizes_;
+	private long total_of_target_window_sizes_;
 
 	// Contains the byte position within decoded_target_ of the first data that
 	// has not yet been output by AppendNewOutputText().
@@ -227,7 +227,7 @@ public class VCDiffStreamingDecoderImpl implements VCDiffStreamingDecoder {
 	// standard and is only available when the version code 'S' is specified.
 	public boolean AllowChecksum() { return vcdiff_version_code_ == 'S'; }
 
-	public boolean SetMaximumTargetFileSize(int new_maximum_target_file_size) {
+	public boolean SetMaximumTargetFileSize(long new_maximum_target_file_size) {
 		maximum_target_file_size_ = new_maximum_target_file_size;
 		return true;
 	}
@@ -285,18 +285,17 @@ public class VCDiffStreamingDecoderImpl implements VCDiffStreamingDecoder {
 			// but the addition might cause an integer overflow if target_bytes_to_add
 			// is very large.  So it is better to check target_bytes_to_add against
 			// the remaining planned target bytes.
-			int remaining_planned_target_file_size =
-				planned_target_file_size_ - total_of_target_window_sizes_;
+			long remaining_planned_target_file_size = planned_target_file_size_ - total_of_target_window_sizes_;
 			if (window_size > remaining_planned_target_file_size) {
 				LOGGER.error("Length of target window ({} bytes) plus previous windows ({} bytes) would exceed planned size of {} bytes",
                         window_size, total_of_target_window_sizes_, planned_target_file_size_);
 				return true;
 			}
 		}
-		int remaining_maximum_target_bytes = maximum_target_file_size_ - total_of_target_window_sizes_;
+		long remaining_maximum_target_bytes = maximum_target_file_size_ - total_of_target_window_sizes_;
 		if (window_size > remaining_maximum_target_bytes) {
 			LOGGER.error("Length of target window ({} bytes) plus previous windows ({} bytes) would exceed maximum target file size of {} bytes",
-                    window_size, total_of_target_window_sizes_, maximum_target_file_size_);
+					window_size, total_of_target_window_sizes_, maximum_target_file_size_);
 			return true;
 		}
 		return false;

@@ -1,5 +1,6 @@
 package com.googlecode.jvcdiff;
 
+import com.googlecode.jvcdiff.google.VCDiffFormatExtensionFlag;
 import org.junit.Before;
 import org.junit.Test;
 
@@ -8,6 +9,7 @@ import java.io.StringWriter;
 import java.util.EnumSet;
 
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertTrue;
 
 
 public class JSONCodeTableWriterTest {
@@ -18,7 +20,8 @@ public class JSONCodeTableWriterTest {
     public void init() {
         writer = new StringWriter();
         coder_ = new JSONCodeTableWriter();
-        coder_.WriteHeader(writer, EnumSet.noneOf(VCDiffFormatExtensionFlags.class));
+        coder_.WriteHeader(writer, EnumSet.noneOf(VCDiffFormatExtensionFlag.class));
+        assertTrue(coder_.Init(0));
     }
 
     @Test

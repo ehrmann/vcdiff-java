@@ -1,3 +1,4 @@
+
 package com.googlecode.jvcdiff.codec;
 
 import com.googlecode.jvcdiff.VCDiffCodeTableData;

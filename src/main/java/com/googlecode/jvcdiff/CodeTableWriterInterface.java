@@ -1,4 +1,28 @@
+// Copyright 2008-2016 Google Inc., David Ehrmann
+// Author: Lincoln Smith, David Ehrmann
+//
+// Licensed under the Apache License, Version 2.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+//
+//      http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
+//
+// Definition of an abstract class that describes the interface between the
+// encoding engine (which finds the best string matches between the source and
+// target data) and the code table writer.  The code table writer is passed a
+// series of Add, Copy, and Run instructions and produces an output file in the
+// desired format.
+
+
 package com.googlecode.jvcdiff;
+
+import com.googlecode.jvcdiff.google.VCDiffFormatExtensionFlag;
 
 import java.io.IOException;
 import java.util.EnumSet;
@@ -18,11 +42,22 @@ import java.util.EnumSet;
  */
 public interface CodeTableWriterInterface<OUT> {
 
+    /**
+     * Initializes the constructed object for use. It will return
+     * false if there was an error initializing the object, or true if it
+     * was successful.  After the object has been initialized and used,
+     * Init() can be called again to restore the initial state of the object.
+     * @param dictionary_size
+     * @return
+     */
+	boolean Init(int dictionary_size);
+
+
 	/**
 	 * Writes the header to the output string.
 	 * @param format_extensions
 	 */
-	void WriteHeader(OUT out, EnumSet<VCDiffFormatExtensionFlags> format_extensions) throws IOException;
+	void WriteHeader(OUT out, EnumSet<VCDiffFormatExtensionFlag> format_extensions) throws IOException;
 
 	/**
 	 * Encode an ADD opcode with the "size" bytes starting at data

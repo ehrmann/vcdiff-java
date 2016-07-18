@@ -16,6 +16,7 @@
 package com.googlecode.jvcdiff.codec;
 
 import com.googlecode.jvcdiff.VarInt;
+import com.googlecode.jvcdiff.ZeroInitializedAdler32;
 import org.junit.Before;
 
 import java.io.ByteArrayOutputStream;
@@ -167,7 +168,7 @@ public abstract class VCDiffDecoderTest {
     // This function computes the Adler32 checksum for the expected target
     // and adds it to the delta window header.
     protected void ComputeAndAddChecksum() {
-        Adler32 adler32 = new Adler32();
+        Adler32 adler32 = new ZeroInitializedAdler32();
         adler32.update(expected_target_);
         AddChecksum((int) adler32.getValue());
     }

@@ -8,7 +8,7 @@ import java.io.OutputStream;
  * if the entire delta file is available.
  */
 public class VCDiffDecoder {
-	private VCDiffStreamingDecoder decoder_;
+	private final VCDiffStreamingDecoder decoder_ = new VCDiffStreamingDecoderImpl();
 
 	/**
 	 * Replaces old contents of "*target" with the result of decoding

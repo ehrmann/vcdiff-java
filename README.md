@@ -2,14 +2,16 @@ An in-progress Java implementation of [VCDIFF](https://github.com/google/open-vc
 
 # TODO:
 ```
-./src/google/format_extension_flags.h
-
 ./src/vcdiff_defs.h
 ./src/vcdiff_main.cc
 ./src/vcdiff_test.sh
 
-./src/vcencoder.cc
-./src/vcencoder_test.cc
+This feels brittle:
+        VCDiffStreamingEncoder<OutputStream> embedded_null_encoder = new BaseVCDiffStreamingEncoder<OutputStream>(
+                interleavedCodeTableWriter,
+                embedded_null_dictionary,
+                EnumSet.of(VCD_FORMAT_INTERLEAVED, VCD_FORMAT_CHECKSUM),
+
 ```
 
 # See also

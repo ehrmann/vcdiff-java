@@ -1,5 +1,6 @@
 package com.googlecode.jvcdiff;
 
+import com.googlecode.jvcdiff.google.VCDiffFormatExtensionFlag;
 import com.googlecode.jvcdiff.mina_buffer.IoBuffer;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -185,7 +186,7 @@ public class VCDiffCodeTableWriter implements CodeTableWriterInterface<OutputStr
 	 *  was successful.  After the object has been initialized and used,
 	 * Init() can be called again to restore the initial state of the object.
 	 */
-	public void Init(int dictionary_size) {
+	public boolean Init(int dictionary_size) {
 		dictionary_size_ = dictionary_size;
 		if (instruction_map_ == null) {
 			if (code_table_data_ == VCDiffCodeTableData.kDefaultCodeTableData) {
@@ -199,6 +200,8 @@ public class VCDiffCodeTableWriter implements CodeTableWriterInterface<OutputStr
 
 		target_length_ = 0;
 		last_opcode_index_ = -1;
+
+		return true;
 	}
 
 	/**
@@ -350,8 +353,8 @@ public class VCDiffCodeTableWriter implements CodeTableWriterInterface<OutputStr
 	 * This includes information that can be gathered
 	 * before the first chunk of input is available.
 	 */
-	public void WriteHeader(OutputStream out, EnumSet<VCDiffFormatExtensionFlags> formatExtensions) throws IOException {
-		if (formatExtensions.contains(VCDiffFormatExtensionFlags.VCD_STANDARD_FORMAT) && formatExtensions.size() == 1) {
+	public void WriteHeader(OutputStream out, EnumSet<VCDiffFormatExtensionFlag> formatExtensions) throws IOException {
+		if (formatExtensions.contains(VCDiffFormatExtensionFlag.VCD_STANDARD_FORMAT) && formatExtensions.size() == 1) {
 			out.write(kHeaderStandardFormat);
 		} else {
 			out.write(kHeaderExtendedFormat);
@@ -429,7 +432,7 @@ public class VCDiffCodeTableWriter implements CodeTableWriterInterface<OutputStr
 		if (size <= 255) {
 			opcode = instruction_map_.LookupFirstOpcode(inst, (byte)size, mode);
 			if (opcode != kNoOpcode) {
-				instructions_and_sizes_.put((byte)opcode);
+				instructions_and_sizes_.put((byte) opcode);
 				last_opcode_index_ = instructions_and_sizes_.position() - 1;
 				return;
 			}

@@ -1,5 +1,7 @@
 package com.googlecode.jvcdiff;
 
+import com.googlecode.jvcdiff.google.VCDiffFormatExtensionFlag;
+
 import java.io.IOException;
 import java.util.EnumSet;
 
@@ -16,8 +18,13 @@ public class JSONCodeTableWriter implements CodeTableWriterInterface<Appendable>
 	private boolean output_called_ = false;
 
 	public JSONCodeTableWriter() {
-		this.output_.append('[');
-		this.target_length_ = 0;
+	}
+
+	@Override
+	public boolean Init(int dictionary_size) {
+        this.output_.append('[');
+        this.target_length_ = 0;
+		return true;
 	}
 
 	public void Add(final byte[] data, final int offset, final int length) {
@@ -75,7 +82,7 @@ public class JSONCodeTableWriter implements CodeTableWriterInterface<Appendable>
 		target_length_ += size;
 	}
 
-	public void WriteHeader(Appendable out, EnumSet<VCDiffFormatExtensionFlags> formatExtensions) {
+	public void WriteHeader(Appendable out, EnumSet<VCDiffFormatExtensionFlag> formatExtensions) {
 		// The JSON format does not need a header.
 	}
 

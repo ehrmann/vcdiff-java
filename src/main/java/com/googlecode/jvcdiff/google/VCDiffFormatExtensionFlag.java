@@ -14,7 +14,7 @@
 
 package com.googlecode.jvcdiff.google;
 
-public enum VCDiffFormatExtensionFlagValues {
+public enum VCDiffFormatExtensionFlag {
 
     // No extensions: the encoded format will conform to the RFC
     // draft standard for VCDIFF.
@@ -38,7 +38,7 @@ public enum VCDiffFormatExtensionFlagValues {
     VCD_FORMAT_JSON (0x04);
 
     public final int flag;
-    VCDiffFormatExtensionFlagValues(int flag) {
+    VCDiffFormatExtensionFlag(int flag) {
         this.flag = flag;
     }
 }

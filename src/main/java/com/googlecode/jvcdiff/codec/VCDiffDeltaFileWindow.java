@@ -3,6 +3,7 @@ package com.googlecode.jvcdiff.codec;
 import com.googlecode.jvcdiff.VCDiffCodeTableData;
 import com.googlecode.jvcdiff.VCDiffCodeTableReader;
 import com.googlecode.jvcdiff.VarInt;
+import com.googlecode.jvcdiff.ZeroInitializedAdler32;
 import com.googlecode.jvcdiff.codec.VCDiffStreamingDecoderImpl.DecoratedByteArrayOutputStream;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -603,7 +604,7 @@ public class VCDiffDeltaFileWindow {
 	private boolean has_checksum_;
 	private final AtomicInteger expected_checksum_ = new AtomicInteger(0);
 
-	private final Adler32 adler32 = new Adler32(); 
+	private final Adler32 adler32 = new ZeroInitializedAdler32();
 
 	private VCDiffCodeTableReader reader_ = new VCDiffCodeTableReader();
 }

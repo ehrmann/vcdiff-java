@@ -140,6 +140,9 @@ public class VCDiffLargeTargetTest extends VCDiffDecoderTest {
             }
         }
 
+        @Override
+        public void close() { }
+
         public long getSize() {
             return size.get();
         }

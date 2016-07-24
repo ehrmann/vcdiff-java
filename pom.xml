@@ -33,6 +33,13 @@
             <version>1.7.21</version>
         </dependency>
 
+        <!-- TODO: this is only pulled in for main. Move main into a separate module -->
+        <dependency>
+            <groupId>com.beust</groupId>
+            <artifactId>jcommander</artifactId>
+            <version>1.48</version>
+        </dependency>
+
         <dependency>
             <groupId>org.slf4j</groupId>
             <artifactId>slf4j-simple</artifactId>

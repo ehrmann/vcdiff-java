@@ -1,10 +1,6 @@
 An in-progress Java implementation of [VCDIFF](https://github.com/google/open-vcdiff) (RFC3284).
 
 # TODO:
-```
-./src/vcdiff_defs.h
-./src/vcdiff_main.cc
-./src/vcdiff_test.sh
 
 This feels brittle:
         VCDiffStreamingEncoder<OutputStream> embedded_null_encoder = new BaseVCDiffStreamingEncoder<OutputStream>(

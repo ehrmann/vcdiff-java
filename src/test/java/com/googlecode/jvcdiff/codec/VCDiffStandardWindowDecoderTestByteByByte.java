@@ -46,4 +46,16 @@ public class VCDiffStandardWindowDecoderTestByteByByte extends VCDiffStandardWin
         // The target data for the first two windows should have been output.
         assertArrayEquals(Arrays.copyOf(expected_target_, 89), output_.toByteArray());
     }
+
+    @Test
+    public void DecodeWithBufferReuse() throws Exception {
+        decoder_.StartDecoding(dictionary_);
+        byte[] buffer = new byte[1];
+        for (byte aDelta_file_ : delta_file_) {
+            buffer[0] = aDelta_file_;
+            assertTrue(decoder_.DecodeChunk(buffer, 0, 1, output_));
+        }
+        assertTrue(decoder_.FinishDecoding());
+        assertArrayEquals(expected_target_, output_.toByteArray());
+    }
 }

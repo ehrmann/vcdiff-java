@@ -148,16 +148,11 @@ public class VCDiffStreamingDecoderImpl implements VCDiffStreamingDecoder {
 			return false;
 		}
         // TODO: there's a lot of room for optimization here
-		IoBuffer parseable_chunk;
-		if (unparsed_bytes_.remaining() > 0) {
-            parseable_chunk = IoBuffer.allocate(unparsed_bytes_.remaining() + len);
-            parseable_chunk.put(unparsed_bytes_);
-            parseable_chunk.put(data, offset, len);
-            parseable_chunk.flip();
-            unparsed_bytes_ = parseable_chunk.duplicate().buf();
-		} else {
-			parseable_chunk = IoBuffer.wrap(data, offset, len);
-		}
+		IoBuffer parseable_chunk = IoBuffer.allocate(unparsed_bytes_.remaining() + len);
+        parseable_chunk.put(unparsed_bytes_);
+        parseable_chunk.put(data, offset, len);
+        parseable_chunk.flip();
+        unparsed_bytes_ = parseable_chunk.duplicate().buf();
 
 		int result = ReadDeltaFileHeader(parseable_chunk);
 		if (RESULT_SUCCESS == result) {

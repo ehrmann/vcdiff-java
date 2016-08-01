@@ -1,14 +1,14 @@
-An in-progress Java implementation of [VCDIFF](https://github.com/google/open-vcdiff) (RFC3284).
+[![Build Status](https://travis-ci.org/ehrmann/vcdiff-java.svg?branch=master)](https://travis-ci.org/ehrmann/vcdiff-java)
 
-# TODO:
+# VCDiff-java
 
-This feels brittle:
-        VCDiffStreamingEncoder<OutputStream> embedded_null_encoder = new BaseVCDiffStreamingEncoder<OutputStream>(
-                interleavedCodeTableWriter,
-                embedded_null_dictionary,
-                EnumSet.of(VCD_FORMAT_INTERLEAVED, VCD_FORMAT_CHECKSUM),
+A Java port of Google's [open-vcdiff](https://github.com/google/open-vcdiff) vcdiff (RFC3284) implementation.
 
-```
+## Usage
 
-# See also
+## Command line usage
+
+
+## See also
+* [Femtozip](https://github.com/gtoubassi/femtozip) (includes dictionary generator)
 * [Diffable](https://web.archive.org/web/20120301201412/http://code.google.com/p/diffable/)

@@ -3,7 +3,6 @@ package com.davidehrmann.vcdiff.codec;
 import com.davidehrmann.vcdiff.VCDiffAddressCache;
 import com.davidehrmann.vcdiff.VCDiffAddressCacheImpl;
 import com.davidehrmann.vcdiff.VCDiffCodeTableData;
-import com.davidehrmann.vcdiff.mina_buffer.IoBuffer;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -148,11 +147,11 @@ public class VCDiffStreamingDecoderImpl implements VCDiffStreamingDecoder {
 			return false;
 		}
         // TODO: there's a lot of room for optimization here
-		IoBuffer parseable_chunk = IoBuffer.allocate(unparsed_bytes_.remaining() + len);
+		ByteBuffer parseable_chunk = ByteBuffer.allocate(unparsed_bytes_.remaining() + len);
         parseable_chunk.put(unparsed_bytes_);
         parseable_chunk.put(data, offset, len);
         parseable_chunk.flip();
-        unparsed_bytes_ = parseable_chunk.duplicate().buf();
+        unparsed_bytes_ = parseable_chunk.duplicate();
 
 		int result = ReadDeltaFileHeader(parseable_chunk);
 		if (RESULT_SUCCESS == result) {
@@ -160,7 +159,7 @@ public class VCDiffStreamingDecoderImpl implements VCDiffStreamingDecoder {
 		}
 		if (RESULT_SUCCESS == result) {
 			while (parseable_chunk.hasRemaining()) {
-				result = delta_window_.DecodeWindow(parseable_chunk.buf());
+				result = delta_window_.DecodeWindow(parseable_chunk);
 				if (RESULT_SUCCESS != result) {
 					break;
 				}
@@ -181,7 +180,7 @@ public class VCDiffStreamingDecoderImpl implements VCDiffStreamingDecoder {
 			return false;
 		}
 
-        unparsed_bytes_ = parseable_chunk.buf();
+        unparsed_bytes_ = parseable_chunk;
 		AppendNewOutputText(output_string);
 		return true;
 	}
@@ -382,14 +381,14 @@ public class VCDiffStreamingDecoderImpl implements VCDiffStreamingDecoder {
 	// of two bytes "12", then we should recognize that it does not match the
 	// initial VCDIFF magic number "VCD" and report an error, rather than waiting
 	// indefinitely for more input that will never arrive.
-	private int ReadDeltaFileHeader(IoBuffer data) {
+	private int ReadDeltaFileHeader(ByteBuffer data) {
 		if (FoundFileHeader()) {
 			return RESULT_SUCCESS;
 		}
 		int data_size = data.remaining();
 
         ByteBuffer paddedHeaderData = ByteBuffer.allocate(DeltaFileHeader.SERIALIZED_SIZE);
-        paddedHeaderData.put(data.slice().limit(Math.min(DeltaFileHeader.SERIALIZED_SIZE, data.remaining())).buf());
+        paddedHeaderData.put((ByteBuffer) data.slice().limit(Math.min(DeltaFileHeader.SERIALIZED_SIZE, data.remaining())));
         paddedHeaderData.rewind();
 
 		final DeltaFileHeader header = new DeltaFileHeader(paddedHeaderData);
@@ -512,7 +511,7 @@ public class VCDiffStreamingDecoderImpl implements VCDiffStreamingDecoder {
 	// returns RESULT_SUCCESS and sets *data_ptr to the position after the encoded
 	// custom code table.  If the function returns RESULT_SUCCESS or
 	// RESULT_END_OF_DATA, it advances data->position_ past the parsed bytes.
-	private int ReadCustomCodeTable(IoBuffer data) {
+	private int ReadCustomCodeTable(ByteBuffer data) {
 		if (custom_code_table_decoder_ == null) {
 			return RESULT_SUCCESS;
 		}

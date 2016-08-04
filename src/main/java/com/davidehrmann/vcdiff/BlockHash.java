@@ -534,12 +534,12 @@ public class BlockHash {
 		int block_number = last_block_added + 1;
 		final int total_blocks = (source_data.limit() / kBlockSize);  // round down
 		if (block_number >= total_blocks) {
-			LOGGER.error("BlockHash.AddBlock() called with block number {} this is past last block {}", block_number, total_blocks - 1);
-			return;
+			throw new IllegalArgumentException(String.format("BlockHash.AddBlock() called with block number %d. This is past last block %d", block_number, total_blocks - 1));
+			//  LOGGER.error("BlockHash.AddBlock() called with block number {} this is past last block {}", block_number, total_blocks - 1);
 		}
 		if (next_block_table[block_number] != -1) {
-			LOGGER.error("Internal error in BlockHash::AddBlock(): block number = {}, next block should be -1 but is {}", block_number, next_block_table[block_number]);
-			return;
+            throw new IllegalStateException(String.format("Internal error in BlockHash.AddBlock(): block number = %d, next block should be -1 but is %d", block_number, next_block_table[block_number]));
+			// LOGGER.error("Internal error in BlockHash::AddBlock(): block number = {}, next block should be -1 but is {}", block_number, next_block_table[block_number]);
 		}
 		final int hash_table_index = GetHashTableIndex(hash_value);
 		final int first_matching_block = hash_table[hash_table_index];

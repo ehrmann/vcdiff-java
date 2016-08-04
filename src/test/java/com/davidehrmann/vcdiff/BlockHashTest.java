@@ -599,18 +599,15 @@ public class BlockHashTest {
         Assert.assertEquals(search_string_many_matches.length, best_match.size());
     }
 
-    // TODO: this test case should fail
-    /*
-	@Test
+	@Test(expected = IllegalArgumentException.class)
 	public void AddTooManyBlocks() {
 		BlockHash th_ = BlockHash.CreateTargetHash(sample_text, 0);
 		for (int i = 0; i < sample_text.length; i+=kBlockSize) {
 			th_.AddOneIndexHash(i, (int)hashed_e);
 		}
 		// Didn't expect another block to be added
-		th_.AddOneIndexHash(sample_text.length / kBlockSize, (int)hashed_e);
+		th_.AddOneIndexHash(sample_text.length, (int)hashed_e);
 	}
-	 */
 
     @Test
     public void HashCollisionFindsNoMatch() {

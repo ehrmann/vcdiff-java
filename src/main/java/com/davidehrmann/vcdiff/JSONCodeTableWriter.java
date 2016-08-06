@@ -1,3 +1,18 @@
+// Copyright 2009-2016 Google Inc., David Ehrmann
+// Author: James deBoer, David Ehrmann
+//
+// Licensed under the Apache License, Version 2.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+//
+//      http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
+
 package com.davidehrmann.vcdiff;
 
 import com.davidehrmann.vcdiff.google.VCDiffFormatExtensionFlag;
@@ -17,6 +32,9 @@ public class JSONCodeTableWriter implements CodeTableWriterInterface<Appendable>
 	// Set if some data has been output.
 	private boolean output_called_ = false;
 
+    // Set if an opcode has been added.
+	private boolean opcode_added_ = false;
+
 	public JSONCodeTableWriter() {
 	}
 
@@ -24,6 +42,7 @@ public class JSONCodeTableWriter implements CodeTableWriterInterface<Appendable>
 	public boolean Init(int dictionary_size) {
         this.output_.append('[');
         this.target_length_ = 0;
+        this.opcode_added_ = false;
 		return true;
 	}
 
@@ -31,6 +50,11 @@ public class JSONCodeTableWriter implements CodeTableWriterInterface<Appendable>
 		if (offset < 0 || offset + length > data.length) {
 			throw new IllegalArgumentException();
 		}
+
+		// Add leading comma if this is not the first opcode.
+        if (opcode_added_) {
+            output_.append(',');
+        }
 		
 		output_.append('"');
 		
@@ -38,8 +62,9 @@ public class JSONCodeTableWriter implements CodeTableWriterInterface<Appendable>
 			JSONEscape(data[i], output_);
 		}
 		
-		output_.append("\",");
+		output_.append('"');
 		target_length_ += length;
+        opcode_added_ = true;
 	}
 
 	public void AddChecksum(int checksum) {
@@ -47,12 +72,17 @@ public class JSONCodeTableWriter implements CodeTableWriterInterface<Appendable>
 	}
 
 	public void Copy(int offset, int size) {
+        // Add leading comma if this is not the first opcode.
+        if (opcode_added_) {
+            output_.append(',');
+        }
+
 		output_.append(offset);
 		output_.append(',');
 		output_.append(size);
-		output_.append(',');
 
 		target_length_ += size;
+        opcode_added_ = true;
 	}
 
 	public void FinishEncoding(Appendable out) throws IOException {
@@ -69,6 +99,11 @@ public class JSONCodeTableWriter implements CodeTableWriterInterface<Appendable>
 	}
 
 	public void Run(int size, byte b) {
+        // Add leading comma if this is not the first opcode.
+        if (opcode_added_) {
+            output_.append(',');
+        }
+
 		output_.append('"');
 
 		StringBuilder escapedByte = new StringBuilder(8);
@@ -78,8 +113,10 @@ public class JSONCodeTableWriter implements CodeTableWriterInterface<Appendable>
 			output_.append(escapedByte);
 		}
 
-		output_.append("\",");
+		output_.append('"');
+
 		target_length_ += size;
+        opcode_added_ = true;
 	}
 
 	public void WriteHeader(Appendable out, EnumSet<VCDiffFormatExtensionFlag> formatExtensions) {
@@ -90,7 +127,7 @@ public class JSONCodeTableWriter implements CodeTableWriterInterface<Appendable>
 		return target_length_;
 	}
 
-	static protected void JSONEscape(byte b, StringBuilder out) {
+	static private void JSONEscape(byte b, StringBuilder out) {
 		switch (b) {
 		case '"': out.append("\\\""); break;
 		case '\\': out.append("\\\\"); break;

@@ -58,7 +58,7 @@ public class VCDiffJSONEncoderTest {
             "[\"\\\"Just the place for a Snark! I have said it twice:\\n" +
                     "That alone should encourage the crew.\\n\"," +
                     "161,44," +
-                    "\"hrice:\\nWhat I tell you three times is true.\\\"\\n\",]";
+                    "\"hrice:\\nWhat I tell you three times is true.\\\"\\n\"]";
 
     protected final HashedDictionary hashed_dictionary_;
     protected final VCDiffStreamingEncoder<Appendable> json_encoder_;
@@ -131,19 +131,19 @@ public class VCDiffJSONEncoderTest {
                 "\"e shou\",\"ld enc\",\"ourage\",\" the c\",\"rew.\\nJ\"," +
                 "\"ust th\",\"e plac\",\"e for \",\"a Snar\",\"k! I h\"," +
                 "\"ave sa\",\"id it \",\"thrice\",\":\\nWhat\",\" I tel\"," +
-                "\"l you \",\"three \",\"times \",\"is tru\",\"e.\\\"\\n\",]",
+                "\"l you \",\"three \",\"times \",\"is tru\",\"e.\\\"\\n\"]",
                 delta.toString());
         TestWithFixedChunkSize(json_encoder_, 45);
         assertEquals("[\"\\\"Just the place for a Snark! I have said it t\"," +
                 "\"wice:\\nThat alone should encourage the crew.\\nJ\"," +
                 "\"ust the place for a Snark! I have said it thr\",\"ice:\\n" +
-                "What I tell you three times is true.\\\"\\n\",]",
+                "What I tell you three times is true.\\\"\\n\"]",
                 delta.toString());
         TestWithFixedChunkSize(json_encoder_, 60);
         assertEquals("[\"\\\"Just the place for a Snark! I have said it twice:\\n" +
                 "That alon\",\"e should encourage the crew.\\n" +
                 "Just the place for a Snark! I h\",\"ave said it thrice:\\n" +
-                "What I tell you three times is true.\\\"\\n\",]",
+                "What I tell you three times is true.\\\"\\n\"]",
                 delta.toString());
     }
 }

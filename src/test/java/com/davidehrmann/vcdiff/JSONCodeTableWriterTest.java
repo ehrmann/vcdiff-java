@@ -48,7 +48,7 @@ public class JSONCodeTableWriterTest {
         coder_.Output(writer);
         assertEquals(0, coder_.target_length());
         coder_.FinishEncoding(writer);
-        assertEquals("[\"123\",]", writer.toString());
+        assertEquals("[\"123\"]", writer.toString());
     }
 
     @Test
@@ -58,7 +58,7 @@ public class JSONCodeTableWriterTest {
         coder_.Output(writer);
         assertEquals(0, coder_.target_length());
         coder_.FinishEncoding(writer);
-        assertEquals("[3,5,]", writer.toString());
+        assertEquals("[3,5]", writer.toString());
     }
 
     @Test
@@ -68,7 +68,7 @@ public class JSONCodeTableWriterTest {
         coder_.Output(writer);
         assertEquals(0, coder_.target_length());
         coder_.FinishEncoding(writer);
-        assertEquals("[\"aaa\",]", writer.toString());
+        assertEquals("[\"aaa\"]", writer.toString());
     }
 
     @Test
@@ -78,7 +78,7 @@ public class JSONCodeTableWriterTest {
         coder_.Output(writer);
         assertEquals(0, coder_.target_length());
         coder_.FinishEncoding(writer);
-        assertEquals("[\"\\n\\b\\r\",]", writer.toString());
+        assertEquals("[\"\\n\\b\\r\"]", writer.toString());
     }
 
     @Test
@@ -90,7 +90,7 @@ public class JSONCodeTableWriterTest {
         coder_.Output(writer);
         assertEquals(0, coder_.target_length());
         coder_.FinishEncoding(writer);
-        assertEquals("[\"abc\",3,5,\"defghij\",]", writer.toString());
+        assertEquals("[\"abc\",3,5,\"defghij\"]", writer.toString());
     }
 
     @Test
@@ -99,13 +99,13 @@ public class JSONCodeTableWriterTest {
         assertEquals(3, coder_.target_length());
         coder_.Output(writer);
         assertEquals(0, coder_.target_length());
-        assertEquals("[\"abc\",", writer.toString());
+        assertEquals("[\"abc\"", writer.toString());
         coder_.Add("def".getBytes("US-ASCII"), 0, 3);
         assertEquals(3, coder_.target_length());
         coder_.Output(writer);
         assertEquals(0, coder_.target_length());
         coder_.FinishEncoding(writer);
-        assertEquals("[\"abc\",\"def\",]", writer.toString());
+        assertEquals("[\"abc\",\"def\"]", writer.toString());
     }
 
     // AddOutputAddOutputToDifferentString isn't tested because the writer isn't reusable

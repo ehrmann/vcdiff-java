@@ -50,54 +50,54 @@ public interface CodeTableWriterInterface<OUT> {
      * @param dictionary_size
      * @return
      */
-	boolean Init(int dictionary_size);
+    boolean Init(int dictionary_size);
 
 
-	/**
-	 * Writes the header to the output string.
-	 * @param format_extensions
-	 */
-	void WriteHeader(OUT out, EnumSet<VCDiffFormatExtensionFlag> format_extensions) throws IOException;
+    /**
+     * Writes the header to the output string.
+     * @param format_extensions
+     */
+    void WriteHeader(OUT out, EnumSet<VCDiffFormatExtensionFlag> format_extensions) throws IOException;
 
-	/**
-	 * Encode an ADD opcode with the "size" bytes starting at data
-	 * @param data
-	 * @param offset
-	 * @param length
-	 */
-	void Add(byte[] data, int offset, int length);
+    /**
+     * Encode an ADD opcode with the "size" bytes starting at data
+     * @param data
+     * @param offset
+     * @param length
+     */
+    void Add(byte[] data, int offset, int length);
 
-	/**
-	 * Encode a COPY opcode with args "offset" (into dictionary) and "size" bytes.
-	 * @param offset
-	 * @param size
-	 */
-	void Copy(int offset, int size);
+    /**
+     * Encode a COPY opcode with args "offset" (into dictionary) and "size" bytes.
+     * @param offset
+     * @param size
+     */
+    void Copy(int offset, int size);
 
-	/**
-	 * Encode a RUN opcode for "size" copies of the value "byte".
-	 * @param size
-	 * @param b
-	 */
-	void Run(int size, byte b);
+    /**
+     * Encode a RUN opcode for "size" copies of the value "byte".
+     * @param size
+     * @param b
+     */
+    void Run(int size, byte b);
 
-	/**
-	 * Appends the encoded delta window to the output
-	 * string.  The output string is not null-terminated and may contain embedded
-	 * '\0' characters.
-	 * @param checksum
-	 */
-	void AddChecksum(int checksum);
+    /**
+     * Appends the encoded delta window to the output
+     * string.  The output string is not null-terminated and may contain embedded
+     * '\0' characters.
+     * @param checksum
+     */
+    void AddChecksum(int checksum);
 
-	/**
-	 * Appends the encoded delta window to the output
-	 * string.  The output string is not null-terminated and may contain embedded
-	 * '\0' characters.
-	 */
-	void Output(OUT out) throws IOException;
+    /**
+     * Appends the encoded delta window to the output
+     * string.  The output string is not null-terminated and may contain embedded
+     * '\0' characters.
+     */
+    void Output(OUT out) throws IOException;
 
-	/**
-	 * Finishes encoding.
-	 */
-	void FinishEncoding(OUT out) throws IOException;
+    /**
+     * Finishes encoding.
+     */
+    void FinishEncoding(OUT out) throws IOException;
 }

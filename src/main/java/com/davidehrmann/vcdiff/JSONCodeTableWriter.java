@@ -23,114 +23,114 @@ import java.util.EnumSet;
 
 public class JSONCodeTableWriter implements CodeTableWriterInterface<Appendable> {
 
-	// Stores the JSON data before it is sent to the OutputString.
-	private StringBuilder output_ = new StringBuilder(1024);
+    // Stores the JSON data before it is sent to the OutputString.
+    private StringBuilder output_ = new StringBuilder(1024);
 
-	// Set if some data has been output.
-	private boolean output_called_ = false;
+    // Set if some data has been output.
+    private boolean output_called_ = false;
 
     // Set if an opcode has been added.
-	private boolean opcode_added_ = false;
+    private boolean opcode_added_ = false;
 
-	public JSONCodeTableWriter() {
-	}
+    public JSONCodeTableWriter() {
+    }
 
-	@Override
-	public boolean Init(int dictionary_size) {
+    @Override
+    public boolean Init(int dictionary_size) {
         this.output_.append('[');
         this.opcode_added_ = false;
-		return true;
-	}
+        return true;
+    }
 
-	public void Add(final byte[] data, final int offset, final int length) {
-		if (offset < 0 || offset + length > data.length) {
-			throw new IllegalArgumentException();
-		}
-
-		// Add leading comma if this is not the first opcode.
-        if (opcode_added_) {
-            output_.append(',');
+    public void Add(final byte[] data, final int offset, final int length) {
+        if (offset < 0 || offset + length > data.length) {
+            throw new IllegalArgumentException();
         }
-		
-		output_.append('"');
-		
-		for (int i = offset; i < offset + length; i++) {
-			JSONEscape(data[i], output_);
-		}
-		
-		output_.append('"');
-        opcode_added_ = true;
-	}
 
-	public void AddChecksum(int checksum) {
-
-	}
-
-	public void Copy(int offset, int size) {
         // Add leading comma if this is not the first opcode.
         if (opcode_added_) {
             output_.append(',');
         }
 
-		output_.append(offset);
-		output_.append(',');
-		output_.append(size);
+        output_.append('"');
 
+        for (int i = offset; i < offset + length; i++) {
+            JSONEscape(data[i], output_);
+        }
+
+        output_.append('"');
         opcode_added_ = true;
-	}
+    }
 
-	public void FinishEncoding(Appendable out) throws IOException {
-		if (output_called_) {
-			out.append(']');
-		}
-	}
+    public void AddChecksum(int checksum) {
 
-	public void Output(Appendable out) throws IOException {
-		output_called_ = true;
-		out.append(output_);
-		output_ = new StringBuilder(1024);
-	}
+    }
 
-	public void Run(int size, byte b) {
+    public void Copy(int offset, int size) {
         // Add leading comma if this is not the first opcode.
         if (opcode_added_) {
             output_.append(',');
         }
 
-		output_.append('"');
-
-		StringBuilder escapedByte = new StringBuilder(8);
-		JSONEscape(b, escapedByte);
-		
-		for (int i = 0; i < size; i++) {
-			output_.append(escapedByte);
-		}
-
-		output_.append('"');
+        output_.append(offset);
+        output_.append(',');
+        output_.append(size);
 
         opcode_added_ = true;
-	}
+    }
 
-	public void WriteHeader(Appendable out, EnumSet<VCDiffFormatExtensionFlag> formatExtensions) {
-		// The JSON format does not need a header.
-	}
+    public void FinishEncoding(Appendable out) throws IOException {
+        if (output_called_) {
+            out.append(']');
+        }
+    }
 
-	static private void JSONEscape(byte b, StringBuilder out) {
-		switch (b) {
-		case '"': out.append("\\\""); break;
-		case '\\': out.append("\\\\"); break;
-		case '\b': out.append("\\b"); break;
-		case '\f': out.append("\\f"); break;
-		case '\n': out.append("\\n"); break;
-		case '\r': out.append("\\r"); break;
-		case '\t':out.append("\\t"); break;
-		default:
-			// encode zero as unicode, also all control codes.
-			if (b < 32 || b >= 127) {
-				out.append(String.format("\\u%04x", b & 0xffff));
-			} else {
-				out.append((char)b);
-			}
-		}
-	}
+    public void Output(Appendable out) throws IOException {
+        output_called_ = true;
+        out.append(output_);
+        output_ = new StringBuilder(1024);
+    }
+
+    public void Run(int size, byte b) {
+        // Add leading comma if this is not the first opcode.
+        if (opcode_added_) {
+            output_.append(',');
+        }
+
+        output_.append('"');
+
+        StringBuilder escapedByte = new StringBuilder(8);
+        JSONEscape(b, escapedByte);
+
+        for (int i = 0; i < size; i++) {
+            output_.append(escapedByte);
+        }
+
+        output_.append('"');
+
+        opcode_added_ = true;
+    }
+
+    public void WriteHeader(Appendable out, EnumSet<VCDiffFormatExtensionFlag> formatExtensions) {
+        // The JSON format does not need a header.
+    }
+
+    static private void JSONEscape(byte b, StringBuilder out) {
+        switch (b) {
+        case '"': out.append("\\\""); break;
+        case '\\': out.append("\\\\"); break;
+        case '\b': out.append("\\b"); break;
+        case '\f': out.append("\\f"); break;
+        case '\n': out.append("\\n"); break;
+        case '\r': out.append("\\r"); break;
+        case '\t':out.append("\\t"); break;
+        default:
+            // encode zero as unicode, also all control codes.
+            if (b < 32 || b >= 127) {
+                out.append(String.format("\\u%04x", b & 0xffff));
+            } else {
+                out.append((char)b);
+            }
+        }
+    }
 }

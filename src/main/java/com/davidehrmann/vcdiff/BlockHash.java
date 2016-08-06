@@ -307,6 +307,14 @@ public class BlockHash {
 		if (end_index <= last_index_added) {
 			throw new IllegalArgumentException("AddAllBlocksThroughIndex() called with index " + end_index + " <= last index added ( " + last_index_added + ")");
 		}
+
+        // Exit early if the source data is small enough that it does not contain
+        // any blocks.  This avoids negative values of last_legal_hash_index.
+        // See: https://code.google.com/p/open-vcdiff/issues/detail?id=40
+		if (source_data.remaining() < kBlockSize) {
+		    return;
+        }
+
 		int end_limit = end_index;
 		// Don't allow reading any indices at or past source_size_.
 		// The Hash function extends (kBlockSize - 1) bytes past the index,

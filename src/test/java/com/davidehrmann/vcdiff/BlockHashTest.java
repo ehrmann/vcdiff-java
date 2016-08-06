@@ -1,3 +1,18 @@
+// Copyright 2008-2016 Google Inc., David Ehrmann
+// Author: Lincoln Smith, David Ehrmann
+//
+// Licensed under the Apache License, Version 2.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+//
+//      http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
+
 package com.davidehrmann.vcdiff;
 
 import org.junit.Assert;
@@ -483,6 +498,13 @@ public class BlockHashTest {
     @Test
     public void ZeroSizeSourceAccepted() {
         new BlockHash(sample_text, 0, true);
+        BlockHash th_ = BlockHash.CreateTargetHash(sample_text, 0);
+        Assert.assertEquals(-1, th_.FirstMatchingBlock((int) hashed_y, test_string_y, 0));
+    }
+
+    @Test
+    public void EmptySource() {
+        new BlockHash(new byte[0], 0, true);
         BlockHash th_ = BlockHash.CreateTargetHash(sample_text, 0);
         Assert.assertEquals(-1, th_.FirstMatchingBlock((int) hashed_y, test_string_y, 0));
     }

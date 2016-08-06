@@ -100,11 +100,4 @@ public interface CodeTableWriterInterface<OUT> {
 	 * Finishes encoding.
 	 */
 	void FinishEncoding(OUT out) throws IOException;
-
-	/**
-	 * Returns the number of target bytes processed, which is the sum of all the
-	 * size arguments passed to Add(), Copy(), and Run().
-	 * @return
-	 */
-	int target_length();
 }

@@ -26,9 +26,6 @@ public class JSONCodeTableWriter implements CodeTableWriterInterface<Appendable>
 	// Stores the JSON data before it is sent to the OutputString.
 	private StringBuilder output_ = new StringBuilder(1024);
 
-	// The sum of all the size arguments passed to Add(), Copy() and Run().
-	private int target_length_ = 0;
-
 	// Set if some data has been output.
 	private boolean output_called_ = false;
 
@@ -41,7 +38,6 @@ public class JSONCodeTableWriter implements CodeTableWriterInterface<Appendable>
 	@Override
 	public boolean Init(int dictionary_size) {
         this.output_.append('[');
-        this.target_length_ = 0;
         this.opcode_added_ = false;
 		return true;
 	}
@@ -63,7 +59,6 @@ public class JSONCodeTableWriter implements CodeTableWriterInterface<Appendable>
 		}
 		
 		output_.append('"');
-		target_length_ += length;
         opcode_added_ = true;
 	}
 
@@ -81,7 +76,6 @@ public class JSONCodeTableWriter implements CodeTableWriterInterface<Appendable>
 		output_.append(',');
 		output_.append(size);
 
-		target_length_ += size;
         opcode_added_ = true;
 	}
 
@@ -95,7 +89,6 @@ public class JSONCodeTableWriter implements CodeTableWriterInterface<Appendable>
 		output_called_ = true;
 		out.append(output_);
 		output_ = new StringBuilder(1024);
-		target_length_ = 0;
 	}
 
 	public void Run(int size, byte b) {
@@ -115,16 +108,11 @@ public class JSONCodeTableWriter implements CodeTableWriterInterface<Appendable>
 
 		output_.append('"');
 
-		target_length_ += size;
         opcode_added_ = true;
 	}
 
 	public void WriteHeader(Appendable out, EnumSet<VCDiffFormatExtensionFlag> formatExtensions) {
 		// The JSON format does not need a header.
-	}
-
-	public int target_length() {
-		return target_length_;
 	}
 
 	static private void JSONEscape(byte b, StringBuilder out) {

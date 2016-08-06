@@ -1,3 +1,18 @@
+// Copyright 2006-2016 Google Inc., David Ehrmann
+// Authors: Sanjay Ghemawat, Jeff Dean, Chandra Chereddi, Lincoln Smith, David Ehrmann
+//
+// Licensed under the Apache License, Version 2.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+//
+//      http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
+
 package com.davidehrmann.vcdiff;
 
 import org.slf4j.Logger;
@@ -63,7 +78,7 @@ public class VCDiffEngine {
 		if (target_data.remaining() < BlockHash.kBlockSize) {
 			int target_size = target_data.remaining();
 			AddUnmatchedRemainder(target_data, coder);
-			FinishEncoding(target_size, diff, coder);
+            coder.Output(diff);
 			return;
 		}
 		
@@ -116,7 +131,7 @@ public class VCDiffEngine {
 		}
 		
 		AddUnmatchedRemainder(local_target_data, coder);
-		FinishEncoding(local_target_data.capacity(), diff, coder);
+        coder.Output(diff);
 		
 		target_data.position(target_data.position() + local_target_data.position());
 	}
@@ -141,19 +156,6 @@ public class VCDiffEngine {
 
 			unencoded_target.position(unencoded_target.limit());
 		}
-	}
-
-	/**
-	 * This helper function tells the coder to finish the encoding and write
-	 * the results into the output string "diff".
-	 * @throws IOException 
-	 */
-	protected <OUT> void FinishEncoding(int target_size, OUT diff, CodeTableWriterInterface<OUT> coder) throws IOException {
-		if (target_size != coder.target_length()) {
-			LOGGER.error("Internal error in VCDiffEngine::Encode: original target size ({}) does not match number of bytes processed ({})",
-					target_size, coder.target_length());
-		}
-		coder.Output(diff);
 	}
 
 	/**

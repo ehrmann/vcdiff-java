@@ -1,3 +1,18 @@
+// Copyright 2007-2016 Google Inc., David Ehrmann
+// Authors: Jeff Dean, Lincoln Smith, David Ehrmann
+//
+// Licensed under the Apache License, Version 2.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+//
+//      http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
+
 package com.davidehrmann.vcdiff;
 
 import org.junit.Assert;
@@ -7,6 +22,7 @@ import java.util.Random;
 import java.util.zip.CRC32;
 
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertNotEquals;
 
 public class RollingHashTest {
     static final int kBase = RollingHash.RollingHashUtil.kBase;
@@ -102,27 +118,31 @@ public class RollingHashTest {
     }
 
     private void BM_DefaultHash(int kBlockSize, int iterations, byte[] buffer) {
-        // TODO: why is result_array never read?
+        long hash = 1;
         RollingHash hasher = new RollingHash(kBlockSize);
-        long result_array[] = new long[kUpdateHashBlocks];
         for (int iter = 0; iter < iterations; ++iter) {
             for (int i = 0; i < kUpdateHashBlocks; ++i) {
-                result_array[i] = hasher.Hash(buffer, i, buffer.length - i);
+                hash = 31 * hash + hasher.Hash(buffer, i, buffer.length - i);
             }
         }
+
+        // Check the hash against a random value so the JIT doesn't optimize out the computation
+        assertNotEquals(42, hash);
     }
 
     private void BM_UpdateHash(int kBlockSize, int iterations, byte[] buffer) {
+        long hash = 1;
         RollingHash hasher = new RollingHash(kBlockSize);
-        // TODO: why is result_array never read?
-        long[] result_array = new long[kUpdateHashBlocks];
         for (int iter = 0; iter < iterations; ++iter) {
             long running_hash = hasher.Hash(buffer, 0, buffer.length);
             for (int i = 0; i < kUpdateHashBlocks; ++i) {
                 running_hash = hasher.UpdateHash(running_hash, buffer[i], buffer[i + kBlockSize]);
-                result_array[i] = running_hash;
+                hash = 31 * hash + running_hash;
             }
         }
+
+        // Check the hash against a random value so the JIT doesn't optimize out the computation
+        assertNotEquals(42, hash);
     }
 
     @Test

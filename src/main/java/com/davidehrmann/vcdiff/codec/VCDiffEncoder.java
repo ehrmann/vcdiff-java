@@ -27,9 +27,12 @@ import java.util.EnumSet;
 import static com.davidehrmann.vcdiff.google.VCDiffFormatExtensionFlag.VCD_FORMAT_JSON;
 import static com.davidehrmann.vcdiff.google.VCDiffFormatExtensionFlag.VCD_STANDARD_FORMAT;
 
-// A simpler (non-streaming) interface to the VCDIFF encoder that can be used
-// if the entire target data string is available.
-//
+/**
+ * A simpler (non-streaming) interface to the VCDIFF encoder that can be used
+ * if the entire target data string is available.
+ *
+ * @param <OUT> The output type the {@link com.davidehrmann.vcdiff.CodeTableWriterInterface} uses
+ */
 public class VCDiffEncoder<OUT> {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(BaseVCDiffStreamingEncoder.class);
@@ -87,8 +90,17 @@ public class VCDiffEncoder<OUT> {
         }
     }
 
-    // Replaces old contents of output_string with the encoded form of
-    // target_data.
+    /**
+     * Replaces old contents of output_string with the encoded form of
+     * target_data.
+     *
+     * @param data
+     * @param offset
+     * @param length
+     * @param out
+     * @return
+     * @throws IOException
+     */
     public boolean Encode(byte[] data, int offset, int length, OUT out) throws IOException {
         if (encoder_ == null) {
             encoder_ = new BaseVCDiffStreamingEncoder<OUT>(

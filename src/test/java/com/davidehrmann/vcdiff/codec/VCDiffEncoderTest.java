@@ -217,35 +217,6 @@ public class VCDiffEncoderTest extends VerifyEncodedBytesTest {
         assertArrayEquals(target_, result_target_.toByteArray());
     }
 
-    // TODO
-    /*
-    #ifdef HAVE_EXT_ROPE
-    // Test that the crope class can be used in place of a string for encoding
-    // and decoding.
-    @Test
-    public void EncodeDecodeCrope() throws Exception {
-        crope delta_crope, result_crope;
-        assertTrue(encoder_.StartEncoding(&delta_crope));
-        assertTrue(encoder_.EncodeChunk(target_, target_.length, &delta_crope));
-        assertTrue(encoder_.FinishEncoding(&delta_crope));
-        EXPECT_GE(target_.length + kFileHeaderSize + kWindowHeaderSize,
-                delta_crope.size());
-        decoder_.StartDecoding(dictionary_);
-        // crope can't guarantee that its characters are contiguous, so the decoding
-        // has to be done byte-by-byte.
-        for (crope::const_iterator it = delta_crope.begin();
-             it != delta_crope.end(); it++) {
-            const char this_char = *it;
-            assertTrue(decoder_.DecodeChunk(&this_char, 1, &result_crope));
-        }
-        assertTrue(decoder_.FinishDecoding());
-        crope expected_target(target_);
-        EXPECT_EQ(expected_target, result_crope);
-    }
-    #endif  // HAVE_EXT_ROPE
-    */
-
-
     @Test
     public void EncodeDecodeFixedChunkSizes() throws Exception {
         // These specific chunk sizes have failed in the past

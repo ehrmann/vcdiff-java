@@ -16,9 +16,6 @@
 
 package com.davidehrmann.vcdiff;
 
-import java.lang.reflect.InvocationTargetException;
-import java.lang.reflect.Method;
-import java.lang.reflect.Modifier;
 import java.nio.ByteBuffer;
 import java.util.zip.Adler32;
 
@@ -38,7 +35,7 @@ public class ZeroInitializedAdler32 extends Adler32 {
     // An alternate implementation initializes Adler32 with this byte array, resulting in an
     // Adler32 sum of zero, effectively initializing Adler32 with zero rather than one.
     @SuppressWarnings({"unused", "MismatchedReadAndWriteOfArray"})
-    private static final byte[] ADLER_ZERO = new byte[] {
+    static final byte[] ADLER_ZERO = new byte[] {
             -26, 11, -99, -30, 23, -120, -6, -15, 8, 48, -61, 112, 94, 116, -23, 86,
             -30, -112, -118, -90, -85, -36, -69, -29, 124, 98, -120, -62, 106, -80, 56, 33,
             -62, -18, -44, 56, 40, 50, -22, 13, 3, 18, -114, 45, 24, 122, -95, -104,
@@ -75,21 +72,6 @@ public class ZeroInitializedAdler32 extends Adler32 {
 
     private static final int MOD_ADLER = 65521;
 
-    private static final Method BYTE_BUFFER_UPDATE;
-    static {
-        Method byteBufferUpdate = null;
-        try {
-            byteBufferUpdate = Adler32.class.getMethod("update", ByteBuffer.class);
-            int modifiers = byteBufferUpdate.getModifiers();
-            if ((modifiers & Modifier.PUBLIC) == 0 || (modifiers & Modifier.STATIC) != 0) {
-                byteBufferUpdate = null;
-            }
-        } catch (NoSuchMethodException ignored) {
-        } catch (SecurityException ignored) {}
-
-        BYTE_BUFFER_UPDATE = byteBufferUpdate;
-    }
-
     private volatile int bytesUpdatedModAdler = 0;
 
     @Override
@@ -110,24 +92,9 @@ public class ZeroInitializedAdler32 extends Adler32 {
         addAndModBytesUpdated(b.length);
     }
 
+    // This method exists in Java8.  Its implementation is more efficient, so switch
+    // to super.update(buffer) when support for older Java is dropped.
     public void update(ByteBuffer buffer) {
-        // This method exists in Java 8.  Use its implementation if present.
-        if (BYTE_BUFFER_UPDATE != null) {
-            try {
-                int remaining = buffer.remaining();
-                BYTE_BUFFER_UPDATE.invoke(this, buffer);
-                addAndModBytesUpdated(remaining);
-                return;
-            } catch (IllegalAccessException ignored) {
-            } catch (InvocationTargetException e) {
-                if (e.getCause() instanceof RuntimeException) {
-                    throw (RuntimeException) e.getCause();
-                } else {
-                    throw new RuntimeException(e.getCause());
-                }
-            }
-        }
-
         byte[] copyBuffer = new byte[2048];
         int read;
         while ((read = Math.min(copyBuffer.length, buffer.remaining())) > 0) {

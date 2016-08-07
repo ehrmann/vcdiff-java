@@ -42,6 +42,9 @@ public class VCDiffEncoderTest extends VerifyEncodedBytesTest {
                     "Just the place for a Snark! I have said it thrice:\n" +
                     "What I tell you three times is true.\"\n").getBytes(US_ASCII);
 
+    // NonASCII string "foo\x128".
+    protected static final byte[] kNonAscii = {102, 111, 111, (byte) 128, 0};
+
     public VCDiffEncoderTest() {
         super(kDictionary, kTarget);
     }
@@ -431,7 +434,18 @@ public class VCDiffEncoderTest extends VerifyEncodedBytesTest {
         assertEquals(new String(wchar_target, UTF16BE), new String(result_target_.toByteArray(), UTF16BE));
     }
 
-    // TODO:
+    @Test
+    public void NonasciiDictionary() throws Exception {
+        VCDiffEncoder<OutputStream> encoder = new VCDiffEncoder<OutputStream>(normalCodeTableWriter, kNonAscii);
+        assertTrue(encoder.Encode(kTarget, 0, kTarget.length, delta_));
+    }
+
+    @Test
+    public void NonasciiTarget() throws Exception {
+        assertTrue(simple_encoder_.Encode(kNonAscii, 0, kNonAscii.length,delta_));
+    }
+
+    // TODO: This can be ported once ByteBuffers are used everywhere
     /*
     #if defined(HAVE_MPROTECT) && \
             (defined(HAVE_MEMALIGN) || defined(HAVE_POSIX_MEMALIGN))

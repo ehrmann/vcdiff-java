@@ -17,6 +17,7 @@ package com.davidehrmann.vcdiff.codec;
 
 import com.davidehrmann.vcdiff.JSONCodeTableWriter;
 import com.davidehrmann.vcdiff.google.VCDiffFormatExtensionFlag;
+import org.junit.Ignore;
 import org.junit.Test;
 
 import java.io.ByteArrayOutputStream;
@@ -24,6 +25,7 @@ import java.nio.charset.Charset;
 import java.util.EnumSet;
 
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
 
 public class VCDiffJSONEncoderTest {
@@ -59,6 +61,9 @@ public class VCDiffJSONEncoderTest {
                     "That alone should encourage the crew.\\n\"," +
                     "161,44," +
                     "\"hrice:\\nWhat I tell you three times is true.\\\"\\n\"]";
+
+    // NonASCII string "foo\x128".
+    protected static final byte[] kNonAscii = {102, 111, 111, (byte) 128, 0};
 
     protected final HashedDictionary hashed_dictionary_;
     protected final VCDiffStreamingEncoder<Appendable> json_encoder_;
@@ -145,5 +150,28 @@ public class VCDiffJSONEncoderTest {
                 "Just the place for a Snark! I h\",\"ave said it thrice:\\n" +
                 "What I tell you three times is true.\\\"\\n\"]",
                 delta.toString());
+    }
+
+    // TODO: disallow non-ASCII in VCDiffJSONEncoder
+    @Ignore
+    @Test
+    public void NonasciiDictionaryWithJSON() throws Exception {
+        HashedDictionary hashed_dictionary = new HashedDictionary(kNonAscii);
+        VCDiffStreamingEncoder<Appendable> json_encoder = new BaseVCDiffStreamingEncoder<Appendable>(
+                new JSONCodeTableWriter(),
+                hashed_dictionary,
+                EnumSet.of(VCDiffFormatExtensionFlag.VCD_FORMAT_JSON),
+                /* look_for_target_matches = */ true) {
+        };
+
+        assertTrue(json_encoder.StartEncoding(delta));
+        assertFalse(json_encoder.EncodeChunk(kTarget, 0, kTarget.length, delta));
+    }
+
+    @Ignore
+    @Test
+    public void NonasciiTargetWithJSON() throws Exception {
+        assertTrue(json_encoder_.StartEncoding(delta));
+        assertFalse(json_encoder_.EncodeChunk(kNonAscii,0, kNonAscii.length, delta));
     }
 }

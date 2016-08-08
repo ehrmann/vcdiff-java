@@ -440,17 +440,17 @@ public class VCDiffFileBasedCoder {
 
         public void Decode() throws IOException {
             byte[] dictionary = OpenDictionary(globalOptions.dictionary);
-            HashedDictionary hashedDictionary = new HashedDictionary(dictionary);
-
-            VCDiffStreamingDecoder decoder = new VCDiffStreamingDecoderImpl();
-            decoder.SetMaximumTargetFileSize(globalOptions.maxTargetFileSize);
-            decoder.SetMaximumTargetWindowSize(globalOptions.maxTargetWindowSize);
-            decoder.SetAllowVcdTarget(decodeOptions.allowVcdTarget);
 
             boolean useStdin = (targetAndDeltaFlags.delta == null || targetAndDeltaFlags.delta.isEmpty());
             boolean useStdout = (targetAndDeltaFlags.target == null || targetAndDeltaFlags.target.isEmpty());
 
-            InputStream in = useStdin ? new InputStreamExceptionMapper(System.in, "delta") : OpenFileForReading(targetAndDeltaFlags.delta, "delta");
+            InputStream in = new VCDiffInputStream(
+                    useStdin ? new InputStreamExceptionMapper(System.in, "delta") : OpenFileForReading(targetAndDeltaFlags.delta, "delta"),
+                    dictionary,
+                    globalOptions.maxTargetFileSize,
+                    globalOptions.maxTargetWindowSize,
+                    decodeOptions.allowVcdTarget
+            );
             try {
                 long inputSize = 0;
 
@@ -459,19 +459,10 @@ public class VCDiffFileBasedCoder {
                         OpenFileForWriting(targetAndDeltaFlags.target, "target")
                 );
                 try {
-                    decoder.StartDecoding(dictionary);
-
                     byte[] buffer = new byte[globalOptions.bufferSize];
                     int read;
                     while ((read = in.read(buffer)) >= 0) {
-                        inputSize += read;
-                        if (!decoder.DecodeChunk(buffer, 0, read, out)) {
-                            throw new IOException("Error trying to decode data chunk of length " + read);
-                        }
-                    }
-
-                    if (!decoder.FinishDecoding()) {
-                        throw new IOException("Decode error; '" + targetAndDeltaFlags.delta + "' may not be a valid VCDIFF delta file");
+                        out.write(buffer, 0, read);
                     }
 
                     if (globalOptions.stats && (out.getBytesWritten() > 0)) {
@@ -509,12 +500,14 @@ public class VCDiffFileBasedCoder {
         public void DecodeAndCompare() throws IOException {
             byte[] dictionary = OpenDictionary(globalOptions.dictionary);
 
-            VCDiffStreamingDecoder decoder = new VCDiffStreamingDecoderImpl();
-            decoder.SetMaximumTargetFileSize(globalOptions.maxTargetFileSize);
-            decoder.SetMaximumTargetWindowSize(globalOptions.maxTargetWindowSize);
-            decoder.SetAllowVcdTarget(decodeOptions.allowVcdTarget);
+            InputStream in = new VCDiffInputStream(
+                    OpenFileForReading(targetAndDeltaOptions.delta, "delta"),
+                    dictionary,
+                    globalOptions.maxTargetFileSize,
+                    globalOptions.maxTargetWindowSize,
+                    decodeOptions.allowVcdTarget
+            );
 
-            InputStream in = OpenFileForReading(targetAndDeltaOptions.delta, "delta");
             try {
                 long input_size = 0;
 
@@ -524,19 +517,11 @@ public class VCDiffFileBasedCoder {
                             new ComparingOutputStream(expected)
                     );
                     try {
-                        decoder.StartDecoding(dictionary);
-
                         byte[] buffer = new byte[globalOptions.bufferSize];
                         int read;
                         while ((read = in.read(buffer)) >= 0) {
                             input_size += read;
-                            if (!decoder.DecodeChunk(buffer, 0, read, out)) {
-                                throw new IOException("Error trying to decode data chunk of length " + read);
-                            }
-                        }
-
-                        if (!decoder.FinishDecoding()) {
-                            throw new IOException("Decode error; '" + targetAndDeltaOptions.delta + "' may not be a valid VCDIFF delta file");
+                            out.write(buffer, 0, read);
                         }
 
                         // Close out here so it verifies EOF

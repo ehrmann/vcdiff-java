@@ -1,6 +1,7 @@
 package com.davidehrmann.vcdiff;
 
 import com.davidehrmann.vcdiff.google.VCDiffFormatExtensionFlag;
+import com.davidehrmann.vcdiff.io.CountingOutputStream;
 import com.davidehrmann.vcdiff.mina_buffer.IoBuffer;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -299,7 +300,7 @@ public class VCDiffCodeTableWriter implements CodeTableWriterInterface<OutputStr
 			VarInt.writeInt(out, length_of_the_delta_encoding);
 			
 			// Start of Delta Encoding
-			final int size_before_delta_encoding = out.getBytesWritten();
+			final int size_before_delta_encoding = (int) out.getBytesWritten();
 			
 			VarInt.writeInt(out, target_length_);
 			out.write(0x00);  // Delta_Indicator: no compression
@@ -317,7 +318,7 @@ public class VCDiffCodeTableWriter implements CodeTableWriterInterface<OutputStr
 			out.write(separate_addresses_for_copy_.array(), separate_addresses_for_copy_.arrayOffset(), separate_addresses_for_copy_.position());
 			
 			// End of Delta Encoding
-			final int size_after_delta_encoding = out.getBytesWritten();
+			final int size_after_delta_encoding = (int) out.getBytesWritten();
 			if (length_of_the_delta_encoding != (size_after_delta_encoding - size_before_delta_encoding)) {
 				LOGGER.error("Internal error: calculated length of the delta encoding ({}) does not match actual length ({})",
 						length_of_the_delta_encoding, (size_after_delta_encoding - size_before_delta_encoding));
@@ -481,50 +482,5 @@ public class VCDiffCodeTableWriter implements CodeTableWriterInterface<OutputStr
 		}
 
 		return length_of_the_delta_encoding;
-	}
-	
-	protected static class CountingOutputStream extends OutputStream {
-		private final AtomicInteger bytesWritten = new AtomicInteger(0);
-		private final OutputStream out;
-		
-		public CountingOutputStream(OutputStream out) {
-			if (out == null) {
-				throw new NullPointerException();
-			}
-			
-			this.out = out;
-		}
-		
-		@Override
-		public void close() throws IOException {
-			out.close();
-		}
-
-		@Override
-		public void flush() throws IOException {
-			out.flush();
-		}
-
-		@Override
-		public void write(byte[] b, int off, int len) throws IOException {
-			out.write(b, off, len);
-			bytesWritten.addAndGet(len);
-		}
-
-		@Override
-		public void write(byte[] b) throws IOException {
-			out.write(b);
-			bytesWritten.addAndGet(b.length);
-		}
-
-		@Override
-		public void write(int b) throws IOException {
-			out.write(b);
-			bytesWritten.incrementAndGet();
-		}
-		
-		public int getBytesWritten() {
-			return bytesWritten.get();
-		}
 	}
 }

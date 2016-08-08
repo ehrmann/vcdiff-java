@@ -13,7 +13,10 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package com.davidehrmann.vcdiff.codec;
+package com.davidehrmann.vcdiff.io;
+
+import com.davidehrmann.vcdiff.codec.VCDiffStreamingDecoder;
+import com.davidehrmann.vcdiff.codec.VCDiffStreamingDecoderImpl;
 
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;

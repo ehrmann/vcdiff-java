@@ -16,12 +16,15 @@
 package com.davidehrmann.vcdiff;
 
 import com.beust.jcommander.*;
-import com.davidehrmann.vcdiff.codec.*;
-import com.davidehrmann.vcdiff.google.VCDiffFormatExtensionFlag;
+import com.davidehrmann.vcdiff.io.*;
 
 import java.io.*;
-import java.util.*;
-import java.util.concurrent.atomic.AtomicLong;
+import java.util.Arrays;
+import java.util.LinkedList;
+import java.util.List;
+import java.util.ListIterator;
+
+import static com.davidehrmann.vcdiff.io.IOUtils.closeQuietly;
 
 /**
  * / command-line interface to the open-vcdiff library.
@@ -128,86 +131,15 @@ public class VCDiffFileBasedCoder {
         }
     }
 
-    protected static void closeQuietly(Closeable c) {
-        try {
-            c.close();
-        } catch (IOException ignored) { }
-    }
-
     // Opens the dictionary file and reads it into a newly allocated buffer.
     // If successful, returns true and populates dictionary with the dictionary
     // contents; otherwise, returns the buffer.
     protected static byte[] OpenDictionary(String dictionary) throws IOException {
-        ByteArrayOutputStream out = new ByteArrayOutputStream();
         InputStream in = OpenFileForReading(dictionary, "dictionary");
         try {
-            byte[] buffer = new byte[4096];
-            int read;
-            while ((read = in.read(buffer)) >= 0) {
-                out.write(buffer, 0, read);
-            }
+            return IOUtils.toByteArray(in);
         } finally {
             closeQuietly(in);
-        }
-
-        return out.toByteArray();
-    }
-
-    protected static class ComparingOutputStream extends OutputStream {
-
-        private final InputStream expected;
-        private volatile boolean open = true;
-
-        public ComparingOutputStream(InputStream expected) {
-            this.expected = new BufferedInputStream(expected);
-        }
-
-        @Override
-        public void write(int b) throws IOException {
-            if (!open) {
-                throw new IllegalStateException();
-            }
-
-            b = b & 0xff;
-            int read = expected.read();
-            if (read < 0) {
-                throw new IOException("Decoded target is longer than original target file");
-            } else if (b != read) {
-                throw new IOException("Original target file does not match decoded target");
-            }
-        }
-
-        @Override
-        public void close() throws IOException {
-            open = false;
-            if (expected.read() >= 0) {
-                throw new IOException("Decoded target is shorter than original target file");
-            }
-        }
-    }
-
-    protected static class CountingOutputStream extends FilterOutputStream {
-
-        private final AtomicLong bytesWritten = new AtomicLong();
-
-        public CountingOutputStream(OutputStream out) {
-            super(out);
-        }
-
-        @Override
-        public void write(int b) throws IOException {
-            super.write(b);
-            bytesWritten.getAndIncrement();
-        }
-
-        @Override
-        public void write(byte[] b, int off, int len) throws IOException {
-            super.out.write(b, off, len);
-            bytesWritten.getAndAdd(len);
-        }
-
-        public long getBytesWritten() {
-            return bytesWritten.get();
         }
     }
 
@@ -361,67 +293,56 @@ public class VCDiffFileBasedCoder {
 
         public void Encode() throws IOException {
             byte[] dictionary = OpenDictionary(globalOptions.dictionary);
-            HashedDictionary hashedDictionary = new HashedDictionary(dictionary);
 
-            EnumSet<VCDiffFormatExtensionFlag> format_flags = EnumSet.of(VCDiffFormatExtensionFlag.VCD_STANDARD_FORMAT);
-            if (encodeOptions.interleaved) {
-                format_flags.add(VCDiffFormatExtensionFlag.VCD_FORMAT_INTERLEAVED);
-            }
-            if (encodeOptions.checksum) {
-                format_flags.add( VCDiffFormatExtensionFlag.VCD_FORMAT_CHECKSUM);
-            }
+            // FIXME: support encodeOptions.json
+            /*
             if (encodeOptions.json) {
                 format_flags.add(VCDiffFormatExtensionFlag.VCD_FORMAT_JSON);
             }
-
-            CodeTableWriterInterface<OutputStream> coder = new VCDiffCodeTableWriter(encodeOptions.interleaved);
-            coder.Init(dictionary.length);
-
-            VCDiffStreamingEncoder<OutputStream> encoder = new BaseVCDiffStreamingEncoder<OutputStream>(
-                    coder,
-                    hashedDictionary,
-                    format_flags,
-                    encodeOptions.targetMatches
-            );
+            */
 
             boolean useStdin = (targetAndDeltaOptions.target == null || targetAndDeltaOptions.target.isEmpty());
             boolean useStdout = (targetAndDeltaOptions.delta == null || targetAndDeltaOptions.delta.isEmpty());
 
-            InputStream in = useStdin ?  new InputStreamExceptionMapper(System.in, "target") : OpenFileForReading(targetAndDeltaOptions.target, "target");
+            InputStream fileIn = useStdin ?  new InputStreamExceptionMapper(System.in, "target") : OpenFileForReading(targetAndDeltaOptions.target, "target");
             try {
-                long inputSize = 0;
-
-                CountingOutputStream out = new CountingOutputStream(useStdout ?
-                        new OutputStreamExceptionMapper(System.out, "delta") : OpenFileForWriting(targetAndDeltaOptions.delta, "delta")
-                );
+                CountingInputStream countingIn = new CountingInputStream(fileIn);
                 try {
-                    if (!encoder.StartEncoding(out)) {
-                        throw new IOException("Error during encoder initialization");
-                    }
-
-                    byte[] buffer = new byte[globalOptions.bufferSize];
-                    int read;
-                    while ((read = in.read(buffer)) >= 0) {
-                        inputSize += read;
-                        if (!encoder.EncodeChunk(buffer, 0, read, out)) {
-                            throw new IOException("Error trying to encode data chunk of length " + read);
+                    OutputStream fileOut = useStdout ? new OutputStreamExceptionMapper(System.out, "delta") : OpenFileForWriting(targetAndDeltaOptions.delta, "delta");
+                    try {
+                        CountingOutputStream countingOut = new CountingOutputStream(fileOut);
+                        try {
+                            OutputStream vcDiffOut = new VCDiffOutputStream(
+                                    countingOut,
+                                    dictionary,
+                                    encodeOptions.targetMatches,
+                                    encodeOptions.interleaved,
+                                    encodeOptions.checksum
+                            );
+                            try {
+                                IOUtils.copyLarge(countingIn, vcDiffOut, new byte[globalOptions.bufferSize]);
+                            } finally {
+                                closeQuietly(vcDiffOut);
+                            }
+                        } finally {
+                            closeQuietly(countingOut);
                         }
+
+                        if (globalOptions.stats && (countingIn.getBytesRead() > 0)) {
+                            System.err.printf("Original size: %d\tCompressed size: %d (%.2f%% of original)%n",
+                                    countingIn.getBytesRead(),
+                                    countingOut.getBytesWritten(),
+                                    100.0 * countingOut.getBytesWritten() / countingIn.getBytesRead()
+                            );
+                        }
+                    } finally {
+                        closeQuietly(fileOut);
                     }
-
-                    encoder.FinishEncoding(out);
                 } finally {
-                    closeQuietly(out);
-                }
-
-                if (globalOptions.stats && (inputSize > 0)) {
-                    System.err.printf("Original size: %d\tCompressed size: %d (%.2f%% of original)%n",
-                            inputSize,
-                            out.getBytesWritten(),
-                            100.0 * out.getBytesWritten() / inputSize
-                    );
+                    closeQuietly(countingIn);
                 }
             } finally {
-                closeQuietly(in);
+                closeQuietly(fileIn);
             }
         }
     }
@@ -444,39 +365,38 @@ public class VCDiffFileBasedCoder {
             boolean useStdin = (targetAndDeltaFlags.delta == null || targetAndDeltaFlags.delta.isEmpty());
             boolean useStdout = (targetAndDeltaFlags.target == null || targetAndDeltaFlags.target.isEmpty());
 
-            InputStream in = new VCDiffInputStream(
-                    useStdin ? new InputStreamExceptionMapper(System.in, "delta") : OpenFileForReading(targetAndDeltaFlags.delta, "delta"),
-                    dictionary,
-                    globalOptions.maxTargetFileSize,
-                    globalOptions.maxTargetWindowSize,
-                    decodeOptions.allowVcdTarget
-            );
+            CountingInputStream countedIn = new CountingInputStream(useStdin ? new InputStreamExceptionMapper(System.in, "delta") : OpenFileForReading(targetAndDeltaFlags.delta, "delta"));
             try {
-                long inputSize = 0;
-
-                CountingOutputStream out = new CountingOutputStream(useStdout ?
-                        new OutputStreamExceptionMapper(System.out, "target") :
-                        OpenFileForWriting(targetAndDeltaFlags.target, "target")
+                InputStream vcDiffIn = new VCDiffInputStream(
+                        countedIn,
+                        dictionary,
+                        globalOptions.maxTargetFileSize,
+                        globalOptions.maxTargetWindowSize,
+                        decodeOptions.allowVcdTarget
                 );
                 try {
-                    byte[] buffer = new byte[globalOptions.bufferSize];
-                    int read;
-                    while ((read = in.read(buffer)) >= 0) {
-                        out.write(buffer, 0, read);
-                    }
+                    CountingOutputStream out = new CountingOutputStream(useStdout ?
+                            new OutputStreamExceptionMapper(System.out, "target") :
+                            OpenFileForWriting(targetAndDeltaFlags.target, "target")
+                    );
+                    try {
+                        IOUtils.copyLarge(vcDiffIn, out, new byte[globalOptions.bufferSize]);
 
-                    if (globalOptions.stats && (out.getBytesWritten() > 0)) {
-                        System.err.printf("Decompressed size: %d\tCompressed size: %d (%.2f%% of original)%n",
-                                out.getBytesWritten(),
-                                inputSize,
-                                100.0 * inputSize / out.getBytesWritten()
-                        );
+                        if (globalOptions.stats && (out.getBytesWritten() > 0)) {
+                            System.err.printf("Decompressed size: %d\tCompressed size: %d (%.2f%% of original)%n",
+                                    out.getBytesWritten(),
+                                    countedIn.getBytesRead(),
+                                    100.0 * countedIn.getBytesRead() / out.getBytesWritten()
+                            );
+                        }
+                    } finally {
+                        closeQuietly(out);
                     }
                 } finally {
-                    closeQuietly(out);
+                    closeQuietly(vcDiffIn);
                 }
             } finally {
-                closeQuietly(in);
+                closeQuietly(countedIn);
             }
         }
     }
@@ -500,48 +420,45 @@ public class VCDiffFileBasedCoder {
         public void DecodeAndCompare() throws IOException {
             byte[] dictionary = OpenDictionary(globalOptions.dictionary);
 
-            InputStream in = new VCDiffInputStream(
-                    OpenFileForReading(targetAndDeltaOptions.delta, "delta"),
-                    dictionary,
-                    globalOptions.maxTargetFileSize,
-                    globalOptions.maxTargetWindowSize,
-                    decodeOptions.allowVcdTarget
-            );
-
+            CountingInputStream countedIn = new CountingInputStream(OpenFileForReading(targetAndDeltaOptions.delta, "delta"));
             try {
-                long input_size = 0;
-
-                InputStream expected = OpenFileForReading(targetAndDeltaOptions.target, "target");
+                InputStream in = new VCDiffInputStream(
+                        countedIn,
+                        dictionary,
+                        globalOptions.maxTargetFileSize,
+                        globalOptions.maxTargetWindowSize,
+                        decodeOptions.allowVcdTarget
+                );
                 try {
-                    CountingOutputStream out = new CountingOutputStream(
-                            new ComparingOutputStream(expected)
-                    );
+                    InputStream expected = OpenFileForReading(targetAndDeltaOptions.target, "target");
                     try {
-                        byte[] buffer = new byte[globalOptions.bufferSize];
-                        int read;
-                        while ((read = in.read(buffer)) >= 0) {
-                            input_size += read;
-                            out.write(buffer, 0, read);
-                        }
+                        CountingOutputStream out = new CountingOutputStream(
+                                new ComparingOutputStream(expected)
+                        );
+                        try {
+                            IOUtils.copyLarge(in, out, new byte[globalOptions.bufferSize]);
 
-                        // Close out here so it verifies EOF
-                        out.close();
+                            // Close out here so it verifies EOF
+                            out.close();
 
-                        if (globalOptions.stats && (out.getBytesWritten() > 0)) {
-                            System.err.printf("Decompressed size: %d\tCompressed size: %d (%.2f%% of original)%n",
-                                    out.getBytesWritten(),
-                                    input_size,
-                                    100.0 * input_size / out.getBytesWritten()
-                            );
+                            if (globalOptions.stats && (out.getBytesWritten() > 0)) {
+                                System.err.printf("Decompressed size: %d\tCompressed size: %d (%.2f%% of original)%n",
+                                        out.getBytesWritten(),
+                                        countedIn.getBytesRead(),
+                                        100.0 * countedIn.getBytesRead() / out.getBytesWritten()
+                                );
+                            }
+                        } finally {
+                            closeQuietly(out);
                         }
                     } finally {
-                        closeQuietly(out);
+                        closeQuietly(expected);
                     }
                 } finally {
-                    closeQuietly(expected);
+                    closeQuietly(in);
                 }
             } finally {
-                closeQuietly(in);
+                countedIn.close();
             }
         }
     }

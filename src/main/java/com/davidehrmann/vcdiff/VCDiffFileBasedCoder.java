@@ -508,7 +508,6 @@ public class VCDiffFileBasedCoder {
 
         public void DecodeAndCompare() throws IOException {
             byte[] dictionary = OpenDictionary(globalOptions.dictionary);
-            HashedDictionary hashedDictionary = new HashedDictionary(dictionary);
 
             VCDiffStreamingDecoder decoder = new VCDiffStreamingDecoderImpl();
             decoder.SetMaximumTargetFileSize(globalOptions.maxTargetFileSize);

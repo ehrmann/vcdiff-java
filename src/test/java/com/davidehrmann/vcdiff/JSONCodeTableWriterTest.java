@@ -1,6 +1,6 @@
 package com.davidehrmann.vcdiff;
 
-import com.davidehrmann.vcdiff.google.VCDiffFormatExtensionFlag;
+import com.davidehrmann.vcdiff.google.VCDiffFormatExtension;
 import org.junit.Before;
 import org.junit.Test;
 
@@ -20,7 +20,7 @@ public class JSONCodeTableWriterTest {
     public void init() {
         writer = new StringWriter();
         coder_ = new JSONCodeTableWriter();
-        coder_.WriteHeader(writer, EnumSet.noneOf(VCDiffFormatExtensionFlag.class));
+        coder_.WriteHeader(writer, EnumSet.noneOf(VCDiffFormatExtension.class));
         assertTrue(coder_.Init(0));
     }
 

@@ -15,7 +15,7 @@
 
 package com.davidehrmann.vcdiff;
 
-import com.davidehrmann.vcdiff.google.VCDiffFormatExtensionFlag;
+import com.davidehrmann.vcdiff.google.VCDiffFormatExtension;
 
 import java.io.IOException;
 import java.util.EnumSet;
@@ -111,7 +111,7 @@ public class JSONCodeTableWriter implements CodeTableWriterInterface<Appendable>
         opcode_added_ = true;
     }
 
-    public void WriteHeader(Appendable out, EnumSet<VCDiffFormatExtensionFlag> formatExtensions) {
+    public void WriteHeader(Appendable out, EnumSet<VCDiffFormatExtension> formatExtensions) {
         // The JSON format does not need a header.
     }
 

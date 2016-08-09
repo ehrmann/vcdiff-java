@@ -33,7 +33,7 @@ import com.davidehrmann.vcdiff.CodeTableWriterInterface;
 import com.davidehrmann.vcdiff.JSONCodeTableWriter;
 import com.davidehrmann.vcdiff.VCDiffEngine;
 import com.davidehrmann.vcdiff.ZeroInitializedAdler32;
-import com.davidehrmann.vcdiff.google.VCDiffFormatExtensionFlag;
+import com.davidehrmann.vcdiff.google.VCDiffFormatExtension;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -42,14 +42,14 @@ import java.nio.ByteBuffer;
 import java.util.EnumSet;
 import java.util.zip.Adler32;
 
-import static com.davidehrmann.vcdiff.google.VCDiffFormatExtensionFlag.VCD_FORMAT_CHECKSUM;
-import static com.davidehrmann.vcdiff.google.VCDiffFormatExtensionFlag.VCD_FORMAT_JSON;
+import static com.davidehrmann.vcdiff.google.VCDiffFormatExtension.VCD_FORMAT_CHECKSUM;
+import static com.davidehrmann.vcdiff.google.VCDiffFormatExtension.VCD_FORMAT_JSON;
 
-public class BaseVCDiffStreamingEncoder<OUT> implements VCDiffStreamingEncoder<OUT> {
-    private static final Logger LOGGER = LoggerFactory.getLogger(BaseVCDiffStreamingEncoder.class);
+public class VCDiffStreamingEncoderImpl<OUT> implements VCDiffStreamingEncoder<OUT> {
+    private static final Logger LOGGER = LoggerFactory.getLogger(VCDiffStreamingEncoderImpl.class);
 
     protected final VCDiffEngine engine_;
-    protected final EnumSet<VCDiffFormatExtensionFlag> format_extensions_;
+    protected final EnumSet<VCDiffFormatExtension> format_extensions_;
 
     // Determines whether to look for matches within the previously encoded
     // target data, or just within the source (dictionary) data.  Please see
@@ -65,9 +65,9 @@ public class BaseVCDiffStreamingEncoder<OUT> implements VCDiffStreamingEncoder<O
     // be false initially, and also after FinishEncoding() has been called.
     protected boolean encode_chunk_allowed_;
 
-    public BaseVCDiffStreamingEncoder(CodeTableWriterInterface<OUT> coder,
+    public VCDiffStreamingEncoderImpl(CodeTableWriterInterface<OUT> coder,
                                       HashedDictionary dictionary,
-                                      EnumSet<VCDiffFormatExtensionFlag> format_extensions,
+                                      EnumSet<VCDiffFormatExtension> format_extensions,
                                       boolean look_for_target_matches) {
 
         if (format_extensions.contains(VCD_FORMAT_JSON) && !(coder instanceof JSONCodeTableWriter)) {

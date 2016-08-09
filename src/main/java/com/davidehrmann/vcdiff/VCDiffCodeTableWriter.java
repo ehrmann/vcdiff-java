@@ -1,6 +1,6 @@
 package com.davidehrmann.vcdiff;
 
-import com.davidehrmann.vcdiff.google.VCDiffFormatExtensionFlag;
+import com.davidehrmann.vcdiff.google.VCDiffFormatExtension;
 import com.davidehrmann.vcdiff.io.CountingOutputStream;
 import com.davidehrmann.vcdiff.mina_buffer.IoBuffer;
 import org.slf4j.Logger;
@@ -354,8 +354,8 @@ public class VCDiffCodeTableWriter implements CodeTableWriterInterface<OutputStr
 	 * This includes information that can be gathered
 	 * before the first chunk of input is available.
 	 */
-	public void WriteHeader(OutputStream out, EnumSet<VCDiffFormatExtensionFlag> formatExtensions) throws IOException {
-		if (formatExtensions.contains(VCDiffFormatExtensionFlag.VCD_STANDARD_FORMAT) && formatExtensions.size() == 1) {
+	public void WriteHeader(OutputStream out, EnumSet<VCDiffFormatExtension> formatExtensions) throws IOException {
+		if (formatExtensions.isEmpty()) {
 			out.write(kHeaderStandardFormat);
 		} else {
 			out.write(kHeaderExtendedFormat);

@@ -22,7 +22,7 @@
 
 package com.davidehrmann.vcdiff;
 
-import com.davidehrmann.vcdiff.google.VCDiffFormatExtensionFlag;
+import com.davidehrmann.vcdiff.google.VCDiffFormatExtension;
 
 import java.io.IOException;
 import java.util.EnumSet;
@@ -57,7 +57,7 @@ public interface CodeTableWriterInterface<OUT> {
      * Writes the header to the output string.
      * @param format_extensions
      */
-    void WriteHeader(OUT out, EnumSet<VCDiffFormatExtensionFlag> format_extensions) throws IOException;
+    void WriteHeader(OUT out, EnumSet<VCDiffFormatExtension> format_extensions) throws IOException;
 
     /**
      * Encode an ADD opcode with the "size" bytes starting at data

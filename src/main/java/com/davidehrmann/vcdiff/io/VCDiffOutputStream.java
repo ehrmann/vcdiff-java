@@ -15,17 +15,12 @@
 
 package com.davidehrmann.vcdiff.io;
 
-import com.davidehrmann.vcdiff.CodeTableWriterInterface;
-import com.davidehrmann.vcdiff.VCDiffCodeTableWriter;
-import com.davidehrmann.vcdiff.codec.BaseVCDiffStreamingEncoder;
-import com.davidehrmann.vcdiff.codec.HashedDictionary;
+import com.davidehrmann.vcdiff.codec.EncoderBuilder;
 import com.davidehrmann.vcdiff.codec.VCDiffStreamingEncoder;
-import com.davidehrmann.vcdiff.google.VCDiffFormatExtensionFlag;
 
 import java.io.FilterOutputStream;
 import java.io.IOException;
 import java.io.OutputStream;
-import java.util.EnumSet;
 
 public class VCDiffOutputStream extends FilterOutputStream {
 
@@ -39,24 +34,12 @@ public class VCDiffOutputStream extends FilterOutputStream {
     public VCDiffOutputStream(OutputStream out, byte[] dictionary, boolean targetMatches,  boolean interleaved, boolean checksum) {
         super(out);
 
-        // TODO: remove VCD_STANDARD_FORMAT. It's a 0 flag in the original code.
-        EnumSet<VCDiffFormatExtensionFlag> format_flags = EnumSet.of(VCDiffFormatExtensionFlag.VCD_STANDARD_FORMAT);
-        if (interleaved) {
-            format_flags.add(VCDiffFormatExtensionFlag.VCD_FORMAT_INTERLEAVED);
-        }
-        if (checksum) {
-            format_flags.add(VCDiffFormatExtensionFlag.VCD_FORMAT_CHECKSUM);
-        }
-
-        CodeTableWriterInterface<OutputStream> coder = new VCDiffCodeTableWriter(interleaved);
-        coder.Init(dictionary.length);
-
-        encoder = new BaseVCDiffStreamingEncoder<OutputStream>(
-                coder,
-                new HashedDictionary(dictionary),
-                format_flags,
-                targetMatches
-        );
+        encoder = EncoderBuilder.builder()
+                .withDictionary(dictionary)
+                .withTargetMatches(targetMatches)
+                .withInterleaving(interleaved)
+                .withChecksum(checksum)
+                .buildStreaming();
     }
 
     @Override

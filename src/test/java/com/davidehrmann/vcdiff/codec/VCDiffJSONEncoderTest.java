@@ -15,18 +15,13 @@
 
 package com.davidehrmann.vcdiff.codec;
 
-import com.davidehrmann.vcdiff.JSONCodeTableWriter;
-import com.davidehrmann.vcdiff.google.VCDiffFormatExtensionFlag;
 import org.junit.Ignore;
 import org.junit.Test;
 
 import java.io.ByteArrayOutputStream;
 import java.nio.charset.Charset;
-import java.util.EnumSet;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertTrue;
+import static org.junit.Assert.*;
 
 public class VCDiffJSONEncoderTest {
 
@@ -65,20 +60,15 @@ public class VCDiffJSONEncoderTest {
     // NonASCII string "foo\x128".
     protected static final byte[] kNonAscii = {102, 111, 111, (byte) 128, 0};
 
-    protected final HashedDictionary hashed_dictionary_;
-    protected final VCDiffStreamingEncoder<Appendable> json_encoder_;
+    protected final VCDiffStreamingEncoder<Appendable> json_encoder_ = EncoderBuilder.builder()
+            .withDictionary(kDictionary)
+            .buildStreamingJson();
 
     protected final StringBuilder delta = new StringBuilder();
     protected final ByteArrayOutputStream result_target_ = new ByteArrayOutputStream();
 
     public VCDiffJSONEncoderTest() {
-        hashed_dictionary_ = new HashedDictionary(kDictionary);
-        json_encoder_ = new BaseVCDiffStreamingEncoder<Appendable>(
-                new JSONCodeTableWriter(),
-                hashed_dictionary_,
-                EnumSet.of(VCDiffFormatExtensionFlag.VCD_FORMAT_JSON),
-                /* look_for_target_matches = */ true) {
-        };
+
     }
 
     // Test the encoding with a fixed chunk size.
@@ -107,13 +97,11 @@ public class VCDiffJSONEncoderTest {
 
     @Test
     public void EncodeNothingJSON() throws Exception {
-        HashedDictionary nothing_dictionary = new HashedDictionary(new byte[0]);
-        VCDiffStreamingEncoder<Appendable> nothing_encoder = new BaseVCDiffStreamingEncoder<Appendable>(
-                new JSONCodeTableWriter(),
-                nothing_dictionary,
-                EnumSet.of(VCDiffFormatExtensionFlag.VCD_FORMAT_JSON),
-                false
-        );
+        VCDiffStreamingEncoder<Appendable> nothing_encoder = EncoderBuilder.builder()
+                .withDictionary(new byte[0])
+                .withTargetMatches(false)
+                .buildStreamingJson();
+
         assertTrue(nothing_encoder.StartEncoding(delta));
         assertTrue(nothing_encoder.FinishEncoding(delta));
         assertEquals("", delta.toString());
@@ -156,13 +144,9 @@ public class VCDiffJSONEncoderTest {
     @Ignore
     @Test
     public void NonasciiDictionaryWithJSON() throws Exception {
-        HashedDictionary hashed_dictionary = new HashedDictionary(kNonAscii);
-        VCDiffStreamingEncoder<Appendable> json_encoder = new BaseVCDiffStreamingEncoder<Appendable>(
-                new JSONCodeTableWriter(),
-                hashed_dictionary,
-                EnumSet.of(VCDiffFormatExtensionFlag.VCD_FORMAT_JSON),
-                /* look_for_target_matches = */ true) {
-        };
+        VCDiffStreamingEncoder<Appendable> json_encoder = EncoderBuilder.builder()
+                .withDictionary(kNonAscii)
+                .buildStreamingJson();
 
         assertTrue(json_encoder.StartEncoding(delta));
         assertFalse(json_encoder.EncodeChunk(kTarget, 0, kTarget.length, delta));

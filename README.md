@@ -12,23 +12,9 @@ byte[] dictionary = ...;
 byte[] dataToCompress = ...;
 OutputStream compressedData = ...;
 
-HashedDictionary hashedDictionary = new HashedDictionary(dictionary);
-
-EnumSet<VCDiffFormatExtensionFlag> format_flags = EnumSet.of(
-        VCDiffFormatExtensionFlag.VCD_STANDARD_FORMAT,
-        VCDiffFormatExtensionFlag.VCD_FORMAT_INTERLEAVED,
-        VCDiffFormatExtensionFlag.VCD_FORMAT_CHECKSUM
-);
-
-CodeTableWriterInterface<OutputStream> coder = new VCDiffCodeTableWriter(true);
-coder.Init(dictionary.length);
-
-VCDiffStreamingEncoder<OutputStream> encoder = new BaseVCDiffStreamingEncoder<OutputStream>(
-        coder,
-        hashedDictionary,
-        format_flags,
-        true
-);
+VCDiffStreamingEncoder<OutputStream> encoder = EncoderBuilder.builder()
+    .withDictionary(dictionary)
+    .buildStreaming();
 
 if (!encoder.StartEncoding(compressedData) ||
         !encoder.EncodeChunk(dataToCompress, 0, dataToCompress.length, compressedData) ||

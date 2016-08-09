@@ -23,10 +23,8 @@ import java.io.IOException;
 import java.io.OutputStream;
 import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.EnumSet;
 import java.util.List;
 
-import static com.davidehrmann.vcdiff.google.VCDiffFormatExtensionFlag.*;
 import static org.junit.Assert.*;
 
 public class VCDiffEncoderTest extends VerifyEncodedBytesTest {
@@ -111,12 +109,11 @@ public class VCDiffEncoderTest extends VerifyEncodedBytesTest {
 
     @Test
     public void EncodeDecodeNothing() throws Exception {
-        HashedDictionary nothing_dictionary = new HashedDictionary(new byte[0]);
-        VCDiffStreamingEncoder<OutputStream> nothing_encoder = new BaseVCDiffStreamingEncoder<OutputStream>(
-                normalCodeTableWriter,
-                nothing_dictionary,
-                EnumSet.of(VCD_STANDARD_FORMAT),
-                false);
+        VCDiffStreamingEncoder<OutputStream> nothing_encoder = EncoderBuilder.builder()
+                .withDictionary(new byte[0])
+                .withTargetMatches(false)
+                .buildStreaming();
+
         assertTrue(nothing_encoder.StartEncoding(delta_));
         assertTrue(nothing_encoder.FinishEncoding(delta_));
         decoder_.StartDecoding(new byte[0]);
@@ -145,7 +142,12 @@ public class VCDiffEncoderTest extends VerifyEncodedBytesTest {
 
     @Test
     public void EncodeDecodeInterleaved() throws Exception {
-        VCDiffEncoder<OutputStream> encoder = new VCDiffEncoder<OutputStream>(interleavedCodeTableWriter, dictionary_, EnumSet.of(VCD_FORMAT_INTERLEAVED));
+        VCDiffEncoder<OutputStream> encoder = EncoderBuilder.builder()
+                .withDictionary(dictionary_)
+                .withInterleaving(true)
+                .withTargetMatches(true)
+                .buildSimple();
+
         assertTrue(encoder.Encode(target_, 0, target_.length, delta_));
         assertTrue(target_.length + kFileHeaderSize + kWindowHeaderSize >= delta_.size());
         assertTrue(simple_decoder_.Decode(dictionary_,
@@ -158,11 +160,12 @@ public class VCDiffEncoderTest extends VerifyEncodedBytesTest {
 
     @Test
     public void EncodeDecodeInterleavedChecksum() throws Exception {
-        VCDiffEncoder<OutputStream> encoder = new VCDiffEncoder<OutputStream>(
-                interleavedCodeTableWriter,
-                dictionary_,
-                EnumSet.of(VCD_FORMAT_CHECKSUM)
-        );
+        VCDiffEncoder<OutputStream> encoder = EncoderBuilder.builder()
+                .withDictionary(dictionary_)
+                .withChecksum(true)
+                .withTargetMatches(true)
+                .withInterleaving(true)
+                .buildSimple();
 
         assertTrue(encoder.Encode(target_,
                 0,
@@ -304,12 +307,13 @@ public class VCDiffEncoderTest extends VerifyEncodedBytesTest {
     @Test
     public void DictionaryBufferOverwritten() throws Exception {
         byte[] dictionary_copy = dictionary_.clone();
-        HashedDictionary hd_copy = new HashedDictionary(dictionary_copy);
-        VCDiffStreamingEncoder<OutputStream> copy_encoder = new BaseVCDiffStreamingEncoder<OutputStream>(
-                interleavedCodeTableWriter,
-                hd_copy,
-                EnumSet.of(VCD_FORMAT_INTERLEAVED, VCD_FORMAT_CHECKSUM),
-                                      /* look_for_target_matches = */ true);
+        VCDiffStreamingEncoder<OutputStream> copy_encoder = EncoderBuilder.builder()
+                .withInterleaving(true)
+                .withDictionary(dictionary_copy)
+                .withChecksum(true)
+                .withTargetMatches(true)
+                .buildStreaming();
+
         // Produce a reference version of the encoded text.
         ByteArrayOutputStream delta_before = new ByteArrayOutputStream();
         assertTrue(copy_encoder.StartEncoding(delta_before));
@@ -343,14 +347,14 @@ public class VCDiffEncoderTest extends VerifyEncodedBytesTest {
                 { (byte) 0xFD, 0x00, (byte) 0xFD, (byte) 0xFE, 0x03, 0x00, 0x01, 0x00 };
         assertEquals(10, embedded_null_dictionary_text.length);
         assertEquals(8, embedded_null_target.length);
-        HashedDictionary embedded_null_dictionary = new HashedDictionary(embedded_null_dictionary_text);
-        // FIXME: ok to remove?
-        //interleavedCodeTableWriter.Init(embedded_null_dictionary_text.length);
-        VCDiffStreamingEncoder<OutputStream> embedded_null_encoder = new BaseVCDiffStreamingEncoder<OutputStream>(
-                interleavedCodeTableWriter,
-                embedded_null_dictionary,
-                EnumSet.of(VCD_FORMAT_INTERLEAVED, VCD_FORMAT_CHECKSUM),
-                /* look_for_target_matches = */ true);
+
+        VCDiffStreamingEncoder<OutputStream> embedded_null_encoder = EncoderBuilder.builder()
+                .withDictionary(embedded_null_dictionary_text)
+                .withInterleaving(true)
+                .withTargetMatches(true)
+                .withChecksum(true)
+                .buildStreaming();
+
         assertTrue(embedded_null_encoder.StartEncoding(delta_));
         assertTrue(embedded_null_encoder.EncodeChunk(embedded_null_target,
                 0,
@@ -376,14 +380,17 @@ public class VCDiffEncoderTest extends VerifyEncodedBytesTest {
                 { 0x0C, 0x00, 0x0A, (byte) 0xFE, 0x03, 0x00, 0x0A, 0x00 };
         assertEquals(10, embedded_null_dictionary_text.length);
         assertEquals(8, embedded_null_target.length);
-        HashedDictionary embedded_null_dictionary = new HashedDictionary(embedded_null_dictionary_text);
+
+
         // FIXME: ok to remove?
         //interleavedCodeTableWriter.Init(embedded_null_dictionary_text.length);
-        VCDiffStreamingEncoder<OutputStream> embedded_null_encoder = new BaseVCDiffStreamingEncoder<OutputStream>(
-                interleavedCodeTableWriter,
-                embedded_null_dictionary,
-                EnumSet.of(VCD_FORMAT_INTERLEAVED, VCD_FORMAT_CHECKSUM),
-                /* look_for_target_matches = */ true);
+        VCDiffStreamingEncoder<OutputStream> embedded_null_encoder = EncoderBuilder.builder()
+                .withDictionary(embedded_null_dictionary_text)
+                .withInterleaving(true)
+                .withChecksum(true)
+                .withTargetMatches(true)
+                .buildStreaming();
+
         assertTrue(embedded_null_encoder.StartEncoding(delta_));
         assertTrue(embedded_null_encoder.EncodeChunk(embedded_null_target,
                 0,
@@ -413,12 +420,13 @@ public class VCDiffEncoderTest extends VerifyEncodedBytesTest {
                         + "Just the place for a Snark! I have said it thrice:\n"
                         + "What I tell you three times is true.\"\n").getBytes(UTF16BE);
 
-        HashedDictionary wchar_dictionary = new HashedDictionary(wchar_dictionary_text);
-        VCDiffStreamingEncoder<OutputStream> wchar_encoder = new BaseVCDiffStreamingEncoder<OutputStream>(
-                interleavedCodeTableWriter,
-                wchar_dictionary,
-                EnumSet.of(VCD_FORMAT_INTERLEAVED, VCD_FORMAT_CHECKSUM),
-                /* look_for_target_matches = */ false);
+        VCDiffStreamingEncoder<OutputStream> wchar_encoder = EncoderBuilder.builder()
+                .withDictionary(wchar_dictionary_text)
+                .withTargetMatches(false)
+                .withChecksum(true)
+                .withInterleaving(true)
+                .buildStreaming();
+
         assertTrue(wchar_encoder.StartEncoding(delta_));
         assertTrue(wchar_encoder.EncodeChunk(wchar_target,
                 0,
@@ -436,7 +444,10 @@ public class VCDiffEncoderTest extends VerifyEncodedBytesTest {
 
     @Test
     public void NonasciiDictionary() throws Exception {
-        VCDiffEncoder<OutputStream> encoder = new VCDiffEncoder<OutputStream>(normalCodeTableWriter, kNonAscii);
+        VCDiffEncoder<OutputStream> encoder = EncoderBuilder.builder()
+                .withDictionary(kNonAscii)
+                .withTargetMatches(true)
+                .buildSimple();
         assertTrue(encoder.Encode(kTarget, 0, kTarget.length, delta_));
     }
 

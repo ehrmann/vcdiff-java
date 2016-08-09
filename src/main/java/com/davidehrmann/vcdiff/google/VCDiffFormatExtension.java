@@ -14,13 +14,7 @@
 
 package com.davidehrmann.vcdiff.google;
 
-public enum VCDiffFormatExtensionFlag {
-
-    /**
-     * No extensions: the encoded format will conform to the RFC
-     * draft standard for VCDIFF.
-     */
-    VCD_STANDARD_FORMAT(0x00),
+public enum VCDiffFormatExtension {
 
     /**
      * If this flag is specified, then the encoder writes each delta file
@@ -46,7 +40,7 @@ public enum VCDiffFormatExtensionFlag {
     VCD_FORMAT_JSON (0x04);
 
     public final int flag;
-    VCDiffFormatExtensionFlag(int flag) {
+    VCDiffFormatExtension(int flag) {
         this.flag = flag;
     }
 }

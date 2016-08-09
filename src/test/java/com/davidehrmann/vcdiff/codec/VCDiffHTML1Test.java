@@ -18,8 +18,6 @@ package com.davidehrmann.vcdiff.codec;
 import com.davidehrmann.vcdiff.BlockHash;
 import org.junit.Test;
 
-import java.io.OutputStream;
-
 import static com.davidehrmann.vcdiff.VCDiffCodeTableWriter.VCD_SOURCE;
 import static org.junit.Assert.assertArrayEquals;
 import static org.junit.Assert.assertTrue;
@@ -159,7 +157,11 @@ public class VCDiffHTML1Test extends VerifyEncodedBytesTest {
 
     @Test
     public void SimpleEncoderWithoutTargetMatching() throws Exception {
-        simple_encoder_ = new VCDiffEncoder<OutputStream>(normalCodeTableWriter, kDictionary, false);
+        simple_encoder_ = EncoderBuilder.builder()
+                .withDictionary(kDictionary)
+                .withTargetMatches(false)
+                .buildSimple();
+
         assertTrue(simple_encoder_.Encode(kRedundantTarget,
                 0,
                 kRedundantTarget.length,

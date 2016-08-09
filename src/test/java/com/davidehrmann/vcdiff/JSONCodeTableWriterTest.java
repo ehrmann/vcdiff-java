@@ -17,7 +17,7 @@ public class JSONCodeTableWriterTest {
     private StringWriter writer = null;
 
     @Before
-    public void init() {
+    public void init() throws Exception {
         writer = new StringWriter();
         coder_ = new JSONCodeTableWriter();
         coder_.WriteHeader(writer, EnumSet.noneOf(VCDiffFormatExtension.class));

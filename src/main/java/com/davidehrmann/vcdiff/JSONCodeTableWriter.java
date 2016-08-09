@@ -111,7 +111,12 @@ public class JSONCodeTableWriter implements CodeTableWriterInterface<Appendable>
         opcode_added_ = true;
     }
 
-    public void WriteHeader(Appendable out, EnumSet<VCDiffFormatExtension> formatExtensions) {
+    public void WriteHeader(Appendable out, EnumSet<VCDiffFormatExtension> formatExtensions) throws IOException {
+        if (!(formatExtensions.isEmpty() ||
+                EnumSet.of(VCDiffFormatExtension.VCD_FORMAT_JSON).equals(formatExtensions))) {
+            throw new IOException("VCDiffFormatExtensions " + formatExtensions + " no compatible with JSONCodeTableWritar");
+        }
+
         // The JSON format does not need a header.
     }
 

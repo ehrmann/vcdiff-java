@@ -2,6 +2,7 @@ package com.davidehrmann.vcdiff;
 
 import com.davidehrmann.vcdiff.VarInt.VarIntEndOfBufferException;
 import com.davidehrmann.vcdiff.VarInt.VarIntParseException;
+import com.davidehrmann.vcdiff.util.Objects;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -57,15 +58,10 @@ public class VCDiffCodeTableReader {
     // Returns true if the code table was accepted, or false if the
     // argument did not appear to be a valid code table.
     public VCDiffCodeTableReader(VCDiffCodeTableData codeTableData, short maxMode) {
-        if (codeTableData == null) {
-            throw new NullPointerException();
-        }
-
         if (!codeTableData.Validate(maxMode)) {
             throw new IllegalArgumentException("Invalid code table data.");
         }
-
-        this.code_table_data_ = codeTableData;
+        this.code_table_data_ = Objects.requireNotNull(codeTableData, "codeTableData was null");
     }
 
     // Defines the buffer containing the instructions and sizes.

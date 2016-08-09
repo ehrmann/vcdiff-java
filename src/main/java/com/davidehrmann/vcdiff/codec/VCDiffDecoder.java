@@ -1,5 +1,7 @@
 package com.davidehrmann.vcdiff.codec;
 
+import com.davidehrmann.vcdiff.util.Objects;
+
 import java.io.IOException;
 import java.io.OutputStream;
 
@@ -11,10 +13,7 @@ public class VCDiffDecoder {
     private final VCDiffStreamingDecoder decoder_;
 
     public VCDiffDecoder(VCDiffStreamingDecoder decoder) {
-        if (decoder == null) {
-            throw new NullPointerException("decoder was null");
-        }
-        this.decoder_ = decoder;
+        this.decoder_ = Objects.requireNotNull(decoder, "decoder was null");
     }
 
     /**

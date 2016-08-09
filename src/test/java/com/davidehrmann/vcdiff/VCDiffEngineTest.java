@@ -1,5 +1,6 @@
 package com.davidehrmann.vcdiff;
 
+import com.davidehrmann.vcdiff.util.Objects;
 import org.junit.Assert;
 import org.junit.Test;
 import org.junit.runners.Suite.SuiteClasses;
@@ -34,13 +35,8 @@ public abstract class VCDiffEngineTest {
     private int address_bytes_ = 0;
 
     public VCDiffEngineTest(byte[] dictionary, byte[] target) {
-        if (target == null || dictionary == null) {
-            throw new NullPointerException();
-        }
-
-        target_ = target;
-        dictionary_ = dictionary;
-
+        target_ = Objects.requireNotNull(target, "target was null");
+        dictionary_ = Objects.requireNotNull(dictionary, "dictionary was null");
         engine_ = new VCDiffEngine(dictionary_);
     }
 

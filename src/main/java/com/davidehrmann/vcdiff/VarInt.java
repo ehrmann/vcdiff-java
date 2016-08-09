@@ -1,5 +1,6 @@
 package com.davidehrmann.vcdiff;
 
+import com.davidehrmann.vcdiff.util.Objects;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -162,10 +163,7 @@ public final class VarInt {
         private static final long serialVersionUID = 2648357489942607161L;
 
         protected VarIntParseException(String message) {
-            super(message);
-            if (message == null) {
-                throw new NullPointerException();
-            }
+            super(Objects.requireNotNull(message));
         }
     }
 

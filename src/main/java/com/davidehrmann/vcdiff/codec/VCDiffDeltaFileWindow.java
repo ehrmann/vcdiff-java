@@ -4,6 +4,7 @@ import com.davidehrmann.vcdiff.VCDiffCodeTableData;
 import com.davidehrmann.vcdiff.VCDiffCodeTableReader;
 import com.davidehrmann.vcdiff.VarInt;
 import com.davidehrmann.vcdiff.ZeroInitializedAdler32;
+import com.davidehrmann.vcdiff.util.Objects;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -19,10 +20,7 @@ public class VCDiffDeltaFileWindow {
     private static final Logger LOGGER = LoggerFactory.getLogger(VCDiffDeltaFileWindow.class);
 
     public VCDiffDeltaFileWindow(VCDiffStreamingDecoderImpl parent) {
-        if (parent == null) {
-            throw new NullPointerException();
-        }
-        this.parent_ = parent;
+        this.parent_ = Objects.requireNotNull(parent, "parent was null");
         Reset();
     }
 

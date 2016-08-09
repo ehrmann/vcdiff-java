@@ -17,6 +17,7 @@ package com.davidehrmann.vcdiff.io;
 
 import com.davidehrmann.vcdiff.codec.EncoderBuilder;
 import com.davidehrmann.vcdiff.codec.VCDiffStreamingEncoder;
+import com.davidehrmann.vcdiff.util.Objects;
 
 import java.io.FilterOutputStream;
 import java.io.IOException;
@@ -33,13 +34,17 @@ public class VCDiffOutputStream extends FilterOutputStream {
 
     public VCDiffOutputStream(OutputStream out, byte[] dictionary, boolean targetMatches,  boolean interleaved, boolean checksum) {
         super(out);
-
         encoder = EncoderBuilder.builder()
                 .withDictionary(dictionary)
                 .withTargetMatches(targetMatches)
                 .withInterleaving(interleaved)
                 .withChecksum(checksum)
                 .buildStreaming();
+    }
+
+    public VCDiffOutputStream(OutputStream out, VCDiffStreamingEncoder<OutputStream> encoder) {
+        super(out);
+        this.encoder = Objects.requireNotNull(encoder, "encoder was null");
     }
 
     @Override

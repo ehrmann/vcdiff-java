@@ -8,7 +8,14 @@ import java.io.OutputStream;
  * if the entire delta file is available.
  */
 public class VCDiffDecoder {
-    private final VCDiffStreamingDecoder decoder_ = new VCDiffStreamingDecoderImpl();
+    private final VCDiffStreamingDecoder decoder_;
+
+    public VCDiffDecoder(VCDiffStreamingDecoder decoder) {
+        if (decoder == null) {
+            throw new NullPointerException("decoder was null");
+        }
+        this.decoder_ = decoder;
+    }
 
     /**
      * Replaces old contents of "*target" with the result of decoding
@@ -18,8 +25,8 @@ public class VCDiffDecoder {
      * instructions, and returns false if not.
      * @throws IOException
      */
-    public boolean Decode(byte[] dictionary_ptr, byte[] encoding, int offset, int length, OutputStream target) throws IOException {
-        decoder_.StartDecoding(dictionary_ptr);
-        return decoder_.DecodeChunk(encoding, offset, length, target) && decoder_.FinishDecoding();
+    public boolean Decode(byte[] dictionary, byte[] encoding, int offset, int len, OutputStream target) throws IOException {
+        decoder_.StartDecoding(dictionary);
+        return decoder_.DecodeChunk(encoding, offset, len, target) && decoder_.FinishDecoding();
     }
 }

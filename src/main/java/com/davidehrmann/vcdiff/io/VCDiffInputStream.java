@@ -15,8 +15,9 @@
 
 package com.davidehrmann.vcdiff.io;
 
+import com.davidehrmann.vcdiff.codec.DecoderBuilder;
 import com.davidehrmann.vcdiff.codec.VCDiffStreamingDecoder;
-import com.davidehrmann.vcdiff.codec.VCDiffStreamingDecoderImpl;
+import com.davidehrmann.vcdiff.util.Objects;
 
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
@@ -49,24 +50,19 @@ public class VCDiffInputStream extends InputStream {
 
     public VCDiffInputStream(InputStream in, byte[] dictionary,
                              long maxTargetFileSize, int maxTargetWindowSize, boolean allowVcdTarget) {
-        if (in == null) {
-            throw new NullPointerException();
-        }
-        if (maxTargetFileSize < 0) {
-            throw new IllegalArgumentException();
-        }
-        if (maxTargetWindowSize < 0) {
-            throw new IllegalArgumentException();
-        }
+        this.in = Objects.requireNotNull(in, "in was null");
+        this.dictionary = Objects.requireNotNull(dictionary, "dictionary was null").clone();
+        decoder = DecoderBuilder.builder()
+                .withMaxTargetFileSize(maxTargetFileSize)
+                .withMaxTargetWindowSize(maxTargetWindowSize)
+                .withAllowTargetMatches(allowVcdTarget)
+                .buildStreaming();
+    }
 
-        this.in = in;
-
-        this.dictionary = dictionary.clone();
-
-        decoder = new VCDiffStreamingDecoderImpl();
-        decoder.SetMaximumTargetFileSize(maxTargetFileSize);
-        decoder.SetMaximumTargetWindowSize(maxTargetWindowSize);
-        decoder.SetAllowVcdTarget(allowVcdTarget);
+    public VCDiffInputStream(InputStream in, byte[] dictionary, VCDiffStreamingDecoder decoder) {
+        this.in = Objects.requireNotNull(in, "in was null");
+        this.decoder = Objects.requireNotNull(decoder, "decoder was null");
+        this.dictionary = Objects.requireNotNull(dictionary, "dictionary was null").clone();
     }
 
     @Override
@@ -135,7 +131,7 @@ public class VCDiffInputStream extends InputStream {
 
     @Override
     public void reset() throws IOException {
-        throw new IOException();
+        throw new IOException("Mark not supported");
     }
 
     @Override
@@ -171,5 +167,4 @@ public class VCDiffInputStream extends InputStream {
             }
         }
     }
-
 }

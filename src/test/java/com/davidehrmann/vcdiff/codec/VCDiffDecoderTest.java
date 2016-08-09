@@ -66,7 +66,7 @@ public abstract class VCDiffDecoderTest {
     private int fuzzer_;
     private int fuzzed_byte_position_;
 
-    protected VCDiffStreamingDecoder decoder_ = new VCDiffStreamingDecoderImpl();
+    protected VCDiffStreamingDecoder decoder_ = DecoderBuilder.builder().buildStreaming();
 
     // delta_file_ will be populated by InitializeDeltaFile() using the components
     // delta_file_header_, delta_window_header_, and delta_window_body_.

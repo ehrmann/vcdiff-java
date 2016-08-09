@@ -35,9 +35,9 @@ public abstract class VerifyEncodedBytesTest {
     protected final byte[] target_;
 
     protected VCDiffStreamingEncoder<OutputStream> encoder_;
-    protected VCDiffStreamingDecoder decoder_ = new VCDiffStreamingDecoderImpl();
+    protected VCDiffStreamingDecoder decoder_ = DecoderBuilder.builder().buildStreaming();
     protected VCDiffEncoder<OutputStream> simple_encoder_;
-    protected VCDiffDecoder simple_decoder_ = new VCDiffDecoder();
+    protected VCDiffDecoder simple_decoder_ = DecoderBuilder.builder().buildSimple();
 
     ByteArrayOutputStream result_target_ = new ByteArrayOutputStream();
 

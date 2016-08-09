@@ -4,25 +4,34 @@
 # VCDiff-java
 
 A Java port of Google's [open-vcdiff](https://github.com/google/open-vcdiff) vcdiff (RFC3284) implementation.
+It's currently synced with [open-vcdiff 0.8.4](https://github.com/google/open-vcdiff/releases/tag/openvcdiff-0.8.4).
 
 ## Usage
 ### Encoding (compressing)
 ```
 byte[] dictionary = ...;
-byte[] dataToCompress = ...;
+byte[] uncompressedData = ...;
 OutputStream compressedData = ...;
 
-VCDiffStreamingEncoder<OutputStream> encoder = EncoderBuilder.builder()
+// An OutputStream (like GZIPOutputStream) and a stream-based encoder are
+// also available from the builder.
+VCDiffEncoder<OutputStream> encoder = EncoderBuilder.builder()
     .withDictionary(dictionary)
-    .buildStreaming();
+    .buildSimple();
 
-if (!encoder.StartEncoding(compressedData) ||
-        !encoder.EncodeChunk(dataToCompress, 0, dataToCompress.length, compressedData) ||
-        !encoder.FinishEncoding(compressedData)) {
-    throw new IOException("Failed to compress data");
-}
+encoder.Encode(uncompressedData, 0, uncompressedData.length, compressedData);
 ```
 ### Decoding (decompressing)
+```
+byte[] dictionary = ...;
+byte[] compressedData = ...;
+OutputStream uncompressedData = ...;
+
+// An InputStream (like GZIPInputStream) and a stream-based decoder are
+// also available from the builder.
+VCDiffDecoder decoder = DecoderBuilder.builder().buildSimple();
+decoder.Decode(dictionary, compressedData, 0, compressedData.length, uncompressedData);
+```
 
 ## Command line usage
 

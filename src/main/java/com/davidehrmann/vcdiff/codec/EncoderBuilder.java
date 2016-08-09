@@ -25,6 +25,7 @@ import com.davidehrmann.vcdiff.CodeTableWriterInterface;
 import com.davidehrmann.vcdiff.JSONCodeTableWriter;
 import com.davidehrmann.vcdiff.VCDiffCodeTableWriter;
 import com.davidehrmann.vcdiff.google.VCDiffFormatExtension;
+import com.davidehrmann.vcdiff.io.VCDiffOutputStream;
 
 import java.io.OutputStream;
 import java.util.EnumSet;
@@ -83,6 +84,10 @@ public class EncoderBuilder {
                 format_flags,
                 targetMatches
         );
+    }
+
+    public VCDiffOutputStream buildOutputStream(OutputStream out) {
+        return new VCDiffOutputStream(out, buildStreaming());
     }
 
     public VCDiffStreamingEncoder<Appendable> buildStreamingJson() {

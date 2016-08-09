@@ -16,7 +16,12 @@
 package com.davidehrmann.vcdiff;
 
 import com.beust.jcommander.*;
-import com.davidehrmann.vcdiff.io.*;
+import com.davidehrmann.vcdiff.codec.DecoderBuilder;
+import com.davidehrmann.vcdiff.codec.EncoderBuilder;
+import com.davidehrmann.vcdiff.io.ComparingOutputStream;
+import com.davidehrmann.vcdiff.io.CountingInputStream;
+import com.davidehrmann.vcdiff.io.CountingOutputStream;
+import com.davidehrmann.vcdiff.io.IOUtils;
 
 import java.io.*;
 import java.util.Arrays;
@@ -312,13 +317,12 @@ public class VCDiffFileBasedCoder {
                     try {
                         CountingOutputStream countingOut = new CountingOutputStream(fileOut);
                         try {
-                            OutputStream vcDiffOut = new VCDiffOutputStream(
-                                    countingOut,
-                                    dictionary,
-                                    encodeOptions.targetMatches,
-                                    encodeOptions.interleaved,
-                                    encodeOptions.checksum
-                            );
+                            OutputStream vcDiffOut = EncoderBuilder.builder()
+                                    .withDictionary(dictionary)
+                                    .withTargetMatches(encodeOptions.targetMatches)
+                                    .withChecksum(encodeOptions.checksum)
+                                    .withInterleaving(encodeOptions.interleaved)
+                                    .buildOutputStream(countingOut);
                             try {
                                 IOUtils.copyLarge(countingIn, vcDiffOut, new byte[globalOptions.bufferSize]);
                             } finally {
@@ -367,13 +371,11 @@ public class VCDiffFileBasedCoder {
 
             CountingInputStream countedIn = new CountingInputStream(useStdin ? new InputStreamExceptionMapper(System.in, "delta") : OpenFileForReading(targetAndDeltaFlags.delta, "delta"));
             try {
-                InputStream vcDiffIn = new VCDiffInputStream(
-                        countedIn,
-                        dictionary,
-                        globalOptions.maxTargetFileSize,
-                        globalOptions.maxTargetWindowSize,
-                        decodeOptions.allowVcdTarget
-                );
+                InputStream vcDiffIn = DecoderBuilder.builder()
+                        .withMaxTargetFileSize(globalOptions.maxTargetFileSize)
+                        .withMaxTargetWindowSize(globalOptions.maxTargetWindowSize)
+                        .withAllowTargetMatches(decodeOptions.allowVcdTarget)
+                        .buildInputStream(countedIn, dictionary);
                 try {
                     CountingOutputStream out = new CountingOutputStream(useStdout ?
                             new OutputStreamExceptionMapper(System.out, "target") :
@@ -422,13 +424,11 @@ public class VCDiffFileBasedCoder {
 
             CountingInputStream countedIn = new CountingInputStream(OpenFileForReading(targetAndDeltaOptions.delta, "delta"));
             try {
-                InputStream in = new VCDiffInputStream(
-                        countedIn,
-                        dictionary,
-                        globalOptions.maxTargetFileSize,
-                        globalOptions.maxTargetWindowSize,
-                        decodeOptions.allowVcdTarget
-                );
+                InputStream in = DecoderBuilder.builder()
+                        .withMaxTargetFileSize(globalOptions.maxTargetFileSize)
+                        .withMaxTargetWindowSize(globalOptions.maxTargetWindowSize)
+                        .withAllowTargetMatches(decodeOptions.allowVcdTarget)
+                        .buildInputStream(countedIn, dictionary);
                 try {
                     InputStream expected = OpenFileForReading(targetAndDeltaOptions.target, "target");
                     try {

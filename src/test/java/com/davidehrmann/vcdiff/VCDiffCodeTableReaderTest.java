@@ -3,6 +3,7 @@ package com.davidehrmann.vcdiff;
 import org.junit.Assert;
 import org.junit.Test;
 
+import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.util.concurrent.atomic.AtomicInteger;
 
@@ -76,7 +77,7 @@ public class VCDiffCodeTableReaderTest {
         g_exercise_code_table_.size2[opcode] = (inst2 == VCDiffCodeTableData.VCD_NOOP) ? 0 : size2;
     }
 
-    void VerifyInstModeSize(byte inst, byte mode, byte size, byte opcode) {
+    void VerifyInstModeSize(byte inst, byte mode, byte size, byte opcode) throws IOException {
         if (inst == VCDiffCodeTableData.VCD_NOOP) return;  // GetNextInstruction skips NOOPs
 
         AtomicInteger found_size = new AtomicInteger(0);
@@ -94,7 +95,7 @@ public class VCDiffCodeTableReaderTest {
         }
     }
 
-    void VerifyInstModeSize1(byte inst, byte mode, byte size, byte opcode) {
+    void VerifyInstModeSize1(byte inst, byte mode, byte size, byte opcode) throws IOException {
         if (inst == VCDiffCodeTableData.VCD_NOOP) {
             size = 0;
         }
@@ -106,7 +107,7 @@ public class VCDiffCodeTableReaderTest {
         VerifyInstModeSize(inst, mode, size, opcode);
     }
 
-    void VerifyInstModeSize2(byte inst, byte mode, byte size, byte opcode) {
+    void VerifyInstModeSize2(byte inst, byte mode, byte size, byte opcode) throws IOException {
         if (inst == VCDiffCodeTableData.VCD_NOOP) {
             size = 0;
         }
@@ -119,7 +120,7 @@ public class VCDiffCodeTableReaderTest {
     }
 
     @Test
-    public void ReadAddTest() {
+    public void ReadAddTest() throws IOException {
         instructions_and_sizes_ptr_.put((byte) 1);
         VarInt.putInt(instructions_and_sizes_ptr_, 257);
         instructions_and_sizes_ptr_.flip();
@@ -137,7 +138,7 @@ public class VCDiffCodeTableReaderTest {
     }
 
     @Test
-    public void ReadRunTest() {
+    public void ReadRunTest() throws IOException {
         instructions_and_sizes_ptr_.put((byte) 0);
         VarInt.putInt(instructions_and_sizes_ptr_, 111);
         instructions_and_sizes_ptr_.flip();
@@ -154,7 +155,7 @@ public class VCDiffCodeTableReaderTest {
     }
 
     @Test
-    public void ReadCopyTest() {
+    public void ReadCopyTest() throws IOException {
         instructions_and_sizes_ptr_.put((byte) 58);
         instructions_and_sizes_ptr_.put((byte) 0);
         instructions_and_sizes_ptr_.flip();
@@ -172,7 +173,7 @@ public class VCDiffCodeTableReaderTest {
     }
 
     @Test
-    public void ReadAddCopyTest() {
+    public void ReadAddCopyTest() throws IOException {
         instructions_and_sizes_ptr_.put((byte) 175);
         instructions_and_sizes_ptr_.put((byte) 0);
         instructions_and_sizes_ptr_.flip();
@@ -195,7 +196,7 @@ public class VCDiffCodeTableReaderTest {
     }
 
     @Test
-    public void ReadCopyAdd() {
+    public void ReadCopyAdd() throws IOException {
         instructions_and_sizes_ptr_.put((byte) 255);
         instructions_and_sizes_ptr_.put((byte) 0);
         instructions_and_sizes_ptr_.flip();
@@ -220,7 +221,7 @@ public class VCDiffCodeTableReaderTest {
     }
 
     @Test
-    public void UnGetAdd() {
+    public void UnGetAdd() throws IOException {
         instructions_and_sizes_ptr_.put((byte) 1);
         VarInt.putInt(instructions_and_sizes_ptr_, 257);
         instructions_and_sizes_ptr_.flip();
@@ -246,7 +247,7 @@ public class VCDiffCodeTableReaderTest {
     }
 
     @Test
-    public void UnGetCopy() {
+    public void UnGetCopy() throws IOException {
         instructions_and_sizes_ptr_.put((byte) 58);
         instructions_and_sizes_ptr_.put((byte) 0);
         instructions_and_sizes_ptr_.put((byte) 255);
@@ -275,7 +276,7 @@ public class VCDiffCodeTableReaderTest {
     }
 
     @Test
-    public void UnGetCopyAddTest() {
+    public void UnGetCopyAddTest() throws IOException {
         instructions_and_sizes_ptr_.put((byte) 255);
         instructions_and_sizes_ptr_.put((byte) 0);
         instructions_and_sizes_ptr_.flip();
@@ -312,7 +313,7 @@ public class VCDiffCodeTableReaderTest {
     }
 
     @Test
-    public void UnGetTwiceTest() {
+    public void UnGetTwiceTest() throws IOException {
         instructions_and_sizes_ptr_.put((byte) 255);
         instructions_and_sizes_ptr_.put((byte) 0);
         instructions_and_sizes_ptr_.flip();
@@ -351,7 +352,7 @@ public class VCDiffCodeTableReaderTest {
     }
 
     @Test
-    public void UnGetBeforeGet() {
+    public void UnGetBeforeGet() throws IOException {
         instructions_and_sizes_ptr_.put((byte) 255);
         instructions_and_sizes_ptr_.put((byte) 0);
         instructions_and_sizes_ptr_.flip();
@@ -371,7 +372,7 @@ public class VCDiffCodeTableReaderTest {
     }
 
     @Test
-    public void UnGetAddCopyTest() {
+    public void UnGetAddCopyTest() throws IOException {
         instructions_and_sizes_ptr_.put((byte) 175);
         instructions_and_sizes_ptr_.put((byte) 0);
         instructions_and_sizes_ptr_.flip();
@@ -403,7 +404,7 @@ public class VCDiffCodeTableReaderTest {
     }
 
     @Test
-    public void ReReadIncomplete() {
+    public void ReReadIncomplete() throws IOException{
         instructions_and_sizes_ptr_.put((byte) 175);    // Add(1) + Copy1(4)
         instructions_and_sizes_ptr_.put((byte) 1);    // Add(0)
         instructions_and_sizes_ptr_.put((byte) 111);    // with size 111
@@ -467,7 +468,7 @@ public class VCDiffCodeTableReaderTest {
     }
 
     @Test
-    public void ExerciseCodeTableReaderTest() {
+    public void ExerciseCodeTableReaderTest() throws IOException {
         for (int opcode = 0; opcode < VCDiffCodeTableData.kCodeTableSize; ++opcode) {
             instructions_and_sizes_ptr_.put((byte) opcode);
             if ((g_exercise_code_table_.inst1[opcode] != VCDiffCodeTableData.VCD_NOOP) && (g_exercise_code_table_.size1[opcode] == 0)) {

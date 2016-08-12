@@ -1,8 +1,11 @@
 package com.davidehrmann.vcdiff;
 
 import org.junit.Assert;
+import org.junit.Rule;
 import org.junit.Test;
+import org.junit.rules.ExpectedException;
 
+import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.util.Arrays;
 import java.util.Random;
@@ -26,6 +29,9 @@ public class VCDiffAddressCacheTest {
 
         assertEquals(size, buffer.position() - startPosition);
     }
+
+    @Rule
+    public ExpectedException thrown= ExpectedException.none();
 
     @Test
     public void ZeroCacheSizes() {
@@ -94,12 +100,11 @@ public class VCDiffAddressCacheTest {
         assertEquals(VCDiffAddressCache.kDefaultNearCacheSize, cache.near_addresses_.length);
         assertEquals(VCDiffAddressCache.kDefaultSameCacheSize * 256, cache.same_addresses_.length);
 
-        int test_address = 0;
         // Check that caches are initially set to zero
-        for (test_address = 0; test_address < cache.near_addresses_.length; ++test_address) {
+        for (int test_address = 0; test_address < cache.near_addresses_.length; ++test_address) {
             assertEquals(0, cache.near_addresses_[test_address]);
         }
-        for (test_address = 0; test_address < cache.same_addresses_.length; ++test_address) {
+        for (int test_address = 0; test_address < cache.same_addresses_.length; ++test_address) {
             assertEquals(0, cache.same_addresses_[test_address]);
         }
     }
@@ -172,7 +177,7 @@ public class VCDiffAddressCacheTest {
     }
 
     @Test
-    public void DecodeAddressModes() {
+    public void DecodeAddressModes() throws IOException {
         ByteBuffer buffer = ByteBuffer.allocate(2048);
 
         VarInt.putInt(buffer, 0xCAFE);
@@ -231,7 +236,7 @@ public class VCDiffAddressCacheTest {
     }
 
     @Test
-    public void DecodeAddressZeroCacheSizes() {
+    public void DecodeAddressZeroCacheSizes() throws IOException {
         VCDiffAddressCacheImpl zero_cache = new VCDiffAddressCacheImpl((short) 0, (short) 0);
         ByteBuffer buffer = ByteBuffer.allocate(2048);
 
@@ -275,7 +280,7 @@ public class VCDiffAddressCacheTest {
     }
 
     @Test(expected = IllegalArgumentException.class)
-    public void DecodeInvalidMode1() {
+    public void DecodeInvalidMode1() throws IOException {
         ByteBuffer buffer = ByteBuffer.allocate(2048);
         VarInt.putInt(buffer, 0xCAFE);
         buffer.flip();
@@ -283,11 +288,11 @@ public class VCDiffAddressCacheTest {
         VCDiffAddressCacheImpl cache = new VCDiffAddressCacheImpl();
         cache.Init();
 
-        assertEquals(VCDiffAddressCache.RESULT_ERROR, cache.DecodeAddress(0x10000000, (short) (cache.LastMode() + 1), buffer));
+        cache.DecodeAddress(0x10000000, (short) (cache.LastMode() + 1), buffer);
     }
 
     @Test(expected = IllegalArgumentException.class)
-    public void DecodeInvalidMode2() {
+    public void DecodeInvalidMode2() throws IOException {
         ByteBuffer buffer = ByteBuffer.allocate(2048);
         VarInt.putInt(buffer, 0xCAFE);
         buffer.flip();
@@ -295,21 +300,22 @@ public class VCDiffAddressCacheTest {
         VCDiffAddressCacheImpl cache = new VCDiffAddressCacheImpl();
         cache.Init();
 
-        assertEquals(VCDiffAddressCache.RESULT_ERROR, cache.DecodeAddress(0x10000000, (short) 0xFF, buffer));
+        cache.DecodeAddress(0x10000000, (short) 0xFF, buffer);
     }
 
-    public void DecodeZeroOrNegativeHereAddress1() {
+    public void DecodeZeroOrNegativeHereAddress1() throws IOException {
         ByteBuffer buffer = ByteBuffer.allocate(2048);
         VarInt.putInt(buffer, 0xCAFE);
         buffer.flip();
 
         VCDiffAddressCacheImpl cache = new VCDiffAddressCacheImpl();
         cache.Init();
-        assertEquals(VCDiffAddressCache.RESULT_ERROR, cache.DecodeAddress(-1, VCDiffAddressCache.VCD_SELF_MODE, buffer));
+        thrown.expect(IOException.class);
+        cache.DecodeAddress(-1, VCDiffAddressCache.VCD_SELF_MODE, buffer);
     }
 
     @Test
-    public void DecodeZeroOrNegativeHereAddress2() {
+    public void DecodeZeroOrNegativeHereAddress2() throws IOException {
         ByteBuffer buffer = ByteBuffer.allocate(2048);
         VarInt.putInt(buffer, 0xCAFE);
         buffer.flip();
@@ -322,11 +328,12 @@ public class VCDiffAddressCacheTest {
         // a window that has no source segment and that (erroneously)
         // uses a COPY instruction as its first instruction.  This should
         // cause an error to be reported, not a debug check failure.
-        assertEquals(VCDiffAddressCache.RESULT_ERROR, cache.DecodeAddress(0, VCDiffAddressCache.VCD_SELF_MODE, buffer));
+        thrown.expect(IOException.class);
+        cache.DecodeAddress(0, VCDiffAddressCache.VCD_SELF_MODE, buffer);
     }
 
     @Test
-    public void DecodeAddressPastHereAddress() {
+    public void DecodeAddressPastHereAddress() throws IOException {
         ByteBuffer buffer = ByteBuffer.allocate(2048);
         VarInt.putInt(buffer, 0xCAFE);
         buffer.flip();
@@ -334,12 +341,16 @@ public class VCDiffAddressCacheTest {
         VCDiffAddressCacheImpl cache = new VCDiffAddressCacheImpl();
         cache.Init();
 
-        assertEquals(VCDiffAddressCache.RESULT_ERROR, cache.DecodeAddress(0x1000, VCDiffAddressCache.VCD_SELF_MODE, buffer));
-        assertEquals(0, buffer.position());
+        try {
+            thrown.expect(IOException.class);
+            cache.DecodeAddress(0x1000, VCDiffAddressCache.VCD_SELF_MODE, buffer);
+        } finally {
+            assertEquals(0, buffer.position());
+        }
     }
 
     @Test
-    public void HereModeAddressTooLarge() {
+    public void HereModeAddressTooLarge() throws IOException {
         ByteBuffer buffer = ByteBuffer.allocate(2048);
         VarInt.putInt(buffer, 0x10001);
         buffer.flip();
@@ -347,12 +358,16 @@ public class VCDiffAddressCacheTest {
         VCDiffAddressCacheImpl cache = new VCDiffAddressCacheImpl();
         cache.Init();
 
-        assertEquals(VCDiffAddressCache.RESULT_ERROR, cache.DecodeAddress(0x10000, VCDiffAddressCache.VCD_HERE_MODE, buffer));
-        assertEquals(0, buffer.position());
+        try {
+            thrown.expect(IOException.class);
+            cache.DecodeAddress(0x10000, VCDiffAddressCache.VCD_HERE_MODE, buffer);
+        } finally {
+            assertEquals(0, buffer.position());
+        }
     }
 
     @Test
-    public void NearModeAddressOverflow() {
+    public void NearModeAddressOverflow() throws IOException {
         ByteBuffer buffer = ByteBuffer.allocate(2048);
         VarInt.putInt(buffer, 0xCAFE);
         VarInt.putInt(buffer, 0x7FFFFFFF);
@@ -367,8 +382,12 @@ public class VCDiffAddressCacheTest {
         // Now decode a NEAR mode address of base address 0xCAFE
         // (the first decoded address) + offset 0x7FFFFFFF.  This will cause
         // an integer overflow and should signal an error.
-        assertEquals(VCDiffAddressCache.RESULT_ERROR, cache.DecodeAddress(0x10000000, VCDiffAddressCache.VCD_FIRST_NEAR_MODE, buffer));
-        assertEquals(3, buffer.position());
+        try {
+            thrown.expect(IOException.class);
+            cache.DecodeAddress(0x10000000, VCDiffAddressCache.VCD_FIRST_NEAR_MODE, buffer);
+        } finally {
+            assertEquals(3, buffer.position());
+        }
     }
 
     // A Varint should contain at most 9 bytes that have their continuation bit
@@ -377,7 +396,7 @@ public class VCDiffAddressCacheTest {
     // and confirm that it does not run off the end of the input buffer and
     // it returns an error value (RESULT_ERROR).
     @Test
-    public void DecodeInvalidVarint() {
+    public void DecodeInvalidVarint() throws IOException {
         ByteBuffer buffer = ByteBuffer.allocate(512);
         Arrays.fill(buffer.array(), (byte) 0xfe);
         buffer.limit(buffer.capacity());
@@ -385,8 +404,12 @@ public class VCDiffAddressCacheTest {
         VCDiffAddressCacheImpl cache = new VCDiffAddressCacheImpl();
         cache.Init();
 
-        assertEquals(VCDiffAddressCache.RESULT_ERROR, cache.DecodeAddress(0x10000000, VCDiffAddressCache.VCD_SELF_MODE, buffer));
-        assertEquals(0, buffer.position());
+        try {
+            thrown.expect(IOException.class);
+            cache.DecodeAddress(0x10000000, VCDiffAddressCache.VCD_SELF_MODE, buffer);
+        } finally {
+            assertEquals(0, buffer.position());
+        }
     }
 
     // If only part of a Varint appears in the data to be decoded,
@@ -394,7 +417,7 @@ public class VCDiffAddressCacheTest {
     // which means that the Varint *may* be valid if there is more
     // data expected to be returned.
     @Test
-    public void DecodePartialVarint() {
+    public void DecodePartialVarint() throws IOException {
         ByteBuffer buffer = ByteBuffer.wrap(new byte[]{(byte) 0xFE, (byte) 0xFE, (byte) 0xFE, (byte) 0x01});
         buffer.limit(3);
 
@@ -413,7 +436,7 @@ public class VCDiffAddressCacheTest {
     }
 
     @Test(expected = IllegalArgumentException.class)
-    public void DecodeBadMode() {
+    public void DecodeBadMode() throws IOException {
         ByteBuffer buffer = ByteBuffer.allocate(2048);
         VarInt.putInt(buffer, 0xCAFE);
         buffer.flip();
@@ -425,7 +448,7 @@ public class VCDiffAddressCacheTest {
     }
 
     @Test
-    public void DecodeInvalidHereAddress() {
+    public void DecodeInvalidHereAddress() throws IOException {
         ByteBuffer buffer = ByteBuffer.allocate(2048);
         VarInt.putInt(buffer, 0x10001); // offset larger than here_address
         buffer.flip();
@@ -433,12 +456,17 @@ public class VCDiffAddressCacheTest {
         VCDiffAddressCacheImpl cache = new VCDiffAddressCacheImpl();
         cache.Init();
 
-        assertEquals(VCDiffAddressCache.RESULT_ERROR, cache.DecodeAddress(0x10000, VCDiffAddressCache.VCD_HERE_MODE, buffer));
-        assertEquals(0, buffer.position());
+        try {
+            thrown.expect(IOException.class);
+            cache.DecodeAddress(0x10000, VCDiffAddressCache.VCD_HERE_MODE, buffer);
+        } finally {
+            assertEquals(0, buffer.position());
+        }
+
     }
 
     @Test
-    public void DecodeInvalidNearAddress() {
+    public void DecodeInvalidNearAddress() throws IOException {
         ByteBuffer buffer = ByteBuffer.allocate(2048);
         VarInt.putInt(buffer, 0xCAFE);
         VarInt.putInt(buffer, Integer.MAX_VALUE); // offset will cause integer overflow
@@ -450,12 +478,16 @@ public class VCDiffAddressCacheTest {
         assertEquals(0xCAFE, cache.DecodeAddress(0x10000, VCDiffAddressCache.VCD_SELF_MODE, buffer));
         assertEquals(3, buffer.position());
 
-        assertEquals(VCDiffAddressCache.RESULT_ERROR, cache.DecodeAddress(0x10000, VCDiffAddressCache.VCD_FIRST_NEAR_MODE, buffer));
-        assertEquals(3, buffer.position());
+        try {
+            thrown.expect(IOException.class);
+            cache.DecodeAddress(0x10000, VCDiffAddressCache.VCD_FIRST_NEAR_MODE, buffer);
+        } finally {
+            assertEquals(3, buffer.position());
+        }
     }
 
     @Test
-    public void PerformanceTest() {
+    public void PerformanceTest() throws IOException {
         final int test_size = 20 * 1024;  // 20K random encode/decode operations
         final int num_iterations = 40;  // run test 40 times and take average
 
@@ -490,12 +522,11 @@ public class VCDiffAddressCacheTest {
     }
 
     private void BM_CacheEncode(int iterations, VCDiffAddressCache cache, int[] verify_stream, short[] mode_stream, ByteBuffer large_address_stream) {
-        int here_address = 1;
         AtomicInteger encoded_addr = new AtomicInteger(0);
         for (int test_iteration = 0; test_iteration < iterations; ++test_iteration) {
             cache.Init();
             large_address_stream.clear();
-            here_address = 1;
+            int here_address = 1;
             for (int i = 0; i < verify_stream.length; ++i) {
                 short mode = cache.EncodeAddress(verify_stream[i], here_address, encoded_addr);
                 if (cache.WriteAddressAsVarintForMode(mode)) {
@@ -512,12 +543,11 @@ public class VCDiffAddressCacheTest {
         }
     }
 
-    private void BM_CacheDecode(int iterations, VCDiffAddressCache cache, int[] verify_stream, short[] mode_stream, ByteBuffer large_address_stream) {
-        int here_address = 1;
+    private void BM_CacheDecode(int iterations, VCDiffAddressCache cache, int[] verify_stream, short[] mode_stream, ByteBuffer large_address_stream) throws IOException {
         for (int test_iteration = 0; test_iteration < iterations; ++test_iteration) {
             cache.Init();
             large_address_stream.rewind();
-            here_address = 1;
+            int here_address = 1;
             for (int i = 0; i < verify_stream.length; ++i) {
                 assertEquals(verify_stream[i], cache.DecodeAddress(here_address, mode_stream[i], large_address_stream));
                 here_address += 4;

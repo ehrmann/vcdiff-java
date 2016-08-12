@@ -152,17 +152,18 @@ public class VCDiffInputStream extends InputStream {
                     decodingStarted = true;
                 }
 
-                if (!decoder.DecodeChunk(inBuffer, 0, read, tempDecoded)) {
-                    throw new IOException("Error trying to decode data chunk starting at offset " + (totalBytesRead - read));
+                try {
+                    decoder.DecodeChunk(inBuffer, 0, read, tempDecoded);
+                } catch (IOException e) {
+                    throw new IOException("Error trying to decode data chunk starting at offset " + (totalBytesRead - read), e);
                 }
+
                 if (tempDecoded.size() > 0) {
                     decodedBuffer = ByteBuffer.wrap(tempDecoded.toByteArray());
                     tempDecoded.reset();
                 }
             } else {
-                if (!decoder.FinishDecoding()) {
-                    throw new IOException("Decode error; may not be a valid VCDIFF delta file");
-                }
+                decoder.FinishDecoding();
                 break;
             }
         }

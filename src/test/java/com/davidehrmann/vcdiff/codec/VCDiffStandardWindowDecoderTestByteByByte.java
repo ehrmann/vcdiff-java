@@ -2,6 +2,7 @@ package com.davidehrmann.vcdiff.codec;
 
 import org.junit.Test;
 
+import java.io.IOException;
 import java.util.Arrays;
 
 import static org.junit.Assert.*;
@@ -11,9 +12,9 @@ public class VCDiffStandardWindowDecoderTestByteByByte extends VCDiffStandardWin
     public void Decode() throws Exception {
         decoder_.StartDecoding(dictionary_);
         for (int i = 0; i < delta_file_.length; ++i) {
-            assertTrue(decoder_.DecodeChunk(delta_file_, i, 1, output_));
+            decoder_.DecodeChunk(delta_file_, i, 1, output_);
         }
-        assertTrue(decoder_.FinishDecoding());
+        decoder_.FinishDecoding();
         assertArrayEquals(expected_target_, output_.toByteArray());
     }
 
@@ -22,9 +23,9 @@ public class VCDiffStandardWindowDecoderTestByteByByte extends VCDiffStandardWin
         decoder_.SetAllowVcdTarget(true);
         decoder_.StartDecoding(dictionary_);
         for (int i = 0; i < delta_file_.length; ++i) {
-            assertTrue(decoder_.DecodeChunk(delta_file_, i, 1, output_));
+            decoder_.DecodeChunk(delta_file_, i, 1, output_);
         }
-        assertTrue(decoder_.FinishDecoding());
+        decoder_.FinishDecoding();
         assertArrayEquals(expected_target_, output_.toByteArray());
     }
 
@@ -35,7 +36,9 @@ public class VCDiffStandardWindowDecoderTestByteByByte extends VCDiffStandardWin
         decoder_.StartDecoding(dictionary_);
         int i = 0;
         for (; i < delta_file_.length; ++i) {
-            if (!decoder_.DecodeChunk(delta_file_, i, 1, output_)) {
+            try {
+                decoder_.DecodeChunk(delta_file_, i, 1, output_);
+            } catch (IOException e) {
                 break;
             }
         }
@@ -51,9 +54,9 @@ public class VCDiffStandardWindowDecoderTestByteByByte extends VCDiffStandardWin
         byte[] buffer = new byte[1];
         for (byte aDelta_file_ : delta_file_) {
             buffer[0] = aDelta_file_;
-            assertTrue(decoder_.DecodeChunk(buffer, 0, 1, output_));
+            decoder_.DecodeChunk(buffer, output_);
         }
-        assertTrue(decoder_.FinishDecoding());
+        decoder_.FinishDecoding();
         assertArrayEquals(expected_target_, output_.toByteArray());
     }
 }

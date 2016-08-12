@@ -60,11 +60,10 @@ public abstract class VerifyEncodedBytesTest {
     protected void SimpleEncode() throws IOException {
         assertTrue(simple_encoder_.Encode(target_, 0, target_.length, delta_));
         assertTrue(target_.length + kFileHeaderSize + kWindowHeaderSize >= delta_.size());
-        assertTrue(simple_decoder_.Decode(dictionary_,
+        simple_decoder_.Decode(
+                dictionary_,
                 delta_.toByteArray(),
-                0,
-                delta_.size(),
-                result_target_));
+                result_target_);
         assertArrayEquals(target_, result_target_.toByteArray());
     }
 

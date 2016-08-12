@@ -19,6 +19,7 @@ import com.davidehrmann.vcdiff.VarInt;
 import org.junit.Assert;
 import org.junit.Test;
 
+import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.util.ArrayList;
 import java.util.List;
@@ -41,21 +42,21 @@ public class VCDiffHeaderParserTest {
         assertNotSame(buffer, parser.unparsedData());
     }
 
-    private void VerifyByte(byte expected_value) {
+    private void VerifyByte(byte expected_value) throws IOException {
         ByteBuffer unparsedData = parser.unparsedData();
         byte decoded_byte = parser.ParseByte();
         assertEquals(expected_value, decoded_byte);
         assertEquals(unparsedData.remaining() - 1, parser.unparsedData().remaining());
     }
 
-    private void VerifyInt32(int expected_value) {
+    private void VerifyInt32(int expected_value) throws IOException {
         ByteBuffer prior_position = parser.unparsedData();
         int decoded_integer = parser.ParseInt32("decoded int32");
         assertEquals(expected_value, decoded_integer);
         Assert.assertEquals(prior_position.remaining(), parser.unparsedData().remaining() + VarInt.calculateIntLength(decoded_integer));
     }
 
-    private void VerifyUInt32(int expected_value) {
+    private void VerifyUInt32(int expected_value) throws IOException {
         ByteBuffer prior_position = parser.unparsedData();
         int decoded_integer = parser.ParseUInt32("decoded uint32");
         assertEquals(expected_value, decoded_integer);
@@ -63,7 +64,7 @@ public class VCDiffHeaderParserTest {
 
     }
 
-    private void VerifyChecksum(int expected_value) {
+    private void VerifyChecksum(int expected_value) throws IOException {
         ByteBuffer prior_position = parser.unparsedData();
         int decoded_checksum = parser.ParseChecksum("decoded checksum");
         assertEquals(expected_value, decoded_checksum);
@@ -71,7 +72,7 @@ public class VCDiffHeaderParserTest {
     }
 
     @Test
-    public void ParseRandomBytes() {
+    public void ParseRandomBytes() throws IOException {
         ByteBuffer encoded_buffer_ = ByteBuffer.allocate(kTestSize * 8);
         List<Byte> byte_values = new ArrayList<Byte>();
         for (int i = 0; i < kTestSize; ++i) {
@@ -94,7 +95,7 @@ public class VCDiffHeaderParserTest {
     }
 
     @Test
-    public void ParseRandomInt32() {
+    public void ParseRandomInt32() throws Exception {
         ByteBuffer encoded_buffer_ = ByteBuffer.allocate(kTestSize * 8);
         List<Integer> integer_values = new ArrayList<Integer>();
         for (int i = 0; i < kTestSize; ++i) {
@@ -116,7 +117,7 @@ public class VCDiffHeaderParserTest {
     }
 
     @Test
-    public void ParseRandomUInt32() {
+    public void ParseRandomUInt32() throws Exception {
         ByteBuffer buffer = ByteBuffer.allocate(kTestSize * 8);
         List<Integer> integer_values = new ArrayList<Integer>();
         for (int i = 0; i < kTestSize; ++i) {
@@ -138,7 +139,7 @@ public class VCDiffHeaderParserTest {
     }
 
     @Test
-    public void ParseRandomChecksum() {
+    public void ParseRandomChecksum() throws Exception {
         ByteBuffer buffer = ByteBuffer.allocate(kTestSize * 8);
         List<Integer> checksum_values = new ArrayList<Integer>();
 
@@ -161,7 +162,7 @@ public class VCDiffHeaderParserTest {
     }
 
     @Test
-    public void ParseMixed() {
+    public void ParseMixed() throws Exception {
         ByteBuffer buffer = ByteBuffer.allocate(64);
 
         VarInt.putLong(buffer, 0xCAFECAFE & 0xFFFFFFFFL);
@@ -185,7 +186,7 @@ public class VCDiffHeaderParserTest {
     }
 
     @Test
-    public void ParseInvalidVarint() {
+    public void ParseInvalidVarint() throws Exception {
         ByteBuffer buffer = ByteBuffer.allocate(64);
 
         // Start with a byte that has the continuation bit plus a high-order bit set
@@ -199,13 +200,19 @@ public class VCDiffHeaderParserTest {
         ByteBuffer backup = buffer.duplicate();
         StartParsing(buffer);
 
-        assertNull(parser.ParseInt32("invalid Varint"));
+        try {
+            parser.ParseInt32("invalid Varint");
+            fail();
+        } catch (IOException ignored) { }
 
         assertEquals(backup, parser.unparsedData());
 
         // After the parse failure, any other call to Parse... should return an error,
         // even though there is still a byte that could be read as valid.
-        assertNull(parser.ParseByte());
+        try {
+            parser.ParseByte();
+            fail();
+        } catch (IOException ignored) { }
 
         assertEquals(backup, parser.unparsedData());
     }

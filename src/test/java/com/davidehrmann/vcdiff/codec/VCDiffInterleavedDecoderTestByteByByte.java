@@ -3,6 +3,7 @@ package com.davidehrmann.vcdiff.codec;
 import com.davidehrmann.vcdiff.VarInt;
 import org.junit.Test;
 
+import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.util.Arrays;
 
@@ -22,9 +23,9 @@ public class VCDiffInterleavedDecoderTestByteByByte extends VCDiffInterleavedDec
     public void DecodeHeaderOnly() throws Exception {
         decoder_.StartDecoding(dictionary_);
         for (int i = 0; i < delta_file_header_.length; ++i) {
-            assertTrue(decoder_.DecodeChunk(delta_file_header_, i, 1, output_));
+            decoder_.DecodeChunk(delta_file_header_, i, 1, output_);
         }
-        assertTrue(decoder_.FinishDecoding());
+        decoder_.FinishDecoding();
         assertArrayEquals(new byte[0], output_.toByteArray());
     }
 
@@ -33,70 +34,79 @@ public class VCDiffInterleavedDecoderTestByteByByte extends VCDiffInterleavedDec
         delta_file_ = Arrays.copyOf(delta_file_, delta_file_header_.length - 2);
         decoder_.StartDecoding(dictionary_);
         for (int i = 0; i < delta_file_.length; ++i) {
-            assertTrue(decoder_.DecodeChunk(delta_file_, i, 1, output_));
+            decoder_.DecodeChunk(delta_file_, i, 1, output_);
         }
-        assertFalse(decoder_.FinishDecoding());
-        assertArrayEquals(new byte[0], output_.toByteArray());
+        try {
+            thrown.expect(IOException.class);
+            decoder_.FinishDecoding();
+        } finally {
+            assertArrayEquals(new byte[0], output_.toByteArray());
+        }
     }
 
     @Test
     public void BadMagicNumber() throws Exception {
         delta_file_[1] = (byte) ('Q' | 0x80);
         decoder_.StartDecoding(dictionary_);
-        boolean failed = false;
-        for (int i = 0; i < delta_file_.length; ++i) {
-            if (!decoder_.DecodeChunk(delta_file_, i, 1, output_)) {
-                // It should fail at the position that was altered
-                assertEquals(1, i);
-                failed = true;
-                break;
+
+        int i = 0;
+        try {
+            for (i = 0; i < delta_file_.length; ++i) {
+                decoder_.DecodeChunk(delta_file_, i, 1, output_);
             }
+        } catch (IOException e) {
+            // It should fail at the position that was altered
+            assertEquals(1, i);
+        } finally {
+            assertArrayEquals(new byte[0], output_.toByteArray());
         }
-        assertTrue(failed);
-        assertArrayEquals(new byte[0], output_.toByteArray());
     }
 
     @Test
     public void BadVersionNumber() throws Exception {
         delta_file_[3] = 0x01;
         decoder_.StartDecoding(dictionary_);
-        boolean failed = false;
-        for (int i = 0; i < delta_file_.length; ++i) {
-            if (!decoder_.DecodeChunk(delta_file_, i, 1, output_)) {
-                failed = true;
-                // It should fail at the position that was altered
-                assertEquals(3, i);
-                break;
+
+        int i = 0;
+        try {
+            for (i = 0; i < delta_file_.length; ++i) {
+                decoder_.DecodeChunk(delta_file_, i, 1, output_);
             }
+            fail();
+        } catch (IOException e) {
+            // It should fail at the position that was altered
+            assertEquals(3, i);
+        } finally {
+            assertArrayEquals(new byte[0], output_.toByteArray());
         }
-        assertTrue(failed);
-        assertArrayEquals(new byte[0], output_.toByteArray());
     }
 
     @Test
     public void SecondaryCompressionNotSupported() throws Exception {
         delta_file_[4] = 0x01;
         decoder_.StartDecoding(dictionary_);
-        boolean failed = false;
-        for (int i = 0; i < delta_file_.length; ++i) {
-            if (!decoder_.DecodeChunk(delta_file_, i, 1, output_)) {
-                failed = true;
-                // It should fail at the position that was altered
-                assertEquals(4, i);
-                break;
+
+        int i = 0;
+        try {
+            for (i = 0; i < delta_file_.length; ++i) {
+                decoder_.DecodeChunk(delta_file_, i, 1, output_);
             }
+            fail();
+        } catch (IOException e) {
+            // It should fail at the position that was altered
+            assertEquals(4, i);
+        } finally {
+            assertArrayEquals(new byte[0], output_.toByteArray());
         }
-        assertTrue(failed);
-        assertArrayEquals(new byte[0], output_.toByteArray());
     }
 
     @Test
     public void Decode() throws Exception {
         decoder_.StartDecoding(dictionary_);
         for (int i = 0; i < delta_file_.length; ++i) {
-            assertTrue(decoder_.DecodeChunk(delta_file_, i, 1, output_));
+            decoder_.DecodeChunk(delta_file_, i, 1, output_);
         }
-        assertTrue(decoder_.FinishDecoding());
+        decoder_.FinishDecoding();
         assertArrayEquals(expected_target_, output_.toByteArray());
     }
 
@@ -106,9 +116,9 @@ public class VCDiffInterleavedDecoderTestByteByByte extends VCDiffInterleavedDec
         InitializeDeltaFile();
         decoder_.StartDecoding(dictionary_);
         for (int i = 0; i < delta_file_.length; ++i) {
-            assertTrue(decoder_.DecodeChunk(delta_file_, i, 1, output_));
+            decoder_.DecodeChunk(delta_file_, i, 1, output_);
         }
-        assertTrue(decoder_.FinishDecoding());
+        decoder_.FinishDecoding();
         assertArrayEquals(expected_target_, output_.toByteArray());
     }
 
@@ -117,18 +127,20 @@ public class VCDiffInterleavedDecoderTestByteByByte extends VCDiffInterleavedDec
         AddChecksum(0xBADBAD);
         InitializeDeltaFile();
         decoder_.StartDecoding(dictionary_);
-        boolean failed = false;
-        for (int i = 0; i < delta_file_.length; ++i) {
-            if (!decoder_.DecodeChunk(delta_file_, i, 1, output_)) {
-                failed = true;
-                // It should fail after decoding the entire delta file
-                assertEquals(delta_file_.length - 1, i);
-                break;
+
+        int i = 0;
+        try {
+            for (i = 0; i < delta_file_.length; ++i) {
+                decoder_.DecodeChunk(delta_file_, i, 1, output_);
             }
+            fail();
+        } catch (IOException e) {
+            // It should fail after decoding the entire delta file
+            assertEquals(delta_file_.length - 1, i);
+        } finally {
+            // The decoder should not create more target bytes than were expected.
+            assertTrue(expected_target_.length >= output_.size());
         }
-        assertTrue(failed);
-        // The decoder should not create more target bytes than were expected.
-        assertTrue(expected_target_.length >= output_.size());
     }
 
     @Test
@@ -147,18 +159,20 @@ public class VCDiffInterleavedDecoderTestByteByByte extends VCDiffInterleavedDec
         delta_window_header_ = ArraysExtra.replace(delta_window_header_, 4, 1, size_of_invalid_varint);
         InitializeDeltaFile();
         decoder_.StartDecoding(dictionary_);
-        boolean failed = false;
-        for (int i = 0; i < delta_file_.length; ++i) {
-            if (!decoder_.DecodeChunk(delta_file_, i, 1, output_)) {
-                failed = true;
-                // It should fail while trying to interpret the checksum.
-                assertEquals(delta_file_header_.length + delta_window_header_.length - 2, i);
-                break;
+
+        int i = 0;
+        try {
+            for (i = 0; i < delta_file_.length; ++i) {
+                decoder_.DecodeChunk(delta_file_, i, 1, output_);
             }
+            fail();
+        } catch (IOException e) {
+            // It should fail while trying to interpret the checksum.
+            assertEquals(delta_file_header_.length + delta_window_header_.length - 2, i);
+        } finally {
+            // The decoder should not create more target bytes than were expected.
+            assertTrue(expected_target_.length >= output_.size());
         }
-        assertTrue(failed);
-        // The decoder should not create more target bytes than were expected.
-        assertTrue(expected_target_.length >= output_.size());
     }
 
     @Test
@@ -166,9 +180,9 @@ public class VCDiffInterleavedDecoderTestByteByByte extends VCDiffInterleavedDec
         decoder_.SetMaximumTargetWindowSize(expected_target_.length);
         decoder_.StartDecoding(dictionary_);
         for (int i = 0; i < delta_file_.length; ++i) {
-            assertTrue(decoder_.DecodeChunk(delta_file_, i, 1, output_));
+            decoder_.DecodeChunk(delta_file_, i, 1, output_);
         }
-        assertTrue(decoder_.FinishDecoding());
+        decoder_.FinishDecoding();
         assertArrayEquals(expected_target_, output_.toByteArray());
     }
 
@@ -177,9 +191,9 @@ public class VCDiffInterleavedDecoderTestByteByByte extends VCDiffInterleavedDec
         decoder_.SetMaximumTargetFileSize(expected_target_.length);
         decoder_.StartDecoding(dictionary_);
         for (int i = 0; i < delta_file_.length; ++i) {
-            assertTrue(decoder_.DecodeChunk(delta_file_, i, 1, output_));
+            decoder_.DecodeChunk(delta_file_, i, 1, output_);
         }
-        assertTrue(decoder_.FinishDecoding());
+        decoder_.FinishDecoding();
         assertArrayEquals(expected_target_, output_.toByteArray());
     }
 
@@ -187,30 +201,34 @@ public class VCDiffInterleavedDecoderTestByteByByte extends VCDiffInterleavedDec
     public void TargetExceedsWindowSizeLimit() throws Exception {
         decoder_.SetMaximumTargetWindowSize(expected_target_.length - 1);
         decoder_.StartDecoding(dictionary_);
-        boolean failed = false;
-        for (int i = 0; i < delta_file_.length; ++i) {
-            if (!decoder_.DecodeChunk(delta_file_, i, 1, output_)) {
-                failed = true;
-                break;
+
+        int i ;
+        try {
+            for (i = 0; i < delta_file_.length; ++i) {
+                decoder_.DecodeChunk(delta_file_, i, 1, output_);
             }
+            fail();
+        } catch (IOException ignored) {
+        } finally {
+            assertArrayEquals(new byte[0], output_.toByteArray());
         }
-        assertTrue(failed);
-        assertArrayEquals(new byte[0], output_.toByteArray());
     }
 
     @Test
     public void TargetExceedsFileSizeLimit() throws Exception {
         decoder_.SetMaximumTargetFileSize(expected_target_.length - 1);
         decoder_.StartDecoding(dictionary_);
-        boolean failed = false;
-        for (int i = 0; i < delta_file_.length; ++i) {
-            if (!decoder_.DecodeChunk(delta_file_, i, 1, output_)) {
-                failed = true;
-                break;
+
+        int i;
+        try {
+            for (i = 0; i < delta_file_.length; ++i) {
+                decoder_.DecodeChunk(delta_file_, i, 1, output_);
             }
+            fail();
+        } catch (IOException ignored) {
+        } finally {
+            assertArrayEquals(new byte[0], output_.toByteArray());
         }
-        assertTrue(failed);
-        assertArrayEquals(new byte[0], output_.toByteArray());
     }
 
     // Fuzz bits to make sure decoder does not violently crash.
@@ -221,16 +239,14 @@ public class VCDiffInterleavedDecoderTestByteByByte extends VCDiffInterleavedDec
     public void FuzzBits() throws Exception {
         while (FuzzOneByteInDeltaFile()) {
             decoder_.StartDecoding(dictionary_);
-            boolean failed = false;
-            for (int i = 0; i < delta_file_.length; ++i) {
-                if (!decoder_.DecodeChunk(delta_file_, i, 1, output_)) {
-                    failed = true;
-                    break;
+
+            try {
+                for (int i = 0; i < delta_file_.length; ++i) {
+                    decoder_.DecodeChunk(delta_file_, i, 1, output_);
                 }
-            }
-            if (!failed) {
                 decoder_.FinishDecoding();
-            }
+            } catch (IOException ignored) { }
+
             InitializeDeltaFile();
             output_.reset();
         }
@@ -245,19 +261,16 @@ public class VCDiffInterleavedDecoderTestByteByByte extends VCDiffInterleavedDec
         InitializeDeltaFile();
         while (FuzzOneByteInDeltaFile()) {
             decoder_.StartDecoding(dictionary_);
-            boolean failed = false;
-            for (int i = 0; i < delta_file_.length; ++i) {
-                if (!decoder_.DecodeChunk(delta_file_, i, 1, output_)) {
-                    failed = true;
-                    break;
+            try {
+                for (int i = 0; i < delta_file_.length; ++i) {
+                    decoder_.DecodeChunk(delta_file_, i, 1, output_);
                 }
-            }
-            if (!failed) {
-                if (decoder_.FinishDecoding()) {
-                    // Decoding succeeded.  Make sure the correct target was produced.
-                    assertArrayEquals(expected_target_, output_.toByteArray());
-                }
-            }
+                decoder_.FinishDecoding();
+
+                // Decoding succeeded.  Make sure the correct target was produced.
+                assertArrayEquals(expected_target_, output_.toByteArray());
+            } catch (IOException ignored) { }
+
             // The decoder should not create more target bytes than were expected.
             assertTrue(expected_target_.length >= output_.size());
             InitializeDeltaFile();
@@ -272,17 +285,19 @@ public class VCDiffInterleavedDecoderTestByteByByte extends VCDiffInterleavedDec
         delta_window_header_ = ArraysExtra.replace(delta_window_header_, 0, 4, new byte[1]);
         InitializeDeltaFile();
         decoder_.StartDecoding(dictionary_);
-        boolean failed = false;
-        for (int i = 0; i < delta_file_.length; ++i) {
-            if (!decoder_.DecodeChunk(delta_file_, i, 1, output_)) {
-                failed = true;
-                // The first COPY instruction should fail.
-                assertEquals(delta_file_header_.length + delta_window_header_.length + 2, i);
-                break;
+
+        int i = 0;
+        try {
+            for (i = 0; i < delta_file_.length; ++i) {
+                decoder_.DecodeChunk(delta_file_, i, 1, output_);
             }
+            fail();
+        } catch (IOException e) {
+            // The first COPY instruction should fail.
+            assertEquals(delta_file_header_.length + delta_window_header_.length + 2, i);
+        } finally {
+            assertArrayEquals(new byte[0], output_.toByteArray());
         }
-        assertTrue(failed);
-        assertArrayEquals(new byte[0], output_.toByteArray());
     }
 
     @Test
@@ -292,18 +307,20 @@ public class VCDiffInterleavedDecoderTestByteByByte extends VCDiffInterleavedDec
         delta_file_[delta_file_header_.length + 0x0D] =
                 (byte) (SecondByteOfStringLength(kExpectedTarget) + 1);
         decoder_.StartDecoding(dictionary_);
-        boolean failed = false;
-        for (int i = 0; i < delta_file_.length; ++i) {
-            if (!decoder_.DecodeChunk(delta_file_, i, 1, output_)) {
-                failed = true;
-                // It should fail at the position that was altered
-                assertEquals(delta_file_header_.length + 0x0D, i);
-                break;
+
+        int i = 0;
+        try {
+            for (i = 0; i < delta_file_.length; ++i) {
+                decoder_.DecodeChunk(delta_file_, i, 1, output_);
             }
+            fail();
+        } catch (IOException e) {
+            // It should fail at the position that was altered
+            assertEquals(delta_file_header_.length + 0x0D, i);
+        } finally {
+            // The decoder should not create more target bytes than were expected.
+            assertTrue(expected_target_.length >= output_.size());
         }
-        assertTrue(failed);
-        // The decoder should not create more target bytes than were expected.
-        assertTrue(expected_target_.length >= output_.size());
     }
 
     // A COPY instruction with an explicit size of 0 is not illegal according to the
@@ -315,102 +332,114 @@ public class VCDiffInterleavedDecoderTestByteByByte extends VCDiffInterleavedDec
     public void CopySizeZero() throws Exception {
         delta_file_[delta_file_header_.length + 0x0C] = 0;
         decoder_.StartDecoding(dictionary_);
-        boolean failed = false;
-        for (int i = 0; i < delta_file_.length; ++i) {
-            if (!decoder_.DecodeChunk(delta_file_, i, 1, output_)) {
-                failed = true;
-                break;
+
+        int i;
+        try {
+            for (i = 0; i < delta_file_.length; ++i) {
+                decoder_.DecodeChunk(delta_file_, i, 1, output_);
             }
+            fail();
+        } catch (IOException ignored) {
+        } finally {
+            // The decoder should not create more target bytes than were expected.
+            assertTrue(expected_target_.length >= output_.size());
         }
-        assertTrue(failed);
-        // The decoder should not create more target bytes than were expected.
-        assertTrue(expected_target_.length >= output_.size());
     }
 
     @Test
     public void CopySizeTooLargeByOne() throws Exception {
         ++delta_file_[delta_file_header_.length + 0x0C];
         decoder_.StartDecoding(dictionary_);
-        boolean failed = false;
-        for (int i = 0; i < delta_file_.length; ++i) {
-            if (!decoder_.DecodeChunk(delta_file_, i, 1, output_)) {
-                failed = true;
-                break;
+
+        int i;
+        try {
+            for (i = 0; i < delta_file_.length; ++i) {
+                decoder_.DecodeChunk(delta_file_, i, 1, output_);
             }
+            fail();
+        } catch (IOException ignored) {
+        } finally {
+            // The decoder should not create more target bytes than were expected.
+            assertTrue(expected_target_.length >= output_.size());
         }
-        assertTrue(failed);
-        // The decoder should not create more target bytes than were expected.
-        assertTrue(expected_target_.length >= output_.size());
     }
 
     @Test
     public void CopySizeTooSmallByOne() throws Exception {
         --delta_file_[delta_file_header_.length + 0x0C];
         decoder_.StartDecoding(dictionary_);
-        boolean failed = false;
-        for (int i = 0; i < delta_file_.length; ++i) {
-            if (!decoder_.DecodeChunk(delta_file_, i, 1, output_)) {
-                failed = true;
-                break;
+
+        int i;
+        try {
+            for (i = 0; i < delta_file_.length; ++i) {
+                decoder_.DecodeChunk(delta_file_, i, 1, output_);
             }
+            fail();
+        } catch (IOException ignored) {
+        } finally {
+            // The decoder should not create more target bytes than were expected.
+            assertTrue(expected_target_.length >= output_.size());
         }
-        assertTrue(failed);
-        // The decoder should not create more target bytes than were expected.
-        assertTrue(expected_target_.length >= output_.size());
     }
 
     @Test
     public void CopySizeMaxInt() throws Exception {
         WriteMaxVarintAtOffset(0x0C, 1);
         decoder_.StartDecoding(dictionary_);
-        boolean failed = false;
-        for (int i = 0; i < delta_file_.length; ++i) {
-            if (!decoder_.DecodeChunk(delta_file_, i, 1, output_)) {
-                failed = true;
-                // It should fail at the position that was altered
-                assertEquals(delta_file_header_.length + 0x10, i);
-                break;
+
+        int i = 0;
+        try {
+            for (i = 0; i < delta_file_.length; ++i) {
+                decoder_.DecodeChunk(delta_file_, i, 1, output_);
             }
+            fail();
+        } catch (IOException e) {
+            // It should fail at the position that was altered
+            assertEquals(delta_file_header_.length + 0x10, i);
+        } finally {
+            // The decoder should not create more target bytes than were expected.
+            assertTrue(expected_target_.length >= output_.size());
         }
-        assertTrue(failed);
-        // The decoder should not create more target bytes than were expected.
-        assertTrue(expected_target_.length >= output_.size());
     }
 
     @Test
     public void CopySizeNegative() throws Exception {
         WriteNegativeVarintAtOffset(0x0C, 1);
         decoder_.StartDecoding(dictionary_);
-        boolean failed = false;
-        for (int i = 0; i < delta_file_.length; ++i) {
-            if (!decoder_.DecodeChunk(delta_file_, i, 1, output_)) {
-                failed = true;
-                // It should fail at the position that was altered
-                assertEquals(delta_file_header_.length + 0x0F, i);
-                break;
+
+        int i = 0;
+        try {
+            for (i = 0; i < delta_file_.length; ++i) {
+                decoder_.DecodeChunk(delta_file_, i, 1, output_);
             }
+            fail();
+        } catch (IOException e) {
+            // It should fail at the position that was altered
+            assertEquals(delta_file_header_.length + 0x0F, i);
+        } finally {
+            // The decoder should not create more target bytes than were expected.
+            assertTrue(expected_target_.length >= output_.size());
         }
-        assertTrue(failed);
-        // The decoder should not create more target bytes than were expected.
-        assertTrue(expected_target_.length >= output_.size());
     }
 
     @Test
     public void CopySizeInvalid() throws Exception {
         WriteInvalidVarintAtOffset(0x0C, 1);
         decoder_.StartDecoding(dictionary_);
-        boolean failed = false;
-        for (int i = 0; i < delta_file_.length; ++i) {
-            if (!decoder_.DecodeChunk(delta_file_, i, 1, output_)) {
-                failed = true;
-                // It should fail at the position that was altered
-                assertEquals(delta_file_header_.length + 0x10, i);
-                break;
+
+        int i = 0;
+        try {
+            for (i = 0; i < delta_file_.length; ++i) {
+                decoder_.DecodeChunk(delta_file_, i, 1, output_);
             }
+            fail();
+        } catch (IOException e) {
+            // It should fail at the position that was altered
+            assertEquals(delta_file_header_.length + 0x10, i);
+        } finally {
+            // The decoder should not create more target bytes than were expected.
+            assertTrue(expected_target_.length >= output_.size());
         }
-        assertTrue(failed);
-        // The decoder should not create more target bytes than were expected.
-        assertTrue(expected_target_.length >= output_.size());
     }
 
     @Test
@@ -420,72 +449,83 @@ public class VCDiffInterleavedDecoderTestByteByByte extends VCDiffInterleavedDec
         delta_file_[delta_file_header_.length + 0x0E] =
                 SecondByteOfStringLength(kDictionary);
         decoder_.StartDecoding(dictionary_);
-        boolean failed = false;
-        for (int i = 0; i < delta_file_.length; ++i) {
-            if (!decoder_.DecodeChunk(delta_file_, i, 1, output_)) {
-                failed = true;
-                // It should fail at the position that was altered
-                assertEquals(delta_file_header_.length + 0x0E, i);
-                break;
+
+        int i = 0;
+        try {
+            for (i = 0; i < delta_file_.length; ++i) {
+                decoder_.DecodeChunk(delta_file_, i, 1, output_);
             }
+            fail();
+        } catch (IOException e) {
+            // It should fail at the position that was altered
+            assertEquals(delta_file_header_.length + 0x0E, i);
+        } finally {
+            // The decoder should not create more target bytes than were expected.
+            assertTrue(expected_target_.length >= output_.size());
         }
-        assertTrue(failed);
-        // The decoder should not create more target bytes than were expected.
-        assertTrue(expected_target_.length >= output_.size());
     }
 
     @Test
     public void CopyAddressMaxInt() throws Exception {
         WriteMaxVarintAtOffset(0x0D, 1);
         decoder_.StartDecoding(dictionary_);
-        boolean failed = false;
-        for (int i = 0; i < delta_file_.length; ++i) {
-            if (!decoder_.DecodeChunk(delta_file_, i, 1, output_)) {
-                failed = true;
-                // It should fail at the position that was altered
-                assertEquals(delta_file_header_.length + 0x11, i);
-                break;
+
+        int i = 0;
+        try {
+            for (i = 0; i < delta_file_.length; ++i) {
+                decoder_.DecodeChunk(delta_file_, i, 1, output_);
             }
+            fail();
+        } catch (IOException e) {
+            // It should fail at the position that was altered
+            assertEquals(delta_file_header_.length + 0x11, i);
+        } finally {
+            // The decoder should not create more target bytes than were expected.
+            assertTrue(expected_target_.length >= output_.size());
         }
-        assertTrue(failed);
-        // The decoder should not create more target bytes than were expected.
-        assertTrue(expected_target_.length >= output_.size());
     }
 
     @Test
     public void CopyAddressNegative() throws Exception {
         WriteNegativeVarintAtOffset(0x0D, 1);
         decoder_.StartDecoding(dictionary_);
-        boolean failed = false;
-        for (int i = 0; i < delta_file_.length; ++i) {
-            if (!decoder_.DecodeChunk(delta_file_, i, 1, output_)) {
-                failed = true;
-                // It should fail at the position that was altered
-                assertEquals(delta_file_header_.length + 0x10, i);
-                break;
+
+        int i = 0;
+        try {
+            for (i = 0; i < delta_file_.length; ++i) {
+                decoder_.DecodeChunk(delta_file_, i, 1, output_);
             }
+            fail();
+        } catch (IOException e) {
+            // It should fail at the position that was altered
+            assertEquals(delta_file_header_.length + 0x10, i);
+        } finally {
+            // The decoder should not create more target bytes than were expected.
+            assertTrue(expected_target_.length >= output_.size());
         }
-        assertTrue(failed);
-        // The decoder should not create more target bytes than were expected.
-        assertTrue(expected_target_.length >= output_.size());
     }
 
     @Test
     public void CopyAddressInvalid() throws Exception {
         WriteInvalidVarintAtOffset(0x0D, 1);
         decoder_.StartDecoding(dictionary_);
-        boolean failed = false;
-        for (int i = 0; i < delta_file_.length; ++i) {
-            if (!decoder_.DecodeChunk(delta_file_, i, 1, output_)) {
-                failed = true;
-                // It should fail at the position that was altered
-                assertEquals(delta_file_header_.length + 0x11, i);
-                break;
+
+        int i = 0;
+        try {
+            for (i = 0; i < delta_file_.length; ++i) {
+                if (i == delta_file_header_.length + 0x11) {
+                    System.err.print("");
+                }
+                decoder_.DecodeChunk(delta_file_, i, 1, output_);
             }
+            fail();
+        } catch (IOException e) {
+            // It should fail at the position that was altered
+            assertEquals(delta_file_header_.length + 0x11, i);
+        } finally {
+            // The decoder should not create more target bytes than were expected.
+            assertTrue(expected_target_.length >= output_.size());
         }
-        assertTrue(failed);
-        // The decoder should not create more target bytes than were expected.
-        assertTrue(expected_target_.length >= output_.size());
     }
 
     @Test
@@ -495,18 +535,20 @@ public class VCDiffInterleavedDecoderTestByteByByte extends VCDiffInterleavedDec
         delta_file_[delta_file_header_.length + 0x10] =
                 (byte) (SecondByteOfStringLength(kExpectedTarget) + 1);
         decoder_.StartDecoding(dictionary_);
-        boolean failed = false;
-        for (int i = 0; i < delta_file_.length; ++i) {
-            if (!decoder_.DecodeChunk(delta_file_, i, 1, output_)) {
-                failed = true;
-                // It should fail at the position that was altered
-                assertEquals(delta_file_header_.length + 0x10, i);
-                break;
+
+        int i = 0;
+        try {
+            for (i = 0; i < delta_file_.length; ++i) {
+                decoder_.DecodeChunk(delta_file_, i, 1, output_);
             }
+            fail();
+        } catch (IOException e) {
+            // It should fail at the position that was altered
+            assertEquals(delta_file_header_.length + 0x10, i);
+        } finally {
+            // The decoder should not create more target bytes than were expected.
+            assertTrue(expected_target_.length >= output_.size());
         }
-        assertTrue(failed);
-        // The decoder should not create more target bytes than were expected.
-        assertTrue(expected_target_.length >= output_.size());
     }
 
     // An ADD instruction with an explicit size of 0 is not illegal according to the
@@ -518,102 +560,114 @@ public class VCDiffInterleavedDecoderTestByteByByte extends VCDiffInterleavedDec
     public void AddSizeZero() throws Exception {
         delta_file_[delta_file_header_.length + 0x0F] = 0;
         decoder_.StartDecoding(dictionary_);
-        boolean failed = false;
-        for (int i = 0; i < delta_file_.length; ++i) {
-            if (!decoder_.DecodeChunk(delta_file_, i, 1, output_)) {
-                failed = true;
-                break;
+
+        int i;
+        try {
+            for (i = 0; i < delta_file_.length; ++i) {
+                decoder_.DecodeChunk(delta_file_, i, 1, output_);
             }
+            fail();
+        } catch (IOException ignored) {
+        } finally {
+            // The decoder should not create more target bytes than were expected.
+            assertTrue(expected_target_.length >= output_.size());
         }
-        assertTrue(failed);
-        // The decoder should not create more target bytes than were expected.
-        assertTrue(expected_target_.length >= output_.size());
     }
 
     @Test
     public void AddSizeTooLargeByOne() throws Exception {
         ++delta_file_[delta_file_header_.length + 0x0F];
         decoder_.StartDecoding(dictionary_);
-        boolean failed = false;
-        for (int i = 0; i < delta_file_.length; ++i) {
-            if (!decoder_.DecodeChunk(delta_file_, i, 1, output_)) {
-                failed = true;
-                break;
+
+        int i;
+        try {
+            for (i = 0; i < delta_file_.length; ++i) {
+                decoder_.DecodeChunk(delta_file_, i, 1, output_);
             }
+            fail();
+        } catch (IOException ignored) {
+        } finally {
+            // The decoder should not create more target bytes than were expected.
+            assertTrue(expected_target_.length >= output_.size());
         }
-        assertTrue(failed);
-        // The decoder should not create more target bytes than were expected.
-        assertTrue(expected_target_.length >= output_.size());
     }
 
     @Test
     public void AddSizeTooSmallByOne() throws Exception {
         --delta_file_[delta_file_header_.length + 0x0F];
         decoder_.StartDecoding(dictionary_);
-        boolean failed = false;
-        for (int i = 0; i < delta_file_.length; ++i) {
-            if (!decoder_.DecodeChunk(delta_file_, i, 1, output_)) {
-                failed = true;
-                break;
+
+        int i;
+        try {
+            for (i = 0; i < delta_file_.length; ++i) {
+                decoder_.DecodeChunk(delta_file_, i, 1, output_);
             }
+            fail();
+        } catch (IOException ignored) {
+        } finally {
+            // The decoder should not create more target bytes than were expected.
+            assertTrue(expected_target_.length >= output_.size());
         }
-        assertTrue(failed);
-        // The decoder should not create more target bytes than were expected.
-        assertTrue(expected_target_.length >= output_.size());
     }
 
     @Test
     public void AddSizeMaxInt() throws Exception {
         WriteMaxVarintAtOffset(0x0F, 1);
         decoder_.StartDecoding(dictionary_);
-        boolean failed = false;
-        for (int i = 0; i < delta_file_.length; ++i) {
-            if (!decoder_.DecodeChunk(delta_file_, i, 1, output_)) {
-                failed = true;
-                // It should fail at the position that was altered
-                assertEquals(delta_file_header_.length + 0x13, i);
-                break;
+
+        int i = 0;
+        try {
+            for (i = 0; i < delta_file_.length; ++i) {
+                decoder_.DecodeChunk(delta_file_, i, 1, output_);
             }
+            fail();
+        } catch (IOException e) {
+            // It should fail at the position that was altered
+            assertEquals(delta_file_header_.length + 0x13, i);
+        } finally {
+            // The decoder should not create more target bytes than were expected.
+            assertTrue(expected_target_.length >= output_.size());
         }
-        assertTrue(failed);
-        // The decoder should not create more target bytes than were expected.
-        assertTrue(expected_target_.length >= output_.size());
     }
 
     @Test
     public void AddSizeNegative() throws Exception {
         WriteNegativeVarintAtOffset(0x0F, 1);
         decoder_.StartDecoding(dictionary_);
-        boolean failed = false;
-        for (int i = 0; i < delta_file_.length; ++i) {
-            if (!decoder_.DecodeChunk(delta_file_, i, 1, output_)) {
-                failed = true;
-                // It should fail at the position that was altered
-                assertEquals(delta_file_header_.length + 0x12, i);
-                break;
+
+        int i = 0;
+        try {
+            for (i = 0; i < delta_file_.length; ++i) {
+                decoder_.DecodeChunk(delta_file_, i, 1, output_);
             }
+            fail();
+        } catch (IOException e) {
+            // It should fail at the position that was altered
+            assertEquals(delta_file_header_.length + 0x12, i);
+        } finally {
+            // The decoder should not create more target bytes than were expected.
+            assertTrue(expected_target_.length >= output_.size());
         }
-        assertTrue(failed);
-        // The decoder should not create more target bytes than were expected.
-        assertTrue(expected_target_.length >= output_.size());
     }
 
     @Test
     public void AddSizeInvalid() throws Exception {
         WriteInvalidVarintAtOffset(0x0F, 1);
         decoder_.StartDecoding(dictionary_);
-        boolean failed = false;
-        for (int i = 0; i < delta_file_.length; ++i) {
-            if (!decoder_.DecodeChunk(delta_file_, i, 1, output_)) {
-                failed = true;
-                // It should fail at the position that was altered
-                assertEquals(delta_file_header_.length + 0x13, i);
-                break;
+
+        int i = 0;
+        try {
+            for (i = 0; i < delta_file_.length; ++i) {
+                decoder_.DecodeChunk(delta_file_, i, 1, output_);
             }
+            fail();
+        } catch (IOException e) {
+            // It should fail at the position that was altered
+            assertEquals(delta_file_header_.length + 0x13, i);
+        } finally {
+            // The decoder should not create more target bytes than were expected.
+            assertTrue(expected_target_.length >= output_.size());
         }
-        assertTrue(failed);
-        // The decoder should not create more target bytes than were expected.
-        assertTrue(expected_target_.length >= output_.size());
     }
 
     @Test
@@ -623,18 +677,18 @@ public class VCDiffInterleavedDecoderTestByteByByte extends VCDiffInterleavedDec
         delta_file_[delta_file_header_.length + 0x60] =
                 (byte) (SecondByteOfStringLength(kExpectedTarget) + 1);
         decoder_.StartDecoding(dictionary_);
-        boolean failed = false;
-        for (int i = 0; i < delta_file_.length; ++i) {
-            if (!decoder_.DecodeChunk(delta_file_, i, 1, output_)) {
-                failed = true;
-                // It should fail at the position that was altered
-                assertEquals(delta_file_header_.length + 0x60, i);
-                break;
+
+        int i;
+        try {
+            for (i = 0; i < delta_file_.length; ++i) {
+                decoder_.DecodeChunk(delta_file_, i, 1, output_);
             }
+            fail();
+        } catch (IOException ignored) {
+        } finally {
+            // The decoder should not create more target bytes than were expected.
+            assertTrue(expected_target_.length >= output_.size());
         }
-        assertTrue(failed);
-        // The decoder should not create more target bytes than were expected.
-        assertTrue(expected_target_.length >= output_.size());
     }
 
     // A RUN instruction with an explicit size of 0 is not illegal according to the
@@ -646,102 +700,113 @@ public class VCDiffInterleavedDecoderTestByteByByte extends VCDiffInterleavedDec
     public void RunSizeZero() throws Exception {
         delta_file_[delta_file_header_.length + 0x5F] = 0;
         decoder_.StartDecoding(dictionary_);
-        boolean failed = false;
-        for (int i = 0; i < delta_file_.length; ++i) {
-            if (!decoder_.DecodeChunk(delta_file_, i, 1, output_)) {
-                failed = true;
-                break;
+
+        int i;
+        try {
+            for (i = 0; i < delta_file_.length; ++i) {
+                decoder_.DecodeChunk(delta_file_, i, 1, output_);
             }
+            fail();
+        } catch (IOException ignored) {
+        } finally {
+            // The decoder should not create more target bytes than were expected.
+            assertTrue(expected_target_.length >= output_.size());
         }
-        assertTrue(failed);
-        // The decoder should not create more target bytes than were expected.
-        assertTrue(expected_target_.length >= output_.size());
     }
 
     @Test
     public void RunSizeTooLargeByOne() throws Exception {
         ++delta_file_[delta_file_header_.length + 0x5F];
         decoder_.StartDecoding(dictionary_);
-        boolean failed = false;
-        for (int i = 0; i < delta_file_.length; ++i) {
-            if (!decoder_.DecodeChunk(delta_file_, i, 1, output_)) {
-                failed = true;
-                break;
+
+        int i;
+        try {
+            for (i = 0; i < delta_file_.length; ++i) {
+                decoder_.DecodeChunk(delta_file_, i, 1, output_);
             }
+            fail();
+        } catch (IOException ignored) {
+        } finally {
+            // The decoder should not create more target bytes than were expected.
+            assertTrue(expected_target_.length >= output_.size());
         }
-        assertTrue(failed);
-        // The decoder should not create more target bytes than were expected.
-        assertTrue(expected_target_.length >= output_.size());
     }
 
     @Test
     public void RunSizeTooSmallByOne() throws Exception {
         --delta_file_[delta_file_header_.length + 0x5F];
         decoder_.StartDecoding(dictionary_);
-        boolean failed = false;
-        for (int i = 0; i < delta_file_.length; ++i) {
-            if (!decoder_.DecodeChunk(delta_file_, i, 1, output_)) {
-                failed = true;
-                break;
+
+        int i;
+        try {
+            for (i = 0; i < delta_file_.length; ++i) {
+                decoder_.DecodeChunk(delta_file_, i, 1, output_);
             }
+            fail();
+        } catch (IOException ignored) {
+        } finally {
+            // The decoder should not create more target bytes than were expected.
+            assertTrue(expected_target_.length >= output_.size());
         }
-        assertTrue(failed);
-        // The decoder should not create more target bytes than were expected.
-        assertTrue(expected_target_.length >= output_.size());
     }
 
     @Test
     public void RunSizeMaxInt() throws Exception {
         WriteMaxVarintAtOffset(0x5F, 1);
         decoder_.StartDecoding(dictionary_);
-        boolean failed = false;
-        for (int i = 0; i < delta_file_.length; ++i) {
-            if (!decoder_.DecodeChunk(delta_file_, i, 1, output_)) {
-                failed = true;
-                // It should fail at the position that was altered
-                assertEquals(delta_file_header_.length + 0x63, i);
-                break;
+
+        int i = 0;
+        try {
+            for (i = 0; i < delta_file_.length; ++i) {
+                decoder_.DecodeChunk(delta_file_, i, 1, output_);
             }
+            fail();
+        } catch (IOException e) {
+            // It should fail at the position that was altered
+            assertEquals(delta_file_header_.length + 0x63, i);
+        } finally {
+            // The decoder should not create more target bytes than were expected.
+            assertTrue(expected_target_.length >= output_.size());
         }
-        assertTrue(failed);
-        // The decoder should not create more target bytes than were expected.
-        assertTrue(expected_target_.length >= output_.size());
     }
 
     @Test
     public void RunSizeNegative() throws Exception {
         WriteNegativeVarintAtOffset(0x5F, 1);
         decoder_.StartDecoding(dictionary_);
-        boolean failed = false;
-        for (int i = 0; i < delta_file_.length; ++i) {
-            if (!decoder_.DecodeChunk(delta_file_, i, 1, output_)) {
-                failed = true;
-                // It should fail at the position that was altered
-                assertEquals(delta_file_header_.length + 0x62, i);
-                break;
+
+        int i = 0;
+        try {
+            for (i = 0; i < delta_file_.length; ++i) {
+                decoder_.DecodeChunk(delta_file_, i, 1, output_);
             }
+            fail();
+        } catch (IOException e) {
+            // It should fail at the position that was altered
+            assertEquals(delta_file_header_.length + 0x62, i);
+        } finally {
+            // The decoder should not create more target bytes than were expected.
+            assertTrue(expected_target_.length >= output_.size());
         }
-        assertTrue(failed);
-        // The decoder should not create more target bytes than were expected.
-        assertTrue(expected_target_.length >= output_.size());
     }
 
     @Test
     public void RunSizeInvalid() throws Exception {
         WriteInvalidVarintAtOffset(0x5F, 1);
         decoder_.StartDecoding(dictionary_);
-        boolean failed = false;
-        for (int i = 0; i < delta_file_.length; ++i) {
-            if (!decoder_.DecodeChunk(delta_file_, i, 1, output_)) {
-                failed = true;
-                // It should fail at the position that was altered
-                assertEquals(delta_file_header_.length + 0x63, i);
-                break;
-            }
-        }
-        assertTrue(failed);
-        // The decoder should not create more target bytes than were expected.
-        assertTrue(expected_target_.length >= output_.size());
-    }
 
+        int i = 0;
+        try {
+            for (i = 0; i < delta_file_.length; ++i) {
+                decoder_.DecodeChunk(delta_file_, i, 1, output_);
+            }
+            fail();
+        } catch (IOException e) {
+            // It should fail at the position that was altered
+            assertEquals(delta_file_header_.length + 0x63, i);
+        } finally {
+            // The decoder should not create more target bytes than were expected.
+            assertTrue(expected_target_.length >= output_.size());
+        }
+    }
 }

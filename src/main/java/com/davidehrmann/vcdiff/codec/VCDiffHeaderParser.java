@@ -4,6 +4,7 @@ import com.davidehrmann.vcdiff.VarInt;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.io.IOException;
 import java.nio.ByteBuffer;
 
 import static com.davidehrmann.vcdiff.VCDiffCodeTableWriter.VCD_SOURCE;
@@ -15,7 +16,7 @@ public class VCDiffHeaderParser {
 
     public static final short RESULT_SUCCESS = 0;
     public static final short RESULT_END_OF_DATA = -2;
-    public static final short RESULT_ERROR = -1;
+    // public static final short RESULT_ERROR = -1;
 
     public static final byte VCD_DECOMPRESS = 0x01;
     public static final byte VCD_CODETABLE = 0x02;
@@ -30,6 +31,7 @@ public class VCDiffHeaderParser {
     // called, or if all calls to Parse...() were successful, then this contains
     // RESULT_SUCCESS.
     protected short return_code_;
+    protected IOException exception;
 
     // Will be zero until ParseWindowLengths() has been called.  After
     // ParseWindowLengths() has been called successfully, this contains the
@@ -75,9 +77,11 @@ public class VCDiffHeaderParser {
     //     if (RESULT_SUCCESS != header_parser.GetResult()) {
     //       return header_parser.GetResult();
     //     }
-    public Byte ParseByte() {
+    public Byte ParseByte() throws IOException {
         if (RESULT_SUCCESS != return_code_) {
             return null;
+        } else if (null != exception) {
+            throw exception;
         }
         if (!buffer.hasRemaining()) {
             return_code_ = RESULT_END_OF_DATA;
@@ -86,22 +90,23 @@ public class VCDiffHeaderParser {
         return buffer.get();
     }
 
-    public Integer ParseInt32(String variable_description) {
+    public Integer ParseInt32(String variable_description) throws IOException {
         if (RESULT_SUCCESS != return_code_) {
             return null;
+        } else if (null != exception) {
+            throw exception;
         }
 
         buffer.mark();
         try {
             return VarInt.getInt(buffer);
         } catch (VarInt.VarIntParseException e) {
-            LOGGER.error("Expected {}; found invalid variable-length integer", variable_description);
-            return_code_ = RESULT_ERROR;
             buffer.reset();
-            return null;
+            exception = new IOException("Expected " + variable_description + "; found invalid variable-length integer");
+            throw exception;
         } catch (VarInt.VarIntEndOfBufferException e) {
-            return_code_ = RESULT_END_OF_DATA;
             buffer.reset();
+            return_code_ = RESULT_END_OF_DATA;
             return null;
         }
     }
@@ -110,17 +115,22 @@ public class VCDiffHeaderParser {
     // instead, then check the value limit.  The uint32_t type can't be parsed
     // directly because two negative values are given special meanings (RESULT_ERROR
     // and RESULT_END_OF_DATA) and could not be expressed in an unsigned format.
-    public Integer ParseUInt32(String variable_description) {
+    public Integer ParseUInt32(String variable_description) throws IOException {
         if (RESULT_SUCCESS != return_code_) {
             return null;
+        } else if (exception != null) {
+            throw exception;
         }
         try {
             buffer.mark();
             long parsedValue = VarInt.getLong(buffer);
             if ((parsedValue & 0xffffffff00000000L) != 0) {
-                LOGGER.error("Value of {} ({}) is too large for unsigned 32-bit integer", variable_description, parsedValue);
-                return_code_ = RESULT_ERROR;
                 buffer.reset();
+                exception = new IOException(String.format(
+                        "Value of {} ({}) is too large for unsigned 32-bit integer",
+                        variable_description, parsedValue
+                ));
+                throw exception;
             } else {
                 return (int) parsedValue;
             }
@@ -128,19 +138,21 @@ public class VCDiffHeaderParser {
             return_code_ = RESULT_END_OF_DATA;
             buffer.reset();
         } catch (VarInt.VarIntParseException e) {
-            LOGGER.error("Expected {}; found invalid variable-length integer", variable_description);
-            return_code_ = RESULT_ERROR;
             buffer.reset();
+            exception = new IOException(String.format(
+                    "Expected {}; found invalid variable-length integer", variable_description
+            ));
+            throw exception;
         }
 
         return null;
     }
 
-    public Integer ParseChecksum(String variable_description) {
+    public Integer ParseChecksum(String variable_description) throws IOException {
         return ParseUInt32(variable_description);
     }
 
-    public Integer ParseSize(String variable_description) {
+    public Integer ParseSize(String variable_description) throws IOException {
         return ParseInt32(variable_description);
     }
 
@@ -177,9 +189,9 @@ public class VCDiffHeaderParser {
     // source_segment_length (output): The parsed length of the source segment.
     // source_segment_position (output): The parsed zero-based index in the
     //     source/target file from which the source segment is to be taken.
-    public DeltaWindowHeader ParseWinIndicatorAndSourceSegment(int dictionary_size,
-                                                               int decoded_target_size,
-                                                               boolean allow_vcd_target) {
+    public DeltaWindowHeader ParseWinIndicatorAndSourceSegment(
+            int dictionary_size, int decoded_target_size, boolean allow_vcd_target)
+            throws IOException {
         Byte win_indicator = this.ParseByte();
         if (win_indicator == null) {
             return null;
@@ -196,9 +208,8 @@ public class VCDiffHeaderParser {
                 );
             case VCD_TARGET:
                 if (!allow_vcd_target) {
-                    LOGGER.error("Delta file contains VCD_TARGET flag, which is not allowed by current decoder settings");
-                    return_code_ = RESULT_ERROR;
-                    return null;
+                    exception = new IOException("Delta file contains VCD_TARGET flag, which is not allowed by current decoder settings");
+                    throw exception;
                 }
                 return ParseSourceSegmentLengthAndPosition(
                         decoded_target_size,
@@ -207,9 +218,8 @@ public class VCDiffHeaderParser {
                         "target file"
                 );
             case VCD_SOURCE | VCD_TARGET:
-                LOGGER.error("Win_Indicator must not have both VCD_SOURCE and VCD_TARGET set");
-                return_code_ = RESULT_ERROR;
-                return null;
+                exception = new IOException("Win_Indicator must not have both VCD_SOURCE and VCD_TARGET set");
+                throw exception;
             default:
                 return new DeltaWindowHeader(win_indicator, 0, 0);
         }
@@ -222,11 +232,10 @@ public class VCDiffHeaderParser {
     //
     // Return conditions and values are the same as for
     // ParseWinIndicatorAndSourceSegment(), above.
-    public Integer ParseWindowLengths() {
+    public Integer ParseWindowLengths() throws IOException {
         if (delta_encoding_start_ != null) {
-            LOGGER.error("Internal error: VCDiffHeaderParser.ParseWindowLengths was called twice for the same delta window");
-            return_code_ = RESULT_ERROR;
-            return null;
+            exception = new IOException("Internal error: VCDiffHeaderParser.ParseWindowLengths was called twice for the same delta window");
+            throw exception;
         }
 
         delta_encoding_length_ = ParseSize("length of the delta encoding");
@@ -257,15 +266,14 @@ public class VCDiffHeaderParser {
     // of VCDIFF, this function does not have an output argument to return the
     // value of that field.  It may return RESULT_SUCCESS, RESULT_ERROR, or
     // RESULT_END_OF_DATA as with the other Parse...() functions.
-    public boolean ParseDeltaIndicator() {
+    public boolean ParseDeltaIndicator() throws IOException {
         Byte deltaIndicator = ParseByte();
         if (deltaIndicator == null) {
             return false;
         }
         if ((deltaIndicator & (VCD_DATACOMP | VCD_INSTCOMP | VCD_ADDRCOMP)) != 0) {
-            LOGGER.error("Secondary compression of delta file sections is not supported");
-            return_code_ = RESULT_ERROR;
-            return false;
+            exception = new IOException("Secondary compression of delta file sections is not supported");
+            throw exception;
         }
         return true;
     }
@@ -283,7 +291,7 @@ public class VCDiffHeaderParser {
     // Return conditions and values are the same as for
     // ParseWinIndicatorAndSourceSegment(), above.
     //
-    public SectionLengths ParseSectionLengths(boolean has_checksum) {
+    public SectionLengths ParseSectionLengths(boolean has_checksum) throws IOException {
         Integer add_and_run_data_length = ParseSize("length of data for ADDs and RUNs");
         Integer instructions_and_sizes_length = ParseSize("length of instructions section");
         Integer addresses_length = ParseSize("length of addresses for COPYs");
@@ -293,11 +301,12 @@ public class VCDiffHeaderParser {
         }
         if (RESULT_SUCCESS != return_code_) {
             return null;
+        } else if (exception != null) {
+            throw exception;
         }
         if (delta_encoding_start_ == null) {
-            LOGGER.error("Internal error: VCDiffHeaderParser.ParseSectionLengths was called before ParseWindowLengths");
-            return_code_ = RESULT_ERROR;
-            return null;
+            exception = new IOException("Internal error: VCDiffHeaderParser.ParseSectionLengths was called before ParseWindowLengths");
+            throw exception;
         }
 
         long delta_encoding_header_length = buffer.position() - delta_encoding_start_.position();
@@ -305,9 +314,8 @@ public class VCDiffHeaderParser {
                 instructions_and_sizes_length + addresses_length;
 
         if (delta_encoding_length_ != expected_delta_encoding_length) {
-            LOGGER.error("The length of the delta encoding does not match the size of the header plus the sizes of the data sections");
-            return_code_ = RESULT_ERROR;
-            return null;
+            exception = new IOException("The length of the delta encoding does not match the size of the header plus the sizes of the data sections");
+            throw exception;
         }
 
         return new SectionLengths(add_and_run_data_length, instructions_and_sizes_length, addresses_length, checksum != null ? checksum : 0);
@@ -345,7 +353,7 @@ public class VCDiffHeaderParser {
     //
     private DeltaWindowHeader ParseSourceSegmentLengthAndPosition(long from_size, byte win_indicator,
                                                                   String from_boundary_name,
-                                                                  String from_name) {
+                                                                  String from_name) throws IOException {
         // Verify the length and position values
         Integer source_segment_length = ParseSize("source segment length");
         if (source_segment_length == null) {
@@ -353,10 +361,11 @@ public class VCDiffHeaderParser {
         }
         // Guard against overflow by checking source length first
         if (source_segment_length > from_size) {
-            LOGGER.error( "Source segment length ({}) is larger than {} ({})",
-                    source_segment_length, from_name, from_size);
-            return_code_ = RESULT_ERROR;
-            return null;
+            exception = new IOException(String.format(
+                    "Source segment length (%d) is larger than %s (%d)",
+                    source_segment_length, from_name, from_size)
+            );
+            throw exception;
         }
 
         Integer source_segment_position = ParseSize("source segment position");
@@ -364,17 +373,19 @@ public class VCDiffHeaderParser {
             return null;
         }
         if ((source_segment_position >= from_size) && (source_segment_length > 0)) {
-            LOGGER.error("Source segment position ({}) is past {} ({})",
-                    source_segment_position, from_boundary_name, from_size);
-            return_code_ = RESULT_ERROR;
-            return null;
+            exception = new IOException(String.format(
+                    "Source segment position (%d) is past %s (%d)",
+                    source_segment_position, from_boundary_name, from_size
+            ));
+            throw exception;
         }
         int source_segment_end = source_segment_position + source_segment_length;
         if (source_segment_end > from_size) {
-            LOGGER.error("Source segment end position ({}) is past {} ({})",
-                    source_segment_end, from_boundary_name, from_size);
-            return_code_ = RESULT_ERROR;
-            return null;
+            exception = new IOException(String.format(
+                    "Source segment end position ({}) is past {} ({})",
+                    source_segment_end, from_boundary_name, from_size
+            ));
+            throw exception;
         }
         return new DeltaWindowHeader(win_indicator, source_segment_length, source_segment_position);
     }

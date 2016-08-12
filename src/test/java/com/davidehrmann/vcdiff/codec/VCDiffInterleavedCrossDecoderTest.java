@@ -3,17 +3,13 @@ package com.davidehrmann.vcdiff.codec;
 import org.junit.Test;
 
 import static org.junit.Assert.assertArrayEquals;
-import static org.junit.Assert.assertTrue;
 
 public class VCDiffInterleavedCrossDecoderTest extends VCDiffInterleavedCrossDecoderTestBase {
     @Test
     public void Decode() throws Exception {
         decoder_.StartDecoding(dictionary_);
-        assertTrue(decoder_.DecodeChunk(delta_file_,
-                0,
-                delta_file_.length,
-                output_));
-        assertTrue(decoder_.FinishDecoding());
+        decoder_.DecodeChunk(delta_file_, output_);
+        decoder_.FinishDecoding();
         assertArrayEquals(expected_target_, output_.toByteArray());
     }
 
@@ -22,11 +18,8 @@ public class VCDiffInterleavedCrossDecoderTest extends VCDiffInterleavedCrossDec
         ComputeAndAddChecksum();
         InitializeDeltaFile();
         decoder_.StartDecoding(dictionary_);
-        assertTrue(decoder_.DecodeChunk(delta_file_,
-                0,
-                delta_file_.length,
-                output_));
-        assertTrue(decoder_.FinishDecoding());
+        decoder_.DecodeChunk(delta_file_, output_);
+        decoder_.FinishDecoding();
         assertArrayEquals(expected_target_, output_.toByteArray());
     }
 }

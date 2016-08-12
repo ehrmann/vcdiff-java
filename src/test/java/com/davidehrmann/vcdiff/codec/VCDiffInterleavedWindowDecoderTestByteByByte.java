@@ -3,18 +3,20 @@ package com.davidehrmann.vcdiff.codec;
 import org.junit.Test;
 
 import java.io.ByteArrayOutputStream;
+import java.io.IOException;
 import java.util.Arrays;
 
-import static org.junit.Assert.*;
+import static org.junit.Assert.assertArrayEquals;
+import static org.junit.Assert.assertEquals;
 
 public class VCDiffInterleavedWindowDecoderTestByteByByte extends VCDiffInterleavedWindowDecoderTestBase {
     @Test
     public void Decode() throws Exception {
         decoder_.StartDecoding(dictionary_);
         for (int i = 0; i < delta_file_.length; ++i) {
-            assertTrue(decoder_.DecodeChunk(delta_file_, i, 1, output_));
+            decoder_.DecodeChunk(delta_file_, i, 1, output_);
         }
-        assertTrue(decoder_.FinishDecoding());
+        decoder_.FinishDecoding();
         assertArrayEquals(expected_target_, output_.toByteArray());
     }
 
@@ -25,7 +27,9 @@ public class VCDiffInterleavedWindowDecoderTestByteByByte extends VCDiffInterlea
         decoder_.StartDecoding(dictionary_);
         int i = 0;
         for (; i < delta_file_.length; ++i) {
-            if (!decoder_.DecodeChunk(delta_file_, i, 1, output_)) {
+            try {
+                decoder_.DecodeChunk(delta_file_, i, 1, output_);
+            } catch (IOException e) {
                 break;
             }
         }
@@ -47,11 +51,11 @@ public class VCDiffInterleavedWindowDecoderTestByteByByte extends VCDiffInterlea
         ByteArrayOutputStream temp_output = new ByteArrayOutputStream();
         decoder_.StartDecoding(dictionary_);
         for (int i = 0; i < delta_file_.length; ++i) {
-            assertTrue(decoder_.DecodeChunk(delta_file_, i, 1, temp_output));
+            decoder_.DecodeChunk(delta_file_, i, 1, temp_output);
             output_.write(temp_output.toByteArray());
             temp_output.reset();
         }
-        assertTrue(decoder_.FinishDecoding());
+        decoder_.FinishDecoding();
         assertArrayEquals(expected_target_, output_.toByteArray());
     }
 
@@ -61,9 +65,9 @@ public class VCDiffInterleavedWindowDecoderTestByteByByte extends VCDiffInterlea
         output_.write(previous_data);
         decoder_.StartDecoding(dictionary_);
         for (int i = 0; i < delta_file_.length; ++i) {
-            assertTrue(decoder_.DecodeChunk(delta_file_, i, 1, output_));
+            decoder_.DecodeChunk(delta_file_, i, 1, output_);
         }
-        assertTrue(decoder_.FinishDecoding());
+        decoder_.FinishDecoding();
         assertArrayEquals(ArraysExtra.concat(previous_data, expected_target_), output_.toByteArray());
     }
 }

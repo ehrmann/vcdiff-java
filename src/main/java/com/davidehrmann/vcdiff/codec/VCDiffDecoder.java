@@ -20,12 +20,15 @@ public class VCDiffDecoder {
      * Replaces old contents of "*target" with the result of decoding
      * the bytes found in "encoding."
      *
-     * Returns true if "encoding" was a well-formed sequence of
-     * instructions, and returns false if not.
      * @throws IOException
      */
-    public boolean Decode(byte[] dictionary, byte[] encoding, int offset, int len, OutputStream target) throws IOException {
+    public void Decode(byte[] dictionary, byte[] encoding, int offset, int len, OutputStream target) throws IOException {
         decoder_.StartDecoding(dictionary);
-        return decoder_.DecodeChunk(encoding, offset, len, target) && decoder_.FinishDecoding();
+        decoder_.DecodeChunk(encoding, offset, len, target);
+        decoder_.FinishDecoding();
+    }
+
+    public void Decode(byte[] dictionary, byte[] encoding, OutputStream target) throws IOException {
+        Decode(dictionary, encoding, 0, encoding.length, target);
     }
 }

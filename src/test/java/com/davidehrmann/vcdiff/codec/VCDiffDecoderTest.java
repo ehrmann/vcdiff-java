@@ -18,6 +18,8 @@ package com.davidehrmann.vcdiff.codec;
 import com.davidehrmann.vcdiff.VarInt;
 import com.davidehrmann.vcdiff.ZeroInitializedAdler32;
 import org.junit.Before;
+import org.junit.Rule;
+import org.junit.rules.ExpectedException;
 
 import java.io.ByteArrayOutputStream;
 import java.nio.ByteBuffer;
@@ -94,6 +96,9 @@ public abstract class VCDiffDecoderTest {
         dictionary_ = kDictionary.clone();
         expected_target_ = kExpectedTarget.clone();
     }
+
+    @Rule
+    public volatile ExpectedException thrown = ExpectedException.none();
 
     @Before
     public void SetUp() {

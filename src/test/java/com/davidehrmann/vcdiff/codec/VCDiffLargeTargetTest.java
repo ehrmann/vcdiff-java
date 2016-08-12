@@ -60,23 +60,20 @@ public class VCDiffLargeTargetTest extends VCDiffDecoderTest {
         decoder_.SetAllowVcdTarget(false);
         decoder_.SetMaximumTargetFileSize(0x4000000L * kIterations);
         decoder_.StartDecoding(dictionary_);
-        assertTrue(decoder_.DecodeChunk(delta_file_header_,
-                0,
-                delta_file_header_.length,
-                output_));
+        decoder_.DecodeChunk(delta_file_header_, output_);
         assertArrayEquals(new byte[0], output_.toByteArray());
 
         for (int i = 0; i < kIterations; i++) {
             AssertRepeatedByteOutputStream out = new AssertRepeatedByteOutputStream((byte) 0xBE);
             try {
-                assertTrue(decoder_.DecodeChunk(kLargeRunWindow, 0, kLargeRunWindow.length, out));
+                decoder_.DecodeChunk(kLargeRunWindow, out);
             } finally {
                 out.close();
             }
 
             assertEquals(0x4000000, out.getSize());
         }
-        assertTrue(decoder_.FinishDecoding());
+        decoder_.FinishDecoding();
     }
 
     // If we don't increase the maximum target file size first, the same test should
@@ -85,17 +82,14 @@ public class VCDiffLargeTargetTest extends VCDiffDecoderTest {
     public void DecodeReachesMaxFileSize() throws Exception {
         decoder_.SetAllowVcdTarget(false);
         decoder_.StartDecoding(dictionary_);
-        assertTrue(decoder_.DecodeChunk(delta_file_header_,
-                0,
-                delta_file_header_.length,
-                output_));
+        decoder_.DecodeChunk(delta_file_header_, output_);
         assertArrayEquals(new byte[0], output_.toByteArray());
 
         // The default maximum target file size is 64MB, which just matches the target
         // data produced by a single iteration.
         AssertRepeatedByteOutputStream out = new AssertRepeatedByteOutputStream((byte) 0xBE);
         try {
-            assertTrue(decoder_.DecodeChunk(kLargeRunWindow, 0, kLargeRunWindow.length, out));
+            decoder_.DecodeChunk(kLargeRunWindow, out);
         } finally {
             out.close();
         }
@@ -103,7 +97,8 @@ public class VCDiffLargeTargetTest extends VCDiffDecoderTest {
         assertEquals(0x4000000, out.getSize());
 
         // Trying to decode a second window should exceed the target file size limit.
-        assertFalse(decoder_.DecodeChunk(kLargeRunWindow, 0, kLargeRunWindow.length, output_));
+        thrown.expect(IOException.class);
+        decoder_.DecodeChunk(kLargeRunWindow, output_);
     }
 
     protected static class AssertRepeatedByteOutputStream extends OutputStream {

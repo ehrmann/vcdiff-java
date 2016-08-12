@@ -6,6 +6,7 @@ import com.davidehrmann.vcdiff.util.Objects;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.util.concurrent.atomic.AtomicInteger;
 
@@ -104,10 +105,9 @@ public class VCDiffCodeTableReader {
     // are skipped over and ignored, not returned.
     // If Init() was not called before calling this method, then
     // VCD_INSTRUCTION_ERROR will be returned.
-    public byte GetNextInstruction(AtomicInteger size, AtomicInteger mode) {
+    public byte GetNextInstruction(AtomicInteger size, AtomicInteger mode) throws IOException {
         if (instructions_and_sizes_ == null) {
-            LOGGER.error("Internal error: GetNextInstruction() called before Init()");
-            return VCDiffCodeTableData.VCD_INSTRUCTION_ERROR;
+            throw new IllegalStateException("Internal error: GetNextInstruction() called before Init()");
         }
 
         last_instruction_start_ = instructions_and_sizes_.position();
@@ -153,8 +153,7 @@ public class VCDiffCodeTableReader {
             try {
                 size.set(VarInt.getInt(instructions_and_sizes_));
             } catch (VarIntParseException e) {
-                LOGGER.error("Instruction size is not a valid variable-length integer", e);
-                return VCDiffCodeTableData.VCD_INSTRUCTION_ERROR;
+                throw new IOException("Instruction size is not a valid variable-length integer");
             } catch (VarIntEndOfBufferException e) {
                 UnGetInstruction();  // Rewind to instruction start
                 return VCDiffCodeTableData.VCD_INSTRUCTION_END_OF_DATA;

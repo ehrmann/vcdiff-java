@@ -29,17 +29,13 @@
 
 package com.davidehrmann.vcdiff;
 
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
+import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.util.Arrays;
 import java.util.concurrent.atomic.AtomicInteger;
 
 
 public class VCDiffAddressCacheImpl extends VCDiffAddressCache {
-
-    private static final Logger LOGGER = LoggerFactory.getLogger(VCDiffAddressCacheImpl.class);
 
     public VCDiffAddressCacheImpl() {
         super();
@@ -189,15 +185,15 @@ public class VCDiffAddressCacheImpl extends VCDiffAddressCache {
     // Checks the given decoded address for validity.  Returns true if the
     // address is valid; otherwise, prints an error message to the log and
     // returns false.
-    private static boolean IsDecodedAddressValid(int decoded_address, int here_address) {
+    private static void requireValidDecodedAddress(int decoded_address, int here_address) throws IOException {
         if (decoded_address < 0) {
-            LOGGER.warn("Decoded address {} is invalid", decoded_address);
-            return false;
+            throw new IOException("Decoded address " + decoded_address + " is invalid");
         } else if (decoded_address >= here_address) {
-            LOGGER.warn("Decoded address ({}) is beyond location in target file ({})", decoded_address, here_address);
-            return false;
+            throw new IOException(String.format(
+                    "Decoded address (%d) is beyond location in target file (%d)",
+                    decoded_address, here_address
+            ));
         }
-        return true;
     }
 
     // Interprets the next value in the address_stream using the provided mode,
@@ -239,10 +235,9 @@ public class VCDiffAddressCacheImpl extends VCDiffAddressCache {
     //	     for more data before continuing to decode.  If no more data is expected,
     //	     this return value signals an error condition.
     @Override
-    public int DecodeAddress(int here_address, short vcDiffMode, ByteBuffer addressStream) {
+    public int DecodeAddress(int here_address, short vcDiffMode, ByteBuffer addressStream) throws IOException {
         if (here_address < 0) {
-            LOGGER.warn("DecodeAddress was passed a negative value for here_address: {}", here_address);
-            return RESULT_ERROR;
+            throw new IllegalStateException("DecodeAddress was passed a negative value for here_address: " + here_address);
         }
 
         if (addressStream.remaining() == 0) {
@@ -262,20 +257,11 @@ public class VCDiffAddressCacheImpl extends VCDiffAddressCache {
             try {
                 encoded_address = VarInt.getInt(duplicateAddressStream);
             } catch (VarInt.VarIntParseException e) {
-                return RESULT_ERROR;
+                throw new IOException("Found invalid variable-length integer as encoded address value");
             } catch (VarInt.VarIntEndOfBufferException e) {
                 return RESULT_END_OF_DATA;
             }
-            //VarintBE<int32_t>::Parse(address_stream_end, &new_address_pos);
-            switch (encoded_address) {
-            case RESULT_ERROR:
-                LOGGER.error("Found invalid variable-length integer as encoded address value");
-                return RESULT_ERROR;
-            case RESULT_END_OF_DATA:
-                return RESULT_END_OF_DATA;
-            default:
-                break;
-            }
+
             if (IsSelfMode(vcDiffMode)) {
                 decoded_address = DecodeSelfAddress(encoded_address);
             } else if (IsHereMode(vcDiffMode)) {
@@ -290,9 +276,7 @@ public class VCDiffAddressCacheImpl extends VCDiffAddressCache {
             }
         }
         // Check for an out-of-bounds address (corrupt/malicious data)
-        if (!IsDecodedAddressValid(decoded_address, here_address)) {
-            return RESULT_ERROR;
-        }
+        requireValidDecodedAddress(decoded_address, here_address);
 
         UpdateCache(decoded_address);
 

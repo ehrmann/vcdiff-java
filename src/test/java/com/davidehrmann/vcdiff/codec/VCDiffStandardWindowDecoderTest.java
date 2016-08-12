@@ -3,6 +3,7 @@ package com.davidehrmann.vcdiff.codec;
 import org.junit.Test;
 
 import java.io.ByteArrayOutputStream;
+import java.io.IOException;
 import java.util.Arrays;
 
 import static com.davidehrmann.vcdiff.VCDiffCodeTableWriter.VCD_TARGET;
@@ -12,11 +13,8 @@ public class VCDiffStandardWindowDecoderTest extends VCDiffStandardWindowDecoder
     @Test
     public void Decode() throws Exception {
         decoder_.StartDecoding(dictionary_);
-        assertTrue(decoder_.DecodeChunk(delta_file_,
-                0,
-                delta_file_.length,
-                output_));
-        assertTrue(decoder_.FinishDecoding());
+        decoder_.DecodeChunk(delta_file_, output_);
+        decoder_.FinishDecoding();
         assertArrayEquals(expected_target_, output_.toByteArray());
     }
 
@@ -39,21 +37,29 @@ public class VCDiffStandardWindowDecoderTest extends VCDiffStandardWindowDecoder
         ByteArrayOutputStream output_chunk3 = new ByteArrayOutputStream();
 
         decoder_.StartDecoding(dictionary_);
-        assertTrue(decoder_.DecodeChunk(delta_file_,
+        decoder_.DecodeChunk(
+                delta_file_,
                 0,
                 chunk_1_size,
-                output_chunk1));
-        assertTrue(decoder_.DecodeChunk(delta_file_,
+                output_chunk1
+        );
+        decoder_.DecodeChunk(
+                delta_file_,
                 chunk_1_size,
                 chunk_2_size,
-                output_chunk2));
-        assertTrue(decoder_.DecodeChunk(delta_file_,
+                output_chunk2
+        );
+        decoder_.DecodeChunk(
+                delta_file_,
                 chunk_1_size + chunk_2_size,
                 delta_file_.length - (chunk_1_size + chunk_2_size),
-                output_chunk3));
-        assertTrue(decoder_.FinishDecoding());
-        assertArrayEquals(expected_target_,
-                ArraysExtra.concat(output_chunk1.toByteArray(), output_chunk2.toByteArray(), output_chunk3.toByteArray()));
+                output_chunk3
+        );
+        decoder_.FinishDecoding();
+        assertArrayEquals(
+                expected_target_,
+                ArraysExtra.concat(output_chunk1.toByteArray(), output_chunk2.toByteArray(), output_chunk3.toByteArray())
+        );
     }
 
     @Test
@@ -66,11 +72,15 @@ public class VCDiffStandardWindowDecoderTest extends VCDiffStandardWindowDecoder
         // TODO: CHECK_EQ
         assertEquals(VCD_TARGET, delta_file_[chunk_1_size]);
         decoder_.StartDecoding(dictionary_);
-        assertTrue(decoder_.DecodeChunk(delta_file_, 0, chunk_1_size, output_));
+        decoder_.DecodeChunk(delta_file_, 0, chunk_1_size, output_);
         // Just parsing one more byte (the VCD_TARGET) should result in an error.
-        assertFalse(decoder_.DecodeChunk(delta_file_, chunk_1_size, 1, output_));
-        // The target data for the first two windows should have been output.
-        assertArrayEquals(Arrays.copyOf(expected_target_, 89), output_.toByteArray());
+        try {
+            thrown.expect(IOException.class);
+            decoder_.DecodeChunk(delta_file_, chunk_1_size, 1, output_);
+        } finally {
+            // The target data for the first two windows should have been output.
+            assertArrayEquals(Arrays.copyOf(expected_target_, 89), output_.toByteArray());
+        }
     }
 
     @Test
@@ -80,15 +90,9 @@ public class VCDiffStandardWindowDecoderTest extends VCDiffStandardWindowDecoder
             ByteArrayOutputStream output_chunk1 = new ByteArrayOutputStream();
             ByteArrayOutputStream output_chunk2 = new ByteArrayOutputStream();
             decoder_.StartDecoding(dictionary_);
-            assertTrue(decoder_.DecodeChunk(delta_file_,
-                    0,
-                    i,
-                    output_chunk1));
-            assertTrue(decoder_.DecodeChunk(delta_file_,
-                    i,
-                    delta_file_size - i,
-                    output_chunk2));
-            assertTrue(decoder_.FinishDecoding());
+            decoder_.DecodeChunk(delta_file_, 0, i, output_chunk1);
+            decoder_.DecodeChunk(delta_file_, i, delta_file_size - i, output_chunk2);
+            decoder_.FinishDecoding();
             assertArrayEquals(expected_target_, ArraysExtra.concat(output_chunk1.toByteArray(), output_chunk2.toByteArray()));
         }
     }
@@ -103,21 +107,14 @@ public class VCDiffStandardWindowDecoderTest extends VCDiffStandardWindowDecoder
                 ByteArrayOutputStream output_chunk3 = new ByteArrayOutputStream();
 
                 decoder_.StartDecoding(dictionary_);
-                assertTrue(decoder_.DecodeChunk(delta_file_,
-                        0,
-                        i,
-                        output_chunk1));
-                assertTrue(decoder_.DecodeChunk(delta_file_,
-                        i,
-                        j - i,
-                        output_chunk2));
-                assertTrue(decoder_.DecodeChunk(delta_file_,
-                        j,
-                        delta_file_size - j,
-                        output_chunk3));
-                assertTrue(decoder_.FinishDecoding());
-                assertArrayEquals(expected_target_,
-                        ArraysExtra.concat(output_chunk1.toByteArray(), output_chunk2.toByteArray(), output_chunk3.toByteArray()));
+                decoder_.DecodeChunk(delta_file_, 0, i, output_chunk1);
+                decoder_.DecodeChunk(delta_file_, i, j - i, output_chunk2);
+                decoder_.DecodeChunk(delta_file_, j, delta_file_size - j, output_chunk3);
+                decoder_.FinishDecoding();
+                assertArrayEquals(
+                        expected_target_,
+                        ArraysExtra.concat(output_chunk1.toByteArray(), output_chunk2.toByteArray(), output_chunk3.toByteArray())
+                );
             }
         }
     }
@@ -129,11 +126,8 @@ public class VCDiffStandardWindowDecoderTest extends VCDiffStandardWindowDecoder
     public void TargetMatchesWindowSizeLimit() throws Exception {
         decoder_.SetMaximumTargetWindowSize(kWindow2Size);
         decoder_.StartDecoding(dictionary_);
-        assertTrue(decoder_.DecodeChunk(delta_file_,
-                0,
-                delta_file_.length,
-                output_));
-        assertTrue(decoder_.FinishDecoding());
+        decoder_.DecodeChunk(delta_file_, output_);
+        decoder_.FinishDecoding();
         assertArrayEquals(expected_target_, output_.toByteArray());
     }
 
@@ -141,11 +135,8 @@ public class VCDiffStandardWindowDecoderTest extends VCDiffStandardWindowDecoder
     public void TargetMatchesFileSizeLimit() throws Exception {
         decoder_.SetMaximumTargetFileSize(expected_target_.length);
         decoder_.StartDecoding(dictionary_);
-        assertTrue(decoder_.DecodeChunk(delta_file_,
-                0,
-                delta_file_.length,
-                output_));
-        assertTrue(decoder_.FinishDecoding());
+        decoder_.DecodeChunk(delta_file_, output_);
+        decoder_.FinishDecoding();
         assertArrayEquals(expected_target_, output_.toByteArray());
     }
 
@@ -153,21 +144,23 @@ public class VCDiffStandardWindowDecoderTest extends VCDiffStandardWindowDecoder
     public void TargetExceedsWindowSizeLimit() throws Exception {
         decoder_.SetMaximumTargetWindowSize(kWindow2Size - 1);
         decoder_.StartDecoding(dictionary_);
-        assertFalse(decoder_.DecodeChunk(delta_file_,
-                0,
-                delta_file_.length,
-                output_));
-        assertArrayEquals(new byte[0], output_.toByteArray());
+        try {
+            thrown.expect(IOException.class);
+            decoder_.DecodeChunk(delta_file_, output_);
+        } finally {
+            assertArrayEquals(new byte[0], output_.toByteArray());
+        }
     }
 
     @Test
     public void TargetExceedsFileSizeLimit() throws Exception {
         decoder_.SetMaximumTargetFileSize(expected_target_.length - 1);
         decoder_.StartDecoding(dictionary_);
-        assertFalse(decoder_.DecodeChunk(delta_file_,
-                0,
-                delta_file_.length,
-                output_));
-        assertArrayEquals(new byte[0], output_.toByteArray());
+        try {
+            thrown.expect(IOException.class);
+            decoder_.DecodeChunk(delta_file_, output_);
+        } finally {
+            assertArrayEquals(new byte[0], output_.toByteArray());
+        }
     }
 }

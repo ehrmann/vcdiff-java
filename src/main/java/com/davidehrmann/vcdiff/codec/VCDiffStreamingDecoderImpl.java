@@ -168,11 +168,10 @@ public class VCDiffStreamingDecoderImpl implements VCDiffStreamingDecoder {
         start_decoding_was_called_ = true;
     }
 
-    public boolean DecodeChunk(byte[] data, int offset, int len, OutputStream output_string) throws IOException {
+    public void DecodeChunk(byte[] data, int offset, int len, OutputStream output_string) throws IOException {
         if (!start_decoding_was_called_) {
-            LOGGER.error("DecodeChunk() called without StartDecoding()");
             Reset();
-            return false;
+            throw new IOException("DecodeChunk() called without StartDecoding()");
         }
         // TODO: there's a lot of room for optimization here
         ByteBuffer parseable_chunk = ByteBuffer.allocate(unparsed_bytes_.remaining() + len);
@@ -181,50 +180,53 @@ public class VCDiffStreamingDecoderImpl implements VCDiffStreamingDecoder {
         parseable_chunk.flip();
         unparsed_bytes_ = parseable_chunk.duplicate();
 
-        int result = ReadDeltaFileHeader(parseable_chunk);
-        if (RESULT_SUCCESS == result) {
-            result = ReadCustomCodeTable(parseable_chunk);
-        }
-        if (RESULT_SUCCESS == result) {
-            while (parseable_chunk.hasRemaining()) {
-                result = delta_window_.DecodeWindow(parseable_chunk);
-                if (RESULT_SUCCESS != result) {
-                    break;
-                }
-                if (ReachedPlannedTargetFileSize()) {
-                    // Found exactly the length we expected.  Stop decoding.
-                    break;
-                }
-                if (!allow_vcd_target()) {
-                    // VCD_TARGET will never be used to reference target data before the
-                    // start of the current window, so flush and clear the contents of
-                    // decoded_target_.
-                    FlushDecodedTarget(output_string);
+        try {
+            int result = ReadDeltaFileHeader(parseable_chunk);
+            if (RESULT_SUCCESS == result) {
+                result = ReadCustomCodeTable(parseable_chunk);
+            }
+            if (RESULT_SUCCESS == result) {
+                while (parseable_chunk.hasRemaining()) {
+                    result = delta_window_.DecodeWindow(parseable_chunk);
+                    if (RESULT_SUCCESS != result) {
+                        break;
+                    }
+                    if (ReachedPlannedTargetFileSize()) {
+                        // Found exactly the length we expected.  Stop decoding.
+                        break;
+                    }
+                    if (!allow_vcd_target()) {
+                        // VCD_TARGET will never be used to reference target data before the
+                        // start of the current window, so flush and clear the contents of
+                        // decoded_target_.
+                        FlushDecodedTarget(output_string);
+                    }
                 }
             }
-        }
-        if (RESULT_ERROR == result) {
+        } catch (IOException e) {
             Reset();  // Don't allow further DecodeChunk calls
-            return false;
+            throw e;
         }
 
         unparsed_bytes_ = parseable_chunk;
         AppendNewOutputText(output_string);
-        return true;
     }
 
-    public boolean FinishDecoding() {
-        boolean success = true;
-        if (!start_decoding_was_called_) {
-            LOGGER.warn("FinishDecoding() called before StartDecoding(), or called after DecodeChunk() returned false");
-            success = false;
-        } else if (!IsDecodingComplete()) {
-            LOGGER.error("FinishDecoding() called before parsing entire delta file window");
-            success = false;
+    public void DecodeChunk(byte[] data, OutputStream out) throws IOException {
+        DecodeChunk(data, 0, data.length, out);
+    }
+
+    public void FinishDecoding() throws IOException {
+        try {
+            if (!start_decoding_was_called_) {
+                throw new IOException("FinishDecoding() called before StartDecoding(), or called after DecodeChunk() returned false");
+            } else if (!IsDecodingComplete()) {
+                throw new IOException("FinishDecoding() called before parsing entire delta file window");
+            }
+        } finally {
+            // Reset the object state for the next decode operation
+            Reset();
         }
-        // Reset the object state for the next decode operation
-        Reset();
-        return success;
     }
 
     // If true, the version of VCDIFF used in the current delta file allows
@@ -294,10 +296,12 @@ public class VCDiffStreamingDecoderImpl implements VCDiffStreamingDecoder {
     // would exceed the planned target file size, the maximum target file size,
     // or the maximum target window size.  If so, logs an error and returns true;
     // otherwise, returns false.
-    public boolean TargetWindowWouldExceedSizeLimits(int window_size) {
+    public void TargetWindowWouldExceedSizeLimits(int window_size) throws IOException {
         if (window_size > maximum_target_window_size_) {
-            LOGGER.error("Length of target window ({}) exceeds limit of {} bytes", window_size, maximum_target_window_size_);
-            return true;
+            throw new IOException(String.format(
+                    "Length of target window (%d) exceeds limit of %d bytes",
+                    window_size, maximum_target_window_size_
+            ));
         }
         if (HasPlannedTargetFileSize()) {
             // The logical expression to check would be:
@@ -309,18 +313,19 @@ public class VCDiffStreamingDecoderImpl implements VCDiffStreamingDecoder {
             // the remaining planned target bytes.
             long remaining_planned_target_file_size = planned_target_file_size_ - total_of_target_window_sizes_;
             if (window_size > remaining_planned_target_file_size) {
-                LOGGER.error("Length of target window ({} bytes) plus previous windows ({} bytes) would exceed planned size of {} bytes",
-                        window_size, total_of_target_window_sizes_, planned_target_file_size_);
-                return true;
+                throw new IOException(String.format(
+                        "Length of target window (%d bytes) plus previous windows (%d bytes) would exceed planned size of %d bytes",
+                        window_size, total_of_target_window_sizes_, planned_target_file_size_
+                ));
             }
         }
         long remaining_maximum_target_bytes = maximum_target_file_size_ - total_of_target_window_sizes_;
         if (window_size > remaining_maximum_target_bytes) {
-            LOGGER.error("Length of target window ({} bytes) plus previous windows ({} bytes) would exceed maximum target file size of {} bytes",
-                    window_size, total_of_target_window_sizes_, maximum_target_file_size_);
-            return true;
+            throw new IOException(String.format(
+                    "Length of target window (%d bytes) plus previous windows (%d bytes) would exceed maximum target file size of %d bytes",
+                    window_size, total_of_target_window_sizes_, maximum_target_file_size_
+            ));
         }
-        return false;
     }
 
     // Returns the amount of input data passed to the last DecodeChunk()
@@ -409,7 +414,7 @@ public class VCDiffStreamingDecoderImpl implements VCDiffStreamingDecoder {
     // of two bytes "12", then we should recognize that it does not match the
     // initial VCDIFF magic number "VCD" and report an error, rather than waiting
     // indefinitely for more input that will never arrive.
-    private int ReadDeltaFileHeader(ByteBuffer data) {
+    private int ReadDeltaFileHeader(ByteBuffer data) throws IOException {
         if (FoundFileHeader()) {
             return RESULT_SUCCESS;
         }
@@ -428,8 +433,7 @@ public class VCDiffStreamingDecoderImpl implements VCDiffStreamingDecoder {
             vcdiff_version_code_ = header.header4;
             if ((vcdiff_version_code_ != 0x00) &&  // Draft standard VCDIFF (RFC 3284)
                     (vcdiff_version_code_ != 'S')) {   // Enhancements for SDCH protocol
-                LOGGER.error("Unrecognized VCDIFF format version");
-                return RESULT_ERROR;
+                throw new IOException("Unrecognized VCDIFF format version");
             }
             // fall through
         case 3:
@@ -449,27 +453,21 @@ public class VCDiffStreamingDecoderImpl implements VCDiffStreamingDecoder {
             // fall through
         case 0:
             if (wrong_magic_number) {
-                LOGGER.error("Did not find VCDIFF header bytes; input is not a VCDIFF delta file");
-                return RESULT_ERROR;
+                throw new IOException("Did not find VCDIFF header bytes; input is not a VCDIFF delta file");
             }
             if (data_size < DeltaFileHeader.SERIALIZED_SIZE) return RESULT_END_OF_DATA;
         }
         // Secondary compressor not supported.
         if ((header.hdr_indicator & VCD_DECOMPRESS) != 0) {
-            LOGGER.error("Secondary compression is not supported");
-            return RESULT_ERROR;
+            throw new IOException("Secondary compression is not supported");
         }
         if ((header.hdr_indicator & VCD_CODETABLE) != 0) {
             int bytes_parsed = InitCustomCodeTable(data.array(), data.arrayOffset() + data.position() + DeltaFileHeader.SERIALIZED_SIZE,
                         data.remaining() - DeltaFileHeader.SERIALIZED_SIZE);
-            switch (bytes_parsed) {
-            case RESULT_ERROR:
-                return RESULT_ERROR;
-            case RESULT_END_OF_DATA:
+            if (bytes_parsed == RESULT_END_OF_DATA) {
                 return RESULT_END_OF_DATA;
-            default:
-                data.position(data.position() + DeltaFileHeader.SERIALIZED_SIZE + bytes_parsed);
             }
+            data.position(data.position() + DeltaFileHeader.SERIALIZED_SIZE + bytes_parsed);
         } else {
             addr_cache_ = new VCDiffAddressCacheImpl();
             // addr_cache_->Init() will be called
@@ -490,7 +488,7 @@ public class VCDiffStreamingDecoderImpl implements VCDiffStreamingDecoder {
     // reached before the custom cache sizes could be read.  Otherwise, returns
     // the number of bytes read.
     //
-    private int InitCustomCodeTable(byte[] data_start, int offset, int length) {
+    private int InitCustomCodeTable(byte[] data_start, int offset, int length) throws IOException {
         // A custom code table is being specified.  Parse the variable-length
         // cache sizes and begin parsing the encoded custom code table.
         Integer near_cache_size;
@@ -539,37 +537,33 @@ public class VCDiffStreamingDecoderImpl implements VCDiffStreamingDecoder {
     // returns RESULT_SUCCESS and sets *data_ptr to the position after the encoded
     // custom code table.  If the function returns RESULT_SUCCESS or
     // RESULT_END_OF_DATA, it advances data->position_ past the parsed bytes.
-    private int ReadCustomCodeTable(ByteBuffer data) {
+    private int ReadCustomCodeTable(ByteBuffer data) throws IOException {
         if (custom_code_table_decoder_ == null) {
             return RESULT_SUCCESS;
         }
         if (custom_code_table_ == null) {
-            LOGGER.error("Internal error:  custom_code_table_decoder_ is set, but custom_code_table_ is NULL");
-            return RESULT_ERROR;
+            throw new IllegalStateException("Internal error: custom_code_table_decoder_ is set, but custom_code_table_ is null");
         }
 
-        boolean rc = false;
         try {
-            rc = custom_code_table_decoder_.DecodeChunk(data.array(),
+            custom_code_table_decoder_.DecodeChunk(data.array(),
                     data.arrayOffset() + data.position(), data.remaining(), custom_code_table_string_);
         } catch (IOException e) {
-            LOGGER.error("Failed to write to custom_code_table_string_.", e);
-        }
-        if (!rc) {
-            return RESULT_ERROR;
+            throw new IOException("Failed to write to custom_code_table_string_.", e);
         }
         if (custom_code_table_string_.size() < VCDiffCodeTableData.SERIALIZED_BYTE_SIZE) {
             // Skip over the consumed data.
             data.position(data.limit());
             return RESULT_END_OF_DATA;
         }
-        if (!custom_code_table_decoder_.FinishDecoding()) {
-            return RESULT_ERROR;
-        }
+
+        custom_code_table_decoder_.FinishDecoding();
+
         if (custom_code_table_string_.size() != VCDiffCodeTableData.SERIALIZED_BYTE_SIZE) {
-            LOGGER.error("Decoded custom code table size ({}) does not match size of a code table ({})",
-                    custom_code_table_string_.size(), VCDiffCodeTableData.SERIALIZED_BYTE_SIZE);
-            return RESULT_ERROR;
+            throw new IOException(String.format(
+                    "Decoded custom code table size (%d) does not match size of a code table (%d)",
+                    custom_code_table_string_.size(), VCDiffCodeTableData.SERIALIZED_BYTE_SIZE
+            ));
         }
 
         custom_code_table_ = new VCDiffCodeTableData(custom_code_table_string_.toByteArray());

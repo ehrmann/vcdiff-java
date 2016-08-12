@@ -120,11 +120,7 @@ public class VCDiffHTML1Test extends VerifyEncodedBytesTest {
                 delta_));
         assertTrue(kRedundantTarget.length + kFileHeaderSize + kWindowHeaderSize >=
                 delta_.size());
-        assertTrue(simple_decoder_.Decode(kDictionary,
-                delta_.toByteArray(),
-                0,
-                delta_.size(),
-                result_target_));
+        simple_decoder_.Decode(kDictionary, delta_.toByteArray(), result_target_);
         assertArrayEquals(kRedundantTarget, result_target_.toByteArray());
 
         EncodedBytesVerifier verifier = new EncodedBytesVerifier(delta_.toByteArray());
@@ -168,11 +164,7 @@ public class VCDiffHTML1Test extends VerifyEncodedBytesTest {
                 delta_));
         assertTrue(kRedundantTarget.length + kFileHeaderSize + kWindowHeaderSize >=
                 delta_.size());
-        assertTrue(simple_decoder_.Decode(kDictionary,
-                delta_.toByteArray(),
-                0,
-                delta_.size(),
-                result_target_));
+        simple_decoder_.Decode(kDictionary, delta_.toByteArray(), result_target_);
         assertArrayEquals(kRedundantTarget, result_target_.toByteArray());
 
         EncodedBytesVerifier verifier = new EncodedBytesVerifier(delta_.toByteArray());

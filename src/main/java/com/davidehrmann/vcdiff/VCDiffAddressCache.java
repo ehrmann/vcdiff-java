@@ -1,5 +1,6 @@
 package com.davidehrmann.vcdiff;
 
+import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.util.concurrent.atomic.AtomicInteger;
 
@@ -22,7 +23,7 @@ public abstract class VCDiffAddressCache {
     /**
      * An error occurred while performing the requested operation.
      */
-    static final int RESULT_ERROR = -1;
+    // static final int RESULT_ERROR = -1;
 
     /**
      * The end of available data was reached before the requested operation could be completed.
@@ -181,5 +182,5 @@ public abstract class VCDiffAddressCache {
      *				before continuing to decode.  If no more data is expected, this
      *				return value signals an error condition.
      */
-    public abstract int DecodeAddress(int here_address, short vcDiffMode, ByteBuffer address_stream);
+    public abstract int DecodeAddress(int here_address, short vcDiffMode, ByteBuffer address_stream) throws IOException;
 }

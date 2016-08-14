@@ -95,9 +95,9 @@ public class VCDiffEncoderTest extends VerifyEncodedBytesTest {
 
     }
 
-    @Test
+    @Test(expected = IllegalStateException.class)
     public void EncodeBeforeStartEncoding() throws Exception {
-        assertFalse(encoder_.EncodeChunk(target_, 0, target_.length, delta_));
+        encoder_.EncodeChunk(target_, 0, target_.length, delta_);
     }
 
     @Test

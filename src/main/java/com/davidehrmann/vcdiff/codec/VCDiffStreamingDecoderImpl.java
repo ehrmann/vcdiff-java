@@ -157,8 +157,7 @@ public class VCDiffStreamingDecoderImpl implements VCDiffStreamingDecoder {
     //
     public void StartDecoding(byte[] dictionary_ptr) {
         if (start_decoding_was_called_) {
-            LOGGER.error("StartDecoding() called twice without FinishDecoding()");
-            return;
+            throw new IllegalStateException("StartDecoding() called twice without FinishDecoding()");
         }
 
         unparsed_bytes_ = ByteBuffer.allocate(0);
@@ -285,9 +284,10 @@ public class VCDiffStreamingDecoderImpl implements VCDiffStreamingDecoder {
         // DecodeBody() will return RESULT_ERROR if the actual decoded output ever
         // exceeds the advertised target window size.
         if (total_of_target_window_sizes_ > planned_target_file_size_) {
-            LOGGER.error("Internal error: Decoded data size {} exceeds planned target file size {}",
-                    total_of_target_window_sizes_, planned_target_file_size_);
-            return true;
+            throw new IllegalStateException(String.format(
+                    "Internal error: Decoded data size %d exceeds planned target file size %d",
+                    total_of_target_window_sizes_, planned_target_file_size_
+            ));
         }
         return total_of_target_window_sizes_ == planned_target_file_size_;
     }
@@ -378,8 +378,7 @@ public class VCDiffStreamingDecoderImpl implements VCDiffStreamingDecoder {
 
     public void SetAllowVcdTarget(boolean allow_vcd_target) {
         if (start_decoding_was_called_) {
-            LOGGER.error("SetAllowVcdTarget() called after StartDecoding()");
-            return;
+            throw new IllegalStateException("SetAllowVcdTarget() called after StartDecoding()");
         }
         allow_vcd_target_ = allow_vcd_target;
     }

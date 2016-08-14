@@ -497,21 +497,27 @@ public class BlockHash {
             table_size <<= 1;
             // Guard against an infinite loop
             if (table_size <= 0) {
-                LOGGER.error("Internal error: CalcTableSize(dictionary_size = {}): resulting table_size {} is zero or negative", dictionary_size, table_size);
-                return 0;
+                throw new IllegalStateException(String.format(
+                        "Internal error: CalcTableSize(dictionary_size = %d): resulting table_size %d is zero or negative",
+                        dictionary_size, table_size
+                ));
             }
         }
         // Check size sanity
         if ((table_size & (table_size - 1)) != 0) {
-            LOGGER.error("Internal error: CalcTableSize(dictionary_size = {}): resulting table_size {} is not a power of 2", dictionary_size, table_size);
-            return 0;
+            throw new IllegalStateException(String.format(
+                    "Internal error: CalcTableSize(dictionary_size = %d): resulting table_size %d is not a power of 2",
+                    dictionary_size, table_size
+            ));
         }
         // The loop above tries to find the smallest power of 2 that is >= min_size.
         // That value must lie somewhere between min_size and (min_size * 2),
         // except for the case (dictionary_size == 0, table_size == 1).
         if ((dictionary_size > 0) && (table_size > (min_size * 2))) {
-            LOGGER.error("Internal error: CalcTableSize(dictionary_size = {}): resulting table_size {} is too large", dictionary_size, table_size);
-            return 0;
+            throw new IllegalStateException(String.format(
+                    "Internal error: CalcTableSize(dictionary_size = %d): resulting table_size %d is too large",
+                    dictionary_size, table_size
+            ));
         }
         return table_size;
     }
@@ -542,12 +548,16 @@ public class BlockHash {
         int block_number = last_block_added + 1;
         final int total_blocks = (source_data.limit() / kBlockSize);  // round down
         if (block_number >= total_blocks) {
-            throw new IllegalArgumentException(String.format("BlockHash.AddBlock() called with block number %d. This is past last block %d", block_number, total_blocks - 1));
-            //  LOGGER.error("BlockHash.AddBlock() called with block number {} this is past last block {}", block_number, total_blocks - 1);
+            throw new IllegalArgumentException(String.format(
+                    "BlockHash.AddBlock() called with block number %d. This is past last block %d",
+                    block_number, total_blocks - 1
+            ));
         }
         if (next_block_table[block_number] != -1) {
-            throw new IllegalStateException(String.format("Internal error in BlockHash.AddBlock(): block number = %d, next block should be -1 but is %d", block_number, next_block_table[block_number]));
-            // LOGGER.error("Internal error in BlockHash::AddBlock(): block number = {}, next block should be -1 but is {}", block_number, next_block_table[block_number]);
+            throw new IllegalStateException(String.format(
+                    "Internal error in BlockHash.AddBlock(): block number = %d, next block should be -1 but is %d",
+                    block_number, next_block_table[block_number]
+            ));
         }
         final int hash_table_index = GetHashTableIndex(hash_value);
         final int first_matching_block = hash_table[hash_table_index];
@@ -559,8 +569,10 @@ public class BlockHash {
             // Add this entry at the end of the chain of matching blocks
             final int last_matching_block = last_block_table[first_matching_block];
             if (next_block_table[last_matching_block] != -1) {
-                LOGGER.error("Internal error in BlockHash::AddBlock(): first matching block = {}, last matching block = {}, next block should be -1 but is {}", first_matching_block, last_matching_block, next_block_table[last_matching_block]);
-                return;
+                throw new IllegalStateException(String.format(
+                        "Internal error in BlockHash.AddBlock(): first matching block = %d, last matching block = %d, next block should be -1 but is %d",
+                        first_matching_block, last_matching_block, next_block_table[last_matching_block]
+                ));
             }
             next_block_table[last_matching_block] = block_number;
             last_block_table[first_matching_block] = block_number;

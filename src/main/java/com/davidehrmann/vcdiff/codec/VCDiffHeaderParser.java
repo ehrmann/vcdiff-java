@@ -252,8 +252,7 @@ public class VCDiffHeaderParser {
     // a valid memory location if there is insufficient input data.)
     public Integer EndOfDeltaWindow() {
         if (delta_encoding_start_ == null) {
-            LOGGER.error("Internal error: VCDiffHeaderParser.GetDeltaWindowEnd was called before ParseWindowLengths");
-            return null;
+            throw new IllegalStateException("Internal error: VCDiffHeaderParser.GetDeltaWindowEnd was called before ParseWindowLengths");
         }
         return delta_encoding_start_.position() + delta_encoding_length_;
     }

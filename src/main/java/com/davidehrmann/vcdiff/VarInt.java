@@ -75,8 +75,7 @@ public final class VarInt {
 
     public static void putInt(ByteBuffer dest, int val) {
         if (val < 0) {
-            LOGGER.error("Negative value {} passed to VarintBE::EncodeInternal, which requires non-negative argument", val);
-            throw new IllegalArgumentException();
+            throw new IllegalArgumentException(String.format("Value (%d) was negative", val));
         }
 
         for (int shift = 28; shift >= 0; shift -= 7) {
@@ -90,8 +89,7 @@ public final class VarInt {
 
     public static void writeInt(OutputStream out, int val) throws IOException {
         if (val < 0) {
-            LOGGER.error("Negative value {} passed to VarintBE::EncodeInternal, which requires non-negative argument", val);
-            throw new IllegalArgumentException("Negative value");
+            throw new IllegalArgumentException(String.format("Value (%d) was negative", val));
         }
 
         for (int shift = 28; shift >= 0; shift -= 7) {
@@ -105,8 +103,7 @@ public final class VarInt {
 
     public static void putLong(ByteBuffer dest, long val) {
         if (val < 0) {
-            LOGGER.error("Negative value {} passed to VarintBE::EncodeInternal, which requires non-negative argument", val);
-            throw new IllegalArgumentException();
+            throw new IllegalArgumentException(String.format("Value (%d) was negative", val));
         }
 
         for (int shift = 63; shift >= 0; shift -= 7) {
@@ -120,8 +117,7 @@ public final class VarInt {
 
     public static void writeLong(OutputStream out, long val) throws IOException {
         if (val < 0) {
-            LOGGER.error("Negative value {} passed to VarintBE::EncodeInternal, which requires non-negative argument", val);
-            throw new IllegalArgumentException();
+            throw new IllegalArgumentException(String.format("Value (%d) was negative", val));
         }
 
         for (int shift = 63; shift >= 0; shift -= 7) {

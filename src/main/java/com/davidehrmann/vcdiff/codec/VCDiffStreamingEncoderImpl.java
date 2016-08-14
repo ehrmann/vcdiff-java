@@ -98,8 +98,7 @@ public class VCDiffStreamingEncoderImpl<OUT> implements VCDiffStreamingEncoder<O
 
     public boolean EncodeChunk(byte[] data, int offset, int length, OUT out) throws IOException {
         if (!encode_chunk_allowed_) {
-            LOGGER.error("EncodeChunk called before StartEncoding");
-            return false;
+            throw new IllegalStateException("EncodeChunk called before StartEncoding");
         }
         if ((format_extensions_.contains(VCD_FORMAT_CHECKSUM))) {
             Adler32 adler32 = new ZeroInitializedAdler32();

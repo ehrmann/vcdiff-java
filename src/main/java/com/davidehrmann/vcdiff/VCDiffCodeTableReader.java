@@ -35,12 +35,12 @@ public class VCDiffCodeTableReader {
     public void UnGetInstruction() {
         if (last_instruction_start_ >= 0) {
             if (last_instruction_start_ > instructions_and_sizes_.position()) {
-                LOGGER.error("Internal error: last_instruction_start past end of instructions_and_sizes in UnGetInstruction");
+                throw new IllegalStateException("Internal error: last_instruction_start past end of instructions_and_sizes in UnGetInstruction");
             }
             instructions_and_sizes_.position(last_instruction_start_);
             if ((pending_second_instruction_ != kNoOpcode) &&
                     (last_pending_second_instruction_ != kNoOpcode)) {
-                LOGGER.error("Internal error: two pending instructions in a row in UnGetInstruction");
+                throw new IllegalStateException("Internal error: two pending instructions in a row in UnGetInstruction");
             }
             pending_second_instruction_ = last_pending_second_instruction_;
         }

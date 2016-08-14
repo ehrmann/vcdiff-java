@@ -58,7 +58,7 @@ public abstract class VerifyEncodedBytesTest {
     }
 
     protected void SimpleEncode() throws IOException {
-        assertTrue(simple_encoder_.Encode(target_, 0, target_.length, delta_));
+        simple_encoder_.Encode(target_, 0, target_.length, delta_);
         assertTrue(target_.length + kFileHeaderSize + kWindowHeaderSize >= delta_.size());
         simple_decoder_.Decode(
                 dictionary_,
@@ -68,9 +68,9 @@ public abstract class VerifyEncodedBytesTest {
     }
 
     protected void StreamingEncode() throws  IOException {
-        assertTrue(encoder_.StartEncoding(delta_));
-        assertTrue(encoder_.EncodeChunk(target_, 0, target_.length, delta_));
-        assertTrue(encoder_.FinishEncoding(delta_));
+        encoder_.StartEncoding(delta_);
+        encoder_.EncodeChunk(target_, 0, target_.length, delta_);
+        encoder_.FinishEncoding(delta_);
     }
 
 

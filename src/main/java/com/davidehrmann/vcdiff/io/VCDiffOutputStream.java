@@ -59,12 +59,12 @@ public class VCDiffOutputStream extends FilterOutputStream {
         }
         if (!started) {
             started = true;
-            if (!encoder.StartEncoding(super.out)) {
-                throw new IOException("Error during encoder initialization");
-            }
+            encoder.StartEncoding(super.out);
         }
-        if (!encoder.EncodeChunk(b, off, len, super.out)) {
-            throw new IOException("Error trying to encode data chunk at offset " + bytesWritten);
+        try {
+            encoder.EncodeChunk(b, off, len, super.out);
+        } catch (IOException e) {
+            throw new IOException("Error trying to encode data chunk at offset " + bytesWritten, e);
         }
         bytesWritten += len;
     }
@@ -79,15 +79,11 @@ public class VCDiffOutputStream extends FilterOutputStream {
         try {
             if (!started) {
                 started = true;
-                if (!encoder.StartEncoding(super.out)) {
-                    throw new IOException("Error during encoder initialization");
-                }
+                encoder.StartEncoding(super.out);
             }
             if (!closed) {
                 closed = true;
-                if (!encoder.FinishEncoding(super.out)) {
-                    throw new IOException("Error finishing encoding");
-                }
+                encoder.FinishEncoding(super.out);
             }
         } finally {
             super.close();

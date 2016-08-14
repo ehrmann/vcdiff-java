@@ -75,7 +75,7 @@ public class VCDiffJSONEncoderTest {
     protected void TestWithFixedChunkSize(VCDiffStreamingEncoder<Appendable> encoder,
                                           int chunk_size) throws Exception {
         delta.setLength(0);
-        assertTrue(encoder.StartEncoding(delta));
+        encoder.StartEncoding(delta);
         for (int chunk_start_index = 0;
              chunk_start_index < kTarget.length;
              chunk_start_index += chunk_size) {
@@ -84,11 +84,14 @@ public class VCDiffJSONEncoderTest {
             if (this_chunk_size > bytes_available) {
                 this_chunk_size = bytes_available;
             }
-            assertTrue(encoder.EncodeChunk(kTarget, chunk_start_index,
+            encoder.EncodeChunk(
+                    kTarget,
+                    chunk_start_index,
                     this_chunk_size,
-                    delta));
+                    delta
+            );
         }
-        assertTrue(encoder.FinishEncoding(delta));
+        encoder.FinishEncoding(delta);
         final int num_windows = (kTarget.length / chunk_size) + 1;
         final int size_of_windows = kTarget.length + (kWindowHeaderSize * num_windows);
         assertTrue(kFileHeaderSize + size_of_windows >= delta.length());
@@ -102,16 +105,16 @@ public class VCDiffJSONEncoderTest {
                 .withTargetMatches(false)
                 .buildStreamingJson();
 
-        assertTrue(nothing_encoder.StartEncoding(delta));
-        assertTrue(nothing_encoder.FinishEncoding(delta));
+        nothing_encoder.StartEncoding(delta);
+        nothing_encoder.FinishEncoding(delta);
         assertEquals("", delta.toString());
     }
 
     @Test
     public void EncodeSimpleJSON() throws Exception {
-        assertTrue(json_encoder_.StartEncoding(delta));
-        assertTrue(json_encoder_.EncodeChunk(kTarget, 0, kTarget.length, delta));
-        assertTrue(json_encoder_.FinishEncoding(delta));
+        json_encoder_.StartEncoding(delta);
+        json_encoder_.EncodeChunk(kTarget, delta);
+        json_encoder_.FinishEncoding(delta);
         assertEquals(kJSONDiff, delta.toString());
     }
 
@@ -148,14 +151,14 @@ public class VCDiffJSONEncoderTest {
                 .withDictionary(kNonAscii)
                 .buildStreamingJson();
 
-        assertTrue(json_encoder.StartEncoding(delta));
-        assertFalse(json_encoder.EncodeChunk(kTarget, 0, kTarget.length, delta));
+        json_encoder.StartEncoding(delta);
+        json_encoder.EncodeChunk(kTarget, 0, kTarget.length, delta);
     }
 
     @Ignore
     @Test
     public void NonasciiTargetWithJSON() throws Exception {
-        assertTrue(json_encoder_.StartEncoding(delta));
-        assertFalse(json_encoder_.EncodeChunk(kNonAscii,0, kNonAscii.length, delta));
+        json_encoder_.StartEncoding(delta);
+        json_encoder_.EncodeChunk(kNonAscii,0, kNonAscii.length, delta);
     }
 }

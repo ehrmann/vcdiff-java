@@ -68,7 +68,7 @@ public interface VCDiffStreamingEncoder<OUT> {
     // If this function returns false, the caller does not need to call
     // FinishEncoding or to do any cleanup except destroying the
     // VCDiffStreamingEncoder object.
-    boolean StartEncoding(OUT out) throws IOException;
+    void StartEncoding(OUT out) throws IOException;
 
     // Appends compressed encoding for "data" (one complete VCDIFF delta window)
     // to *output_string.
@@ -77,7 +77,9 @@ public interface VCDiffStreamingEncoder<OUT> {
     // otherwise it returns true.  The caller does not need to call FinishEncoding
     // or do any cleanup except destroying the VCDiffStreamingEncoder
     // if this function returns false.
-    boolean EncodeChunk(byte[] data, int offset, int length, OUT out) throws IOException;
+    void EncodeChunk(byte[] data, int offset, int length, OUT out) throws IOException;
+
+    void EncodeChunk(byte[] data, OUT out) throws IOException;
 
     // Finishes encoding and appends any leftover encoded data to *output_string.
     // If an error occurs (for example, if StartEncoding was not called
@@ -85,5 +87,5 @@ public interface VCDiffStreamingEncoder<OUT> {
     // otherwise it returns true.  The caller does not need to
     // do any cleanup except destroying the VCDiffStreamingEncoder
     // if this function returns false.
-    boolean FinishEncoding(OUT out) throws IOException;
+    void FinishEncoding(OUT out) throws IOException;
 }

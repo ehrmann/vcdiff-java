@@ -52,16 +52,15 @@ public class VCDiffEncoder<OUT> {
      * @param offset
      * @param length
      * @param out
-     * @return
      * @throws IOException
      */
-    public boolean Encode(byte[] data, int offset, int length, OUT out) throws IOException {
-        if (!encoder_.StartEncoding(out)) {
-            return false;
-        }
-        if (!encoder_.EncodeChunk(data, offset, length, out)) {
-            return false;
-        }
-        return encoder_.FinishEncoding(out);
+    public void Encode(byte[] data, int offset, int length, OUT out) throws IOException {
+        encoder_.StartEncoding(out);
+        encoder_.EncodeChunk(data, offset, length, out);
+        encoder_.FinishEncoding(out);
+    }
+
+    public void Encode(byte[] data, OUT out) throws IOException {
+        Encode(data, 0, data.length, out);
     }
 }

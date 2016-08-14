@@ -53,7 +53,7 @@ public class VCDiffEncoderTest extends VerifyEncodedBytesTest {
                                           VCDiffStreamingDecoder decoder,
                                           int chunk_size) throws IOException {
         delta_.reset();
-        assertTrue(encoder.StartEncoding(delta_));
+        encoder.StartEncoding(delta_);
         for (int chunk_start_index = 0;
              chunk_start_index < target_.length;
              chunk_start_index += chunk_size) {
@@ -62,12 +62,14 @@ public class VCDiffEncoderTest extends VerifyEncodedBytesTest {
             if (this_chunk_size > bytes_available) {
                 this_chunk_size = bytes_available;
             }
-            assertTrue(encoder.EncodeChunk(target_,
+            encoder.EncodeChunk(
+                    target_,
                     chunk_start_index,
                     this_chunk_size,
-                    delta_));
+                    delta_
+            );
         }
-        assertTrue(encoder.FinishEncoding(delta_));
+        encoder.FinishEncoding(delta_);
         final int num_windows = (target_.length / chunk_size) + 1;
         final int size_of_windows =
                 target_.length + (kWindowHeaderSize * num_windows);
@@ -100,9 +102,9 @@ public class VCDiffEncoderTest extends VerifyEncodedBytesTest {
         encoder_.EncodeChunk(target_, 0, target_.length, delta_);
     }
 
-    @Test
+    @Test(expected = IllegalStateException.class)
     public void FinishBeforeStartEncoding() throws Exception {
-        assertFalse(encoder_.FinishEncoding(delta_));
+        encoder_.FinishEncoding(delta_);
     }
 
     @Test
@@ -112,8 +114,8 @@ public class VCDiffEncoderTest extends VerifyEncodedBytesTest {
                 .withTargetMatches(false)
                 .buildStreaming();
 
-        assertTrue(nothing_encoder.StartEncoding(delta_));
-        assertTrue(nothing_encoder.FinishEncoding(delta_));
+        nothing_encoder.StartEncoding(delta_);
+        nothing_encoder.FinishEncoding(delta_);
         decoder_.StartDecoding(new byte[0]);
         decoder_.DecodeChunk(delta_.toByteArray(), result_target_);
         decoder_.FinishDecoding();
@@ -125,7 +127,7 @@ public class VCDiffEncoderTest extends VerifyEncodedBytesTest {
 
     @Test
     public void EncodeDecodeSimple() throws Exception {
-        assertTrue(simple_encoder_.Encode(target_, 0, target_.length, delta_));
+        simple_encoder_.Encode(target_, 0, target_.length, delta_);
         assertTrue(target_.length + kFileHeaderSize + kWindowHeaderSize >= delta_.size());
         simple_decoder_.Decode(dictionary_, delta_.toByteArray(), result_target_);
         assertArrayEquals(target_, result_target_.toByteArray());
@@ -139,7 +141,7 @@ public class VCDiffEncoderTest extends VerifyEncodedBytesTest {
                 .withTargetMatches(true)
                 .buildSimple();
 
-        assertTrue(encoder.Encode(target_, 0, target_.length, delta_));
+        encoder.Encode(target_, 0, target_.length, delta_);
         assertTrue(target_.length + kFileHeaderSize + kWindowHeaderSize >= delta_.size());
         simple_decoder_.Decode(dictionary_, delta_.toByteArray(), result_target_);
         assertArrayEquals(target_, result_target_.toByteArray());
@@ -154,10 +156,7 @@ public class VCDiffEncoderTest extends VerifyEncodedBytesTest {
                 .withInterleaving(true)
                 .buildSimple();
 
-        assertTrue(encoder.Encode(target_,
-                0,
-                target_.length,
-                delta_));
+        encoder.Encode(target_, delta_);
         assertTrue(target_.length + kFileHeaderSize + kWindowHeaderSize >= delta_.size());
         simple_decoder_.Decode(dictionary_, delta_.toByteArray(), result_target_);
         assertArrayEquals(target_, result_target_.toByteArray());
@@ -165,9 +164,9 @@ public class VCDiffEncoderTest extends VerifyEncodedBytesTest {
 
     @Test
     public void EncodeDecodeSingleChunk() throws Exception {
-        assertTrue(encoder_.StartEncoding(delta_));
-        assertTrue(encoder_.EncodeChunk(target_, 0, target_.length, delta_));
-        assertTrue(encoder_.FinishEncoding(delta_));
+        encoder_.StartEncoding(delta_);
+        encoder_.EncodeChunk(target_, delta_);
+        encoder_.FinishEncoding(delta_);
         assertTrue(target_.length + kFileHeaderSize + kWindowHeaderSize >= delta_.size());
         decoder_.StartDecoding(dictionary_);
         decoder_.DecodeChunk(delta_.toByteArray(), result_target_);
@@ -181,9 +180,9 @@ public class VCDiffEncoderTest extends VerifyEncodedBytesTest {
         ByteArrayOutputStream delta_encode = new ByteArrayOutputStream();
         ByteArrayOutputStream delta_finish = new ByteArrayOutputStream();
 
-        assertTrue(encoder_.StartEncoding(delta_start));
-        assertTrue(encoder_.EncodeChunk(target_, 0, target_.length, delta_encode));
-        assertTrue(encoder_.FinishEncoding(delta_finish));
+        encoder_.StartEncoding(delta_start);
+        encoder_.EncodeChunk(target_, 0, target_.length, delta_encode);
+        encoder_.FinishEncoding(delta_finish);
         assertTrue(target_.length + kFileHeaderSize + kWindowHeaderSize >=
                 delta_start.size() + delta_encode.size() + delta_finish.size());
         decoder_.StartDecoding(dictionary_);
@@ -227,7 +226,7 @@ public class VCDiffEncoderTest extends VerifyEncodedBytesTest {
         List<byte[]> encoded_chunks = new ArrayList<byte[]>();
         ByteArrayOutputStream this_encoded_chunk = new ByteArrayOutputStream();
         int total_chunk_size = 0;
-        assertTrue(encoder_.StartEncoding(this_encoded_chunk));
+        encoder_.StartEncoding(this_encoded_chunk);
         encoded_chunks.add(this_encoded_chunk.toByteArray());
         total_chunk_size += this_encoded_chunk.size();
         for (int chunk_start_index = 0;
@@ -239,15 +238,17 @@ public class VCDiffEncoderTest extends VerifyEncodedBytesTest {
                 this_chunk_size = bytes_available;
             }
             this_encoded_chunk.reset();
-            assertTrue(encoder_.EncodeChunk(target_,
+            encoder_.EncodeChunk(
+                    target_,
                     chunk_start_index,
                     this_chunk_size,
-                    this_encoded_chunk));
+                    this_encoded_chunk
+            );
             encoded_chunks.add(this_encoded_chunk.toByteArray());
             total_chunk_size += this_encoded_chunk.size();
         }
         this_encoded_chunk.reset();
-        assertTrue(encoder_.FinishEncoding(this_encoded_chunk));
+        encoder_.FinishEncoding(this_encoded_chunk);
         encoded_chunks.add(this_encoded_chunk.toByteArray());
         total_chunk_size += this_encoded_chunk.size();
         final int num_windows = (target_.length / chunk_size) + 1;
@@ -287,12 +288,9 @@ public class VCDiffEncoderTest extends VerifyEncodedBytesTest {
 
         // Produce a reference version of the encoded text.
         ByteArrayOutputStream delta_before = new ByteArrayOutputStream();
-        assertTrue(copy_encoder.StartEncoding(delta_before));
-        assertTrue(copy_encoder.EncodeChunk(target_,
-                0,
-                target_.length,
-                delta_before));
-        assertTrue(copy_encoder.FinishEncoding(delta_before));
+        copy_encoder.StartEncoding(delta_before);
+        copy_encoder.EncodeChunk(target_, delta_before);
+        copy_encoder.FinishEncoding(delta_before);
         assertTrue(target_.length + kFileHeaderSize + kWindowHeaderSize >= delta_before.size());
 
         // Overwrite the dictionary text with all 'Q' characters.
@@ -301,9 +299,9 @@ public class VCDiffEncoderTest extends VerifyEncodedBytesTest {
         // When the encoder is used on the same target text after overwriting
         // the dictionary, it should produce the same encoded output.
         ByteArrayOutputStream delta_after = new ByteArrayOutputStream();
-        assertTrue(copy_encoder.StartEncoding(delta_after));
-        assertTrue(copy_encoder.EncodeChunk(target_, 0, target_.length, delta_after));
-        assertTrue(copy_encoder.FinishEncoding(delta_after));
+        copy_encoder.StartEncoding(delta_after);
+        copy_encoder.EncodeChunk(target_, delta_after);
+        copy_encoder.FinishEncoding(delta_after);
         assertArrayEquals(delta_before.toByteArray(), delta_after.toByteArray());
     }
 
@@ -326,12 +324,9 @@ public class VCDiffEncoderTest extends VerifyEncodedBytesTest {
                 .withChecksum(true)
                 .buildStreaming();
 
-        assertTrue(embedded_null_encoder.StartEncoding(delta_));
-        assertTrue(embedded_null_encoder.EncodeChunk(embedded_null_target,
-                0,
-                embedded_null_target.length,
-                delta_));
-        assertTrue(embedded_null_encoder.FinishEncoding(delta_));
+        embedded_null_encoder.StartEncoding(delta_);
+        embedded_null_encoder.EncodeChunk(embedded_null_target, delta_);
+        embedded_null_encoder.FinishEncoding(delta_);
         decoder_.StartDecoding(embedded_null_dictionary_text);
         decoder_.DecodeChunk(delta_.toByteArray(), result_target_);
         decoder_.FinishDecoding();
@@ -359,12 +354,9 @@ public class VCDiffEncoderTest extends VerifyEncodedBytesTest {
                 .withTargetMatches(true)
                 .buildStreaming();
 
-        assertTrue(embedded_null_encoder.StartEncoding(delta_));
-        assertTrue(embedded_null_encoder.EncodeChunk(embedded_null_target,
-                0,
-                embedded_null_target.length,
-                delta_));
-        assertTrue(embedded_null_encoder.FinishEncoding(delta_));
+        embedded_null_encoder.StartEncoding(delta_);
+        embedded_null_encoder.EncodeChunk(embedded_null_target, delta_);
+        embedded_null_encoder.FinishEncoding(delta_);
         decoder_.StartDecoding(embedded_null_dictionary_text);
         decoder_.DecodeChunk(delta_.toByteArray(), result_target_);
         decoder_.FinishDecoding();
@@ -392,12 +384,9 @@ public class VCDiffEncoderTest extends VerifyEncodedBytesTest {
                 .withInterleaving(true)
                 .buildStreaming();
 
-        assertTrue(wchar_encoder.StartEncoding(delta_));
-        assertTrue(wchar_encoder.EncodeChunk(wchar_target,
-                0,
-                wchar_target.length,
-                delta_));
-        assertTrue(wchar_encoder.FinishEncoding(delta_));
+        wchar_encoder.StartEncoding(delta_);
+        wchar_encoder.EncodeChunk(wchar_target, delta_);
+        wchar_encoder.FinishEncoding(delta_);
         decoder_.StartDecoding(wchar_dictionary_text);
         decoder_.DecodeChunk(delta_.toByteArray(), result_target_);
         decoder_.FinishDecoding();
@@ -410,12 +399,12 @@ public class VCDiffEncoderTest extends VerifyEncodedBytesTest {
                 .withDictionary(kNonAscii)
                 .withTargetMatches(true)
                 .buildSimple();
-        assertTrue(encoder.Encode(kTarget, 0, kTarget.length, delta_));
+        encoder.Encode(kTarget, 0, kTarget.length, delta_);
     }
 
     @Test
     public void NonasciiTarget() throws Exception {
-        assertTrue(simple_encoder_.Encode(kNonAscii, 0, kNonAscii.length,delta_));
+        simple_encoder_.Encode(kNonAscii, 0, kNonAscii.length,delta_);
     }
 
     // TODO: This can be ported once ByteBuffers are used everywhere

@@ -85,18 +85,16 @@ public class VCDiffStreamingEncoderImpl<OUT> implements VCDiffStreamingEncoder<O
 
     // These functions are identical to their counterparts
     // in VCDiffStreamingEncoder.
-    public boolean StartEncoding(OUT out) throws IOException {
+    public void StartEncoding(OUT out) throws IOException {
         if (!coder_.Init(engine_.dictionary_size())) {
-            LOGGER.error("Internal error: Initialization of code table writer failed");
-            return false;
+            throw new IOException("Internal error: Initialization of code table writer failed");
         }
 
         coder_.WriteHeader(out, format_extensions_);
         encode_chunk_allowed_ = true;
-        return true;
     }
 
-    public boolean EncodeChunk(byte[] data, int offset, int length, OUT out) throws IOException {
+    public void EncodeChunk(byte[] data, int offset, int length, OUT out) throws IOException {
         if (!encode_chunk_allowed_) {
             throw new IllegalStateException("EncodeChunk called before StartEncoding");
         }
@@ -106,16 +104,17 @@ public class VCDiffStreamingEncoderImpl<OUT> implements VCDiffStreamingEncoder<O
             coder_.AddChecksum((int) adler32.getValue());
         }
         engine_.Encode(ByteBuffer.wrap(data, offset, length).slice(), look_for_target_matches_, out, coder_);
-        return true;
     }
 
-    public boolean FinishEncoding(OUT out) throws IOException {
+    public void EncodeChunk(byte[] data, OUT out) throws IOException {
+        EncodeChunk(data, 0, data.length, out);
+    }
+
+    public void FinishEncoding(OUT out) throws IOException {
         if (!encode_chunk_allowed_) {
-            LOGGER.error("FinishEncoding called before StartEncoding");
-            return false;
+            throw new IllegalStateException("FinishEncoding called before StartEncoding");
         }
         encode_chunk_allowed_ = false;
         coder_.FinishEncoding(out);
-        return true;
     }
 }

@@ -173,14 +173,13 @@ public abstract class VCDiffAddressCache {
      * @param here_address
      * @param vcDiffMode
      * @param address_stream
-     * @param offset
      * @return If successful, the new offset will be returned.
-     * 				RESULT_ERROR: An invalid address value was found in address_stream.
      *				RESULT_END_OF_DATA: The limit address_stream_end was reached before
      *				the address could be decoded.  If more streamed data is expected,
      *				this means that the consumer should block and wait for more data
      *				before continuing to decode.  If no more data is expected, this
      *				return value signals an error condition.
+     * @throws IOException if an invalid address value was found in address_stream.
      */
     public abstract int DecodeAddress(int here_address, short vcDiffMode, ByteBuffer address_stream) throws IOException;
 }

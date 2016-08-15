@@ -47,23 +47,24 @@ public interface CodeTableWriterInterface<OUT> {
      * false if there was an error initializing the object, or true if it
      * was successful.  After the object has been initialized and used,
      * Init() can be called again to restore the initial state of the object.
-     * @param dictionary_size
-     * @return
+     *
+     * @param dictionary_size size of the dictionary being used
+     * @return true if initialization was successful, false otherwise
      */
     boolean Init(int dictionary_size);
 
 
     /**
      * Writes the header to the output string.
-     * @param format_extensions
+     * @param format_extensions Flags for enabling features that are extensions to the format
      */
     void WriteHeader(OUT out, EnumSet<VCDiffFormatExtension> format_extensions) throws IOException;
 
     /**
-     * Encode an ADD opcode with the "size" bytes starting at data
-     * @param data
-     * @param offset
-     * @param length
+     * Encode an ADD opcode with the "size" length starting at offset
+     * @param data data to add
+     * @param offset offset in data to start from
+     * @param length  total bytes to add
      */
     void Add(byte[] data, int offset, int length);
 

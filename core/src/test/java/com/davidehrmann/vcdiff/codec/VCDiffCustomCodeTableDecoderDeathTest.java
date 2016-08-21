@@ -41,8 +41,8 @@ public class VCDiffCustomCodeTableDecoderDeathTest extends VCDiffCustomCodeTable
         );
 
         InitializeDeltaFile();
-        decoder_.StartDecoding(dictionary_);
-        decoder_.DecodeChunk(
+        decoder_.startDecoding(dictionary_);
+        decoder_.decodeChunk(
                 delta_file_,
                 0,
                 delta_file_.length,
@@ -52,7 +52,7 @@ public class VCDiffCustomCodeTableDecoderDeathTest extends VCDiffCustomCodeTable
 
     @Test(expected = IllegalArgumentException.class)
     public void BadCustomCacheSizesNoVcdTarget() throws Exception {
-        decoder_.SetAllowVcdTarget(false);
+        decoder_.setAllowVcdTarget(false);
         delta_file_header_ = ArraysExtra.concat(
                 kFileHeader,
                 new byte[] {
@@ -65,8 +65,8 @@ public class VCDiffCustomCodeTableDecoderDeathTest extends VCDiffCustomCodeTable
         );
 
         InitializeDeltaFile();
-        decoder_.StartDecoding(dictionary_);
-        decoder_.DecodeChunk(
+        decoder_.startDecoding(dictionary_);
+        decoder_.decodeChunk(
                 delta_file_,
                 0,
                 delta_file_.length,

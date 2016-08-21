@@ -7,9 +7,9 @@ import static org.junit.Assert.assertArrayEquals;
 public class VCDiffStandardCrossDecoderTest extends VCDiffStandardCrossDecoderTestBase {
     @Test
     public void Decode() throws Exception {
-        decoder_.StartDecoding(dictionary_);
-        decoder_.DecodeChunk(delta_file_, output_);
-        decoder_.FinishDecoding();
+        decoder_.startDecoding(dictionary_);
+        decoder_.decodeChunk(delta_file_, output_);
+        decoder_.finishDecoding();
         assertArrayEquals(expected_target_, output_.toByteArray());
     }
 }

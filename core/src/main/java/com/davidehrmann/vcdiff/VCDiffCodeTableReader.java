@@ -55,7 +55,7 @@ public class VCDiffCodeTableReader {
     // may free the memory occupied by the argument code table after
     // passing it to this method, because the argument code table
     // allocates space to store a copy of it.
-    // UseCodeTable() may be called either before or after calling Init().
+    // useCodeTable() may be called either before or after calling init().
     // Returns true if the code table was accepted, or false if the
     // argument did not appear to be a valid code table.
     public VCDiffCodeTableReader(VCDiffCodeTableData codeTableData, short maxMode) {
@@ -67,10 +67,10 @@ public class VCDiffCodeTableReader {
 
     // Defines the buffer containing the instructions and sizes.
     // This method must be called before GetNextInstruction() may be used.
-    // Init() may be called any number of times to reset the state of
+    // init() may be called any number of times to reset the state of
     // the object.
     //
-    public void Init(ByteBuffer instructions_and_sizes) {
+    public void init(ByteBuffer instructions_and_sizes) {
         instructions_and_sizes_ = instructions_and_sizes;
         last_instruction_start_ = -1;
         pending_second_instruction_ = kNoOpcode;
@@ -103,11 +103,11 @@ public class VCDiffCodeTableReader {
     // is undefined, and is not guaranteed to be preserved.
     // Any occurrences of VCD_NOOP in the opcode stream
     // are skipped over and ignored, not returned.
-    // If Init() was not called before calling this method, then
+    // If init() was not called before calling this method, then
     // VCD_INSTRUCTION_ERROR will be returned.
     public byte GetNextInstruction(AtomicInteger size, AtomicInteger mode) throws IOException {
         if (instructions_and_sizes_ == null) {
-            throw new IllegalStateException("Internal error: GetNextInstruction() called before Init()");
+            throw new IllegalStateException("Internal error: GetNextInstruction() called before init()");
         }
 
         last_instruction_start_ = instructions_and_sizes_.position();

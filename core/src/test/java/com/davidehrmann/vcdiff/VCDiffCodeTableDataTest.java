@@ -36,7 +36,7 @@ public class VCDiffCodeTableDataTest {
     @Test
     public void MissingAdd() {
         VerifyInstruction(1, VCDiffCodeTableData.VCD_ADD, (byte) 0, (byte) 0);
-        code_table_data_.size1[1] = (byte) 0xFF;  // Add size 0 => size 255
+        code_table_data_.size1[1] = (byte) 0xFF;  // add size 0 => size 255
         // Now there is no opcode expressing ADD with size 0.
         Assert.assertFalse(code_table_data_.Validate());
     }
@@ -44,7 +44,7 @@ public class VCDiffCodeTableDataTest {
     @Test
     public void MissingRun() {
         VerifyInstruction(0, VCDiffCodeTableData.VCD_RUN, (byte) 0, (byte) 0);
-        code_table_data_.size1[0] = (byte) 0xFF;  // Run size 0 => size 255
+        code_table_data_.size1[0] = (byte) 0xFF;  // run size 0 => size 255
         // Now there is no opcode expressing RUN with size 0.
         Assert.assertFalse(code_table_data_.Validate());
     }

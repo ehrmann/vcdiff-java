@@ -75,7 +75,7 @@ public class VCDiffJSONEncoderTest {
     protected void TestWithFixedChunkSize(VCDiffStreamingEncoder<Appendable> encoder,
                                           int chunk_size) throws Exception {
         delta.setLength(0);
-        encoder.StartEncoding(delta);
+        encoder.startEncoding(delta);
         for (int chunk_start_index = 0;
              chunk_start_index < kTarget.length;
              chunk_start_index += chunk_size) {
@@ -84,14 +84,14 @@ public class VCDiffJSONEncoderTest {
             if (this_chunk_size > bytes_available) {
                 this_chunk_size = bytes_available;
             }
-            encoder.EncodeChunk(
+            encoder.encodeChunk(
                     kTarget,
                     chunk_start_index,
                     this_chunk_size,
                     delta
             );
         }
-        encoder.FinishEncoding(delta);
+        encoder.finishEncoding(delta);
         final int num_windows = (kTarget.length / chunk_size) + 1;
         final int size_of_windows = kTarget.length + (kWindowHeaderSize * num_windows);
         assertTrue(kFileHeaderSize + size_of_windows >= delta.length());
@@ -105,16 +105,16 @@ public class VCDiffJSONEncoderTest {
                 .withTargetMatches(false)
                 .buildStreamingJson();
 
-        nothing_encoder.StartEncoding(delta);
-        nothing_encoder.FinishEncoding(delta);
+        nothing_encoder.startEncoding(delta);
+        nothing_encoder.finishEncoding(delta);
         assertEquals("", delta.toString());
     }
 
     @Test
     public void EncodeSimpleJSON() throws Exception {
-        json_encoder_.StartEncoding(delta);
-        json_encoder_.EncodeChunk(kTarget, delta);
-        json_encoder_.FinishEncoding(delta);
+        json_encoder_.startEncoding(delta);
+        json_encoder_.encodeChunk(kTarget, delta);
+        json_encoder_.finishEncoding(delta);
         assertEquals(kJSONDiff, delta.toString());
     }
 
@@ -151,14 +151,14 @@ public class VCDiffJSONEncoderTest {
                 .withDictionary(kNonAscii)
                 .buildStreamingJson();
 
-        json_encoder.StartEncoding(delta);
-        json_encoder.EncodeChunk(kTarget, 0, kTarget.length, delta);
+        json_encoder.startEncoding(delta);
+        json_encoder.encodeChunk(kTarget, 0, kTarget.length, delta);
     }
 
     @Ignore
     @Test
     public void NonasciiTargetWithJSON() throws Exception {
-        json_encoder_.StartEncoding(delta);
-        json_encoder_.EncodeChunk(kNonAscii,0, kNonAscii.length, delta);
+        json_encoder_.startEncoding(delta);
+        json_encoder_.encodeChunk(kNonAscii,0, kNonAscii.length, delta);
     }
 }

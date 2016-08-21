@@ -25,7 +25,7 @@ public class VCDiffCodeTableWriterTest {
 
     protected static final Charset US_ASCII = Charset.forName("US-ASCII");
 
-    // Destination for VCDiffCodeTableWriter::Output()
+    // Destination for VCDiffCodeTableWriter::output()
     protected final ByteArrayOutputStream out = new ByteArrayOutputStream(4096);
 
     // A code table that exercises as many combinations as possible:
@@ -88,33 +88,33 @@ public class VCDiffCodeTableWriterTest {
 
     @Test
     public void WriterOutputWithoutInit() throws IOException {
-        standard_writer.Output(out);
+        standard_writer.output(out);
         assertEquals(0, out.size());
     }
 
     @Test
     public void WriterEncodeNothing() throws IOException {
-        standard_writer.Init(0);
-        standard_writer.Output(out);
+        standard_writer.init(0);
+        standard_writer.output(out);
 
         // The writer should know not to append a delta file window
         // if nothing was encoded.
         assertEquals(0, out.size());
 
-        interleaved_writer.Init(0x10);
-        interleaved_writer.Output(out);
+        interleaved_writer.init(0x10);
+        interleaved_writer.output(out);
         assertEquals(0, out.size());
 
-        exercise_writer.Init(0x20);
-        exercise_writer.Output(out);
+        exercise_writer.init(0x20);
+        exercise_writer.output(out);
         assertEquals(0, out.size());
     }
 
     @Test
     public void StandardWriterEncodeAdd() throws IOException {
-        standard_writer.Init(0x11);
-        standard_writer.Add("foo".getBytes(US_ASCII), 0, 3);
-        standard_writer.Output(out);
+        standard_writer.init(0x11);
+        standard_writer.add("foo".getBytes(US_ASCII), 0, 3);
+        standard_writer.output(out);
 
         assertArrayEquals(new byte[]{
                 VCD_SOURCE, // Win_Indicator: VCD_SOURCE (dictionary)
@@ -133,9 +133,9 @@ public class VCDiffCodeTableWriterTest {
 
     @Test
     public void ExerciseWriterEncodeAdd() throws IOException {
-        exercise_writer.Init(0x11);
-        exercise_writer.Add("foo".getBytes(US_ASCII), 0, 3);
-        exercise_writer.Output(out);
+        exercise_writer.init(0x11);
+        exercise_writer.add("foo".getBytes(US_ASCII), 0, 3);
+        exercise_writer.output(out);
 
         assertArrayEquals(new byte[]{
                 VCD_SOURCE,    // Win_Indicator: VCD_SOURCE (dictionary)
@@ -155,9 +155,9 @@ public class VCDiffCodeTableWriterTest {
 
     @Test
     public void StandardWriterEncodeRun() throws IOException {
-        standard_writer.Init(0x11);
-        standard_writer.Run(3, (byte) 'a');
-        standard_writer.Output(out);
+        standard_writer.init(0x11);
+        standard_writer.run(3, (byte) 'a');
+        standard_writer.output(out);
 
         assertArrayEquals(new byte[]{
                 VCD_SOURCE,    // Win_Indicator: VCD_SOURCE (dictionary)
@@ -177,9 +177,9 @@ public class VCDiffCodeTableWriterTest {
 
     @Test
     public void ExerciseWriterEncodeRun() throws IOException {
-        exercise_writer.Init(0x11);
-        exercise_writer.Run(3, (byte) 'a');
-        exercise_writer.Output(out);
+        exercise_writer.init(0x11);
+        exercise_writer.run(3, (byte) 'a');
+        exercise_writer.output(out);
 
         assertArrayEquals(new byte[]{
                 VCD_SOURCE,    // Win_Indicator: VCD_SOURCE (dictionary)
@@ -199,10 +199,10 @@ public class VCDiffCodeTableWriterTest {
 
     @Test
     public void StandardWriterEncodeCopy() throws IOException {
-        standard_writer.Init(0x11);
-        standard_writer.Copy(2, 8);
-        standard_writer.Copy(2, 8);
-        standard_writer.Output(out);
+        standard_writer.init(0x11);
+        standard_writer.copy(2, 8);
+        standard_writer.copy(2, 8);
+        standard_writer.output(out);
 
         assertArrayEquals(new byte[]{
                 VCD_SOURCE,    // Win_Indicator: VCD_SOURCE (dictionary)
@@ -227,10 +227,10 @@ public class VCDiffCodeTableWriterTest {
     // used in the exercise table.
     @Test
     public void InterleavedWriterEncodeCopy() throws IOException {
-        interleaved_writer.Init(0x11);
-        interleaved_writer.Copy(2, 8);
-        interleaved_writer.Copy(2, 8);
-        interleaved_writer.Output(out);
+        interleaved_writer.init(0x11);
+        interleaved_writer.copy(2, 8);
+        interleaved_writer.copy(2, 8);
+        interleaved_writer.output(out);
 
         assertArrayEquals(new byte[]{
                 VCD_SOURCE,    // Win_Indicator: VCD_SOURCE (dictionary)
@@ -251,12 +251,12 @@ public class VCDiffCodeTableWriterTest {
 
     @Test
     public void StandardWriterEncodeCombo() throws IOException {
-        standard_writer.Init(0x11);
-        standard_writer.Add("rayo".getBytes(US_ASCII), 0, 4);
-        standard_writer.Copy(2, 5);
-        standard_writer.Copy(0, 4);
-        standard_writer.Add("X".getBytes(US_ASCII), 0, 1);
-        standard_writer.Output(out);
+        standard_writer.init(0x11);
+        standard_writer.add("rayo".getBytes(US_ASCII), 0, 4);
+        standard_writer.copy(2, 5);
+        standard_writer.copy(0, 4);
+        standard_writer.add("X".getBytes(US_ASCII), 0, 1);
+        standard_writer.output(out);
 
         assertArrayEquals(new byte[]{
                 VCD_SOURCE,    // Win_Indicator: VCD_SOURCE (dictionary)
@@ -269,8 +269,8 @@ public class VCDiffCodeTableWriterTest {
                 0x02,        // length of instructions section
                 0x02,        // length of addresses for COPYs
                 'r', 'a', 'y', 'o', 'X',
-                (byte) 0xAD,    // Combo: Add size 4 + COPY mode SELF, size 5
-                (byte) 0xFD,    // Combo: COPY mode SAME(0), size 4 + Add size 1
+                (byte) 0xAD,    // Combo: add size 4 + COPY mode SELF, size 5
+                (byte) 0xFD,    // Combo: COPY mode SAME(0), size 4 + add size 1
                 0x02,        // COPY address (2)
                 0x00,        // COPY address (0)
         }, out.toByteArray());
@@ -278,12 +278,12 @@ public class VCDiffCodeTableWriterTest {
 
     @Test
     public void InterleavedWriterEncodeCombo() throws IOException {
-        interleaved_writer.Init(0x11);
-        interleaved_writer.Add("rayo".getBytes(US_ASCII), 0, 4);
-        interleaved_writer.Copy(2, 5);
-        interleaved_writer.Copy(0, 4);
-        interleaved_writer.Add("X".getBytes(US_ASCII), 0, 1);
-        interleaved_writer.Output(out);
+        interleaved_writer.init(0x11);
+        interleaved_writer.add("rayo".getBytes(US_ASCII), 0, 4);
+        interleaved_writer.copy(2, 5);
+        interleaved_writer.copy(0, 4);
+        interleaved_writer.add("X".getBytes(US_ASCII), 0, 1);
+        interleaved_writer.output(out);
 
         assertArrayEquals(new byte[]{
                 VCD_SOURCE,    // Win_Indicator: VCD_SOURCE (dictionary)
@@ -295,10 +295,10 @@ public class VCDiffCodeTableWriterTest {
                 0x00,        // length of data for ADDs and RUNs
                 0x09,        // length of instructions section
                 0x00,        // length of addresses for COPYs
-                (byte) 0xAD,    // Combo: Add size 4 + COPY mode SELF, size 5
+                (byte) 0xAD,    // Combo: add size 4 + COPY mode SELF, size 5
                 'r', 'a', 'y', 'o',
                 0x02,        // COPY address (2)
-                (byte) 0xFD,    // Combo: COPY mode SAME(0), size 4 + Add size 1
+                (byte) 0xFD,    // Combo: COPY mode SAME(0), size 4 + add size 1
                 0x00,        // COPY address (0)
                 'X',
         }, out.toByteArray());
@@ -306,14 +306,14 @@ public class VCDiffCodeTableWriterTest {
 
     @Test
     public void InterleavedWriterEncodeComboWithChecksum() throws IOException {
-        interleaved_writer.Init(0x11);
+        interleaved_writer.init(0x11);
         final int checksum = 0xFFFFFFFF;  // would be negative if signed
-        interleaved_writer.AddChecksum(checksum);
-        interleaved_writer.Add("rayo".getBytes(US_ASCII), 0, 4);
-        interleaved_writer.Copy(2, 5);
-        interleaved_writer.Copy(0, 4);
-        interleaved_writer.Add("X".getBytes(US_ASCII), 0, 1);
-        interleaved_writer.Output(out);
+        interleaved_writer.addChecksum(checksum);
+        interleaved_writer.add("rayo".getBytes(US_ASCII), 0, 4);
+        interleaved_writer.copy(2, 5);
+        interleaved_writer.copy(0, 4);
+        interleaved_writer.add("X".getBytes(US_ASCII), 0, 1);
+        interleaved_writer.output(out);
 
         assertArrayEquals(new byte[]{
                 VCD_SOURCE | VCD_CHECKSUM,        // Win_Indicator
@@ -330,10 +330,10 @@ public class VCDiffCodeTableWriterTest {
                 (byte) 0xFF,    // checksum byte 3
                 (byte) 0xFF,    // checksum byte 4
                 0x7F,        // checksum byte 5
-                (byte) 0xAD,    // Combo: Add size 4 + COPY mode SELF, size 5
+                (byte) 0xAD,    // Combo: add size 4 + COPY mode SELF, size 5
                 'r', 'a', 'y', 'o',
                 0x02,        // COPY address (2)
-                (byte) 0xFD,    // Combo: COPY mode SAME(0), size 4 + Add size 1
+                (byte) 0xFD,    // Combo: COPY mode SAME(0), size 4 + add size 1
                 0x00,        // COPY address (0)
                 'X',
         }, out.toByteArray());
@@ -341,10 +341,10 @@ public class VCDiffCodeTableWriterTest {
 
     @Test
     public void ReallyBigDictionary() throws IOException {
-        interleaved_writer.Init(0x3FFFFFFF);
-        interleaved_writer.Copy(2, 8);
-        interleaved_writer.Copy(0x3FFFFFFE, 8);
-        interleaved_writer.Output(out);
+        interleaved_writer.init(0x3FFFFFFF);
+        interleaved_writer.copy(2, 8);
+        interleaved_writer.copy(0x3FFFFFFE, 8);
+        interleaved_writer.output(out);
 
         assertArrayEquals(new byte[]{
                 VCD_SOURCE,    // Win_Indicator: VCD_SOURCE (dictionary)
@@ -369,28 +369,28 @@ public class VCDiffCodeTableWriterTest {
 
     @Test(expected = IllegalStateException.class)
     public void WriterAddWithoutInit() {
-        standard_writer.Add("Hello".getBytes(US_ASCII), 0, 5);
+        standard_writer.add("Hello".getBytes(US_ASCII), 0, 5);
     }
 
     @Test(expected = IllegalStateException.class)
     public void WriterRunWithoutInit() {
-        standard_writer.Run(3, (byte) 'a');
+        standard_writer.run(3, (byte) 'a');
     }
 
     @Test(expected = IllegalStateException.class)
     public void WriterCopyWithoutInit() {
-        standard_writer.Copy(6, 5);
+        standard_writer.copy(6, 5);
     }
 
     @Test(expected = IllegalArgumentException.class)
     public void DictionaryTooBig() {
         try {
-            interleaved_writer.Init(0x7FFFFFFF);
+            interleaved_writer.init(0x7FFFFFFF);
         } catch (RuntimeException e) {
             Assert.fail();
         }
 
-        interleaved_writer.Copy(2, 8);
-        interleaved_writer.Copy(0x7FFFFFFE, 8);
+        interleaved_writer.copy(2, 8);
+        interleaved_writer.copy(0x7FFFFFFE, 8);
     }
 }

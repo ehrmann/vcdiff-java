@@ -13,10 +13,10 @@ public class VCDiffDecoderInterleavedUsedButNotSupported extends VCDiffInterleav
 
     @Test
     public void DecodeShouldFail() throws Exception {
-        decoder_.StartDecoding(dictionary_);
+        decoder_.startDecoding(dictionary_);
         try {
             thrown.expect(IOException.class);
-            decoder_.DecodeChunk(delta_file_, output_);
+            decoder_.decodeChunk(delta_file_, output_);
         } finally {
             assertArrayEquals(new byte[0], output_.toByteArray());
         }
@@ -24,11 +24,11 @@ public class VCDiffDecoderInterleavedUsedButNotSupported extends VCDiffInterleav
 
     @Test
     public void DecodeByteByByteShouldFail() throws Exception {
-        decoder_.StartDecoding(dictionary_);
+        decoder_.startDecoding(dictionary_);
         boolean failed = false;
         try {
             for (int i = 0; i < delta_file_.length; ++i) {
-                decoder_.DecodeChunk(delta_file_, i, 1, output_);
+                decoder_.decodeChunk(delta_file_, i, 1, output_);
             }
 
             fail();

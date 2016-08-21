@@ -70,7 +70,7 @@ public class VCDiffFileBasedCoder {
         @Parameter(names = {"-interleaved", "--interleaved"}, description = "Use interleaved format")
         protected boolean interleaved = false;
 
-        @Parameter(names = {"-json", "--json"}, description = "Output diff in the JSON format when encoding")
+        @Parameter(names = {"-json", "--json"}, description = "output diff in the JSON format when encoding")
         protected boolean json = false;
 
         @Parameter(names = {"-target_matches", "--target_matches"}, description = "Find duplicate strings in target data as well as dictionary data")

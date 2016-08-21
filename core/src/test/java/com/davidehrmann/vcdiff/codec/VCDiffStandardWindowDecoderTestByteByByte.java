@@ -10,34 +10,34 @@ import static org.junit.Assert.*;
 public class VCDiffStandardWindowDecoderTestByteByByte extends VCDiffStandardWindowDecoderTestBase {
     @Test
     public void Decode() throws Exception {
-        decoder_.StartDecoding(dictionary_);
+        decoder_.startDecoding(dictionary_);
         for (int i = 0; i < delta_file_.length; ++i) {
-            decoder_.DecodeChunk(delta_file_, i, 1, output_);
+            decoder_.decodeChunk(delta_file_, i, 1, output_);
         }
-        decoder_.FinishDecoding();
+        decoder_.finishDecoding();
         assertArrayEquals(expected_target_, output_.toByteArray());
     }
 
     @Test
     public void DecodeExplicitVcdTarget() throws Exception {
-        decoder_.SetAllowVcdTarget(true);
-        decoder_.StartDecoding(dictionary_);
+        decoder_.setAllowVcdTarget(true);
+        decoder_.startDecoding(dictionary_);
         for (int i = 0; i < delta_file_.length; ++i) {
-            decoder_.DecodeChunk(delta_file_, i, 1, output_);
+            decoder_.decodeChunk(delta_file_, i, 1, output_);
         }
-        decoder_.FinishDecoding();
+        decoder_.finishDecoding();
         assertArrayEquals(expected_target_, output_.toByteArray());
     }
 
     // Windows 3 and 4 use the VCD_TARGET flag, so decoder should signal an error.
     @Test
     public void DecodeNoVcdTarget() throws Exception {
-        decoder_.SetAllowVcdTarget(false);
-        decoder_.StartDecoding(dictionary_);
+        decoder_.setAllowVcdTarget(false);
+        decoder_.startDecoding(dictionary_);
         int i = 0;
         for (; i < delta_file_.length; ++i) {
             try {
-                decoder_.DecodeChunk(delta_file_, i, 1, output_);
+                decoder_.decodeChunk(delta_file_, i, 1, output_);
             } catch (IOException e) {
                 break;
             }
@@ -50,13 +50,13 @@ public class VCDiffStandardWindowDecoderTestByteByByte extends VCDiffStandardWin
 
     @Test
     public void DecodeWithBufferReuse() throws Exception {
-        decoder_.StartDecoding(dictionary_);
+        decoder_.startDecoding(dictionary_);
         byte[] buffer = new byte[1];
         for (byte aDelta_file_ : delta_file_) {
             buffer[0] = aDelta_file_;
-            decoder_.DecodeChunk(buffer, output_);
+            decoder_.decodeChunk(buffer, output_);
         }
-        decoder_.FinishDecoding();
+        decoder_.finishDecoding();
         assertArrayEquals(expected_target_, output_.toByteArray());
     }
 }

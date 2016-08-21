@@ -36,18 +36,18 @@ public class JSONCodeTableWriter implements CodeTableWriterInterface<Appendable>
     }
 
     @Override
-    public boolean Init(int dictionary_size) {
+    public boolean init(int dictionary_size) {
         this.output_.append('[');
         this.opcode_added_ = false;
         return true;
     }
 
-    public void Add(final byte[] data, final int offset, final int length) {
+    public void add(final byte[] data, final int offset, final int length) {
         if (offset < 0 || offset + length > data.length) {
             throw new IllegalArgumentException();
         }
 
-        // Add leading comma if this is not the first opcode.
+        // add leading comma if this is not the first opcode.
         if (opcode_added_) {
             output_.append(',');
         }
@@ -62,12 +62,12 @@ public class JSONCodeTableWriter implements CodeTableWriterInterface<Appendable>
         opcode_added_ = true;
     }
 
-    public void AddChecksum(int checksum) {
+    public void addChecksum(int checksum) {
 
     }
 
-    public void Copy(int offset, int size) {
-        // Add leading comma if this is not the first opcode.
+    public void copy(int offset, int size) {
+        // add leading comma if this is not the first opcode.
         if (opcode_added_) {
             output_.append(',');
         }
@@ -79,20 +79,20 @@ public class JSONCodeTableWriter implements CodeTableWriterInterface<Appendable>
         opcode_added_ = true;
     }
 
-    public void FinishEncoding(Appendable out) throws IOException {
+    public void finishEncoding(Appendable out) throws IOException {
         if (output_called_) {
             out.append(']');
         }
     }
 
-    public void Output(Appendable out) throws IOException {
+    public void output(Appendable out) throws IOException {
         output_called_ = true;
         out.append(output_);
         output_ = new StringBuilder(1024);
     }
 
-    public void Run(int size, byte b) {
-        // Add leading comma if this is not the first opcode.
+    public void run(int size, byte b) {
+        // add leading comma if this is not the first opcode.
         if (opcode_added_) {
             output_.append(',');
         }
@@ -111,7 +111,7 @@ public class JSONCodeTableWriter implements CodeTableWriterInterface<Appendable>
         opcode_added_ = true;
     }
 
-    public void WriteHeader(Appendable out, EnumSet<VCDiffFormatExtension> formatExtensions) throws IOException {
+    public void writeHeader(Appendable out, EnumSet<VCDiffFormatExtension> formatExtensions) throws IOException {
         if (!(formatExtensions.isEmpty() ||
                 EnumSet.of(VCDiffFormatExtension.VCD_FORMAT_JSON).equals(formatExtensions))) {
             throw new IOException("VCDiffFormatExtensions " + formatExtensions + " no compatible with JSONCodeTableWritar");

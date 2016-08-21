@@ -48,22 +48,22 @@ import static com.davidehrmann.vcdiff.google.VCDiffFormatExtension.VCD_FORMAT_JS
 public class VCDiffStreamingEncoderImpl<OUT> implements VCDiffStreamingEncoder<OUT> {
     private static final Logger LOGGER = LoggerFactory.getLogger(VCDiffStreamingEncoderImpl.class);
 
-    protected final VCDiffEngine engine_;
-    protected final EnumSet<VCDiffFormatExtension> format_extensions_;
+    protected final VCDiffEngine engine;
+    protected final EnumSet<VCDiffFormatExtension> formatExtensions;
 
     // Determines whether to look for matches within the previously encoded
     // target data, or just within the source (dictionary) data.  Please see
     // vcencoder.h for a full explanation of this parameter.
-    protected final boolean look_for_target_matches_;
+    protected final boolean lookForTargetMatches;
 
-    protected final CodeTableWriterInterface<OUT> coder_;
+    protected final CodeTableWriterInterface<OUT> coder;
 
-    // This state variable is used to ensure that StartEncoding(), EncodeChunk(),
-    // and FinishEncoding() are called in the correct order.  It will be true
-    // if StartEncoding() has been called, followed by zero or more calls to
-    // EncodeChunk(), but FinishEncoding() has not yet been called.  It will
-    // be false initially, and also after FinishEncoding() has been called.
-    protected boolean encode_chunk_allowed_;
+    // This state variable is used to ensure that startEncoding(), encodeChunk(),
+    // and finishEncoding() are called in the correct order.  It will be true
+    // if startEncoding() has been called, followed by zero or more calls to
+    // encodeChunk(), but finishEncoding() has not yet been called.  It will
+    // be false initially, and also after finishEncoding() has been called.
+    protected boolean encodeChunkAllowed;
 
     public VCDiffStreamingEncoderImpl(CodeTableWriterInterface<OUT> coder,
                                       HashedDictionary dictionary,
@@ -77,44 +77,44 @@ public class VCDiffStreamingEncoderImpl<OUT> implements VCDiffStreamingEncoder<O
             );
         }
 
-        this.engine_ = dictionary.engine();
-        this.format_extensions_ = format_extensions.clone();
-        this.look_for_target_matches_ = look_for_target_matches;
-        this.coder_ = coder;
+        this.engine = dictionary.engine();
+        this.formatExtensions = format_extensions.clone();
+        this.lookForTargetMatches = look_for_target_matches;
+        this.coder = coder;
     }
 
     // These functions are identical to their counterparts
     // in VCDiffStreamingEncoder.
-    public void StartEncoding(OUT out) throws IOException {
-        if (!coder_.Init(engine_.dictionary_size())) {
+    public void startEncoding(OUT out) throws IOException {
+        if (!coder.init(engine.dictionary_size())) {
             throw new IOException("Internal error: Initialization of code table writer failed");
         }
 
-        coder_.WriteHeader(out, format_extensions_);
-        encode_chunk_allowed_ = true;
+        coder.writeHeader(out, formatExtensions);
+        encodeChunkAllowed = true;
     }
 
-    public void EncodeChunk(byte[] data, int offset, int length, OUT out) throws IOException {
-        if (!encode_chunk_allowed_) {
-            throw new IllegalStateException("EncodeChunk called before StartEncoding");
+    public void encodeChunk(byte[] data, int offset, int length, OUT out) throws IOException {
+        if (!encodeChunkAllowed) {
+            throw new IllegalStateException("encodeChunk called before startEncoding");
         }
-        if ((format_extensions_.contains(VCD_FORMAT_CHECKSUM))) {
+        if ((formatExtensions.contains(VCD_FORMAT_CHECKSUM))) {
             Adler32 adler32 = new ZeroInitializedAdler32();
             adler32.update(data, offset, length);
-            coder_.AddChecksum((int) adler32.getValue());
+            coder.addChecksum((int) adler32.getValue());
         }
-        engine_.Encode(ByteBuffer.wrap(data, offset, length).slice(), look_for_target_matches_, out, coder_);
+        engine.Encode(ByteBuffer.wrap(data, offset, length).slice(), lookForTargetMatches, out, coder);
     }
 
-    public void EncodeChunk(byte[] data, OUT out) throws IOException {
-        EncodeChunk(data, 0, data.length, out);
+    public void encodeChunk(byte[] data, OUT out) throws IOException {
+        encodeChunk(data, 0, data.length, out);
     }
 
-    public void FinishEncoding(OUT out) throws IOException {
-        if (!encode_chunk_allowed_) {
-            throw new IllegalStateException("FinishEncoding called before StartEncoding");
+    public void finishEncoding(OUT out) throws IOException {
+        if (!encodeChunkAllowed) {
+            throw new IllegalStateException("finishEncoding called before startEncoding");
         }
-        encode_chunk_allowed_ = false;
-        coder_.FinishEncoding(out);
+        encodeChunkAllowed = false;
+        coder.finishEncoding(out);
     }
 }

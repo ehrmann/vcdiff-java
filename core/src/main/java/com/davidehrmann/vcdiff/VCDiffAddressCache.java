@@ -66,9 +66,9 @@ public abstract class VCDiffAddressCache {
 
     // Initializes the object before use.  This method must be called after
     // constructing a VCDiffAddressCache/ object, before any other method may be
-    // called.  This is because Init() validates near_cache_size_ and
+    // called.  This is because init() validates near_cache_size_ and
     // same_cache_size_ before initializing the same and near caches.  After the
-    // object has been initialized and used, Init() can be called again to reset
+    // object has been initialized and used, init() can be called again to reset
     // it to its initial state.
     public abstract void Init();
 

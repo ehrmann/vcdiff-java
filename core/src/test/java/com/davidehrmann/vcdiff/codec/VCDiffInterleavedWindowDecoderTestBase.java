@@ -100,7 +100,7 @@ public abstract class VCDiffInterleavedWindowDecoderTestBase extends VCDiffStand
     protected VCDiffInterleavedWindowDecoderTestBase() {
         UseInterleavedFileHeader();
         // delta_window_header_ is left blank.  All window headers and bodies are
-        // lumped together in delta_window_body_.  This means that AddChecksum()
+        // lumped together in delta_window_body_.  This means that addChecksum()
         // cannot be used to test the checksum feature.
         delta_window_body_ = kWindowBody.clone();
     }

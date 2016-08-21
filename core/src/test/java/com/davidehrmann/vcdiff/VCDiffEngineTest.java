@@ -40,7 +40,7 @@ public abstract class VCDiffEngineTest {
         engine_ = new VCDiffEngine(dictionary_);
     }
 
-    // Copy string_without_spaces into newly allocated result buffer,
+    // copy string_without_spaces into newly allocated result buffer,
     // but pad its contents with space characters so that every character
     // in string_without_spaces corresponds to (block_size - 1)
     // spaces in the result, followed by that character.
@@ -75,7 +75,7 @@ public abstract class VCDiffEngineTest {
     protected void EncodeNothing(boolean interleaved, boolean target_matching) throws IOException {
         interleaved_ = interleaved;
         VCDiffCodeTableWriter coder = new VCDiffCodeTableWriter(interleaved);
-        coder.Init(engine_.dictionary_size());
+        coder.init(engine_.dictionary_size());
 
         engine_.Encode(ByteBuffer.allocate(0), target_matching, null, coder);
         assertEquals(0, diff_.size());
@@ -84,7 +84,7 @@ public abstract class VCDiffEngineTest {
     protected void EncodeText(byte[] bytes, boolean interleaved, boolean target_matching) throws IOException {
         interleaved_ = interleaved;
         VCDiffCodeTableWriter coder = new VCDiffCodeTableWriter(interleaved);
-        coder.Init(engine_.dictionary_size());
+        coder.init(engine_.dictionary_size());
         engine_.Encode(ByteBuffer.wrap(bytes), target_matching, diff_, coder);
     }
 

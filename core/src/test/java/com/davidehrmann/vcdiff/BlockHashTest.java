@@ -136,7 +136,7 @@ public class BlockHashTest {
         System.out.println("BlockHash.BlockContentsMatch: " + time_for_block_contents_match + " μs per operation");
     }
 
-    // Copy sample_text_without_spaces and search_string_without_spaces
+    // copy sample_text_without_spaces and search_string_without_spaces
     // into newly allocated sample_text and search_string buffers,
     // but pad them with space characters so that every character
     // in sample_text_without_spaces matches (kBlockSize - 1)
@@ -390,7 +390,7 @@ public class BlockHashTest {
     public void AddRangeFindThreeMatches() {
         BlockHash th_ = BlockHash.CreateTargetHash(sample_text, 0);
 
-        // Add hash values only for those characters before the fourth instance
+        // add hash values only for those characters before the fourth instance
         // of "e" in the sample text.  Tests that the ending index
         // of AddAllBlocksThroughIndex() is not inclusive: only three matches
         // for "e" should be found.
@@ -405,7 +405,7 @@ public class BlockHashTest {
     }
 
     // Try indices that are not even multiples of the block size.
-    // Add three ranges and verify the results after each
+    // add three ranges and verify the results after each
     // call to AddAllBlocksThroughIndex().
     @Test
     public void AddRangeWithUnalignedIndices() {
@@ -418,7 +418,7 @@ public class BlockHashTest {
         // Starting over gives same result
         Assert.assertEquals(block_of_first_e, th_.FirstMatchingBlock((int) hashed_e, test_string_e, 0));
 
-        // Add the second range to expand the result set
+        // add the second range to expand the result set
         th_.AddAllBlocksThroughIndex(index_of_fourth_e - 3);
         Assert.assertEquals(block_of_first_e, th_.FirstMatchingBlock((int) hashed_e, test_string_e, 0));
         Assert.assertEquals(block_of_second_e, th_.NextMatchingBlock(block_of_first_e, test_string_e, 0));
@@ -428,7 +428,7 @@ public class BlockHashTest {
         // Starting over gives same result
         Assert.assertEquals(block_of_first_e, th_.FirstMatchingBlock((int) hashed_e, test_string_e, 0));
 
-        // Add the third range to expand the result set
+        // add the third range to expand the result set
         th_.AddAllBlocksThroughIndex(index_of_fourth_e + 1);
 
         Assert.assertEquals(block_of_first_e, th_.FirstMatchingBlock((int) hashed_e, test_string_e, 0));
@@ -556,7 +556,7 @@ public class BlockHashTest {
                 search_string, 0,
                 best_match);
 
-        // Offset should begin with dictionary_size
+        // Offset should begin with dictionarySize
         Assert.assertEquals(0x10000 + (index_of_longest_match_ear_is_fear), best_match.source_offset());
         Assert.assertEquals(index_of_second_e_in_what_we_hear, best_match.target_offset());
         // The match includes the spaces after the final character,

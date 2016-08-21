@@ -43,7 +43,7 @@ public class VCDiffAddressCacheImpl extends VCDiffAddressCache {
 
     /**
      * The constructor does not initialize near_addresses_ and same_addresses_.
-     * Therefore, Init() must be called before any other method can be used.
+     * Therefore, init() must be called before any other method can be used.
      *
      * Because the mode is expressed as a byte value,
      * near_cache_size + same_cache_size should not exceed 254.
@@ -61,7 +61,7 @@ public class VCDiffAddressCacheImpl extends VCDiffAddressCache {
     // confined to this routine in order to guarantee that the class constructor
     // will never fail.  Other methods (except the destructor) cannot be invoked
     // until this method has been called successfully.  After the object has been
-    // initialized and used, Init() can be called again to reset it to its initial
+    // initialized and used, init() can be called again to reset it to its initial
     // state.
     //
     // Return value: "true" if initialization succeeded, "false" if it failed.
@@ -79,7 +79,7 @@ public class VCDiffAddressCacheImpl extends VCDiffAddressCache {
         Arrays.fill(near_addresses_, 0);
         Arrays.fill(same_addresses_, 0);
 
-        // in case Init() is called a second time to reinit
+        // in case init() is called a second time to reinit
         next_slot_ = 0;
     }
 
@@ -199,7 +199,7 @@ public class VCDiffAddressCacheImpl extends VCDiffAddressCache {
     // Interprets the next value in the address_stream using the provided mode,
     // which may need to access the SAME or NEAR address cache.  Returns the
     // decoded address.
-    // The Init() function must already have been called.
+    // The init() function must already have been called.
     //
     // Arguments:
     //   here_address: The current location in the source + target data (i.e., the

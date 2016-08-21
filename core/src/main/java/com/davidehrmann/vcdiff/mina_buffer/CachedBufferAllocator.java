@@ -271,7 +271,7 @@ public class CachedBufferAllocator implements IoBufferAllocator {
                 return;
             }
 
-            // Add to the cache.
+            // add to the cache.
             Queue<CachedBuffer> pool;
             
             if (oldBuf.isDirect()) {

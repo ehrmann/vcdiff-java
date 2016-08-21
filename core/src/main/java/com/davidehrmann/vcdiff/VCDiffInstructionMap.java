@@ -22,8 +22,8 @@ public class VCDiffInstructionMap {
     /**
      * Create a VCDiffInstructionMap from the information in code_table_data.
      * Does not save a pointer to code_table_data after using its contents
-     * to create the instruction->opcode mappings.  The caller *must* have
-     * verified that code_table_data->Validate() returned true before
+     * to create the instruction-&gt;opcode mappings.  The caller *must* have
+     * verified that code_table_data-&gt;Validate() returned true before
      * attempting to use this constructor.
      * max_mode is the maximum value for the mode of a COPY instruction.
      */
@@ -44,7 +44,7 @@ public class VCDiffInstructionMap {
             } else if (code_table_data.inst1[opcode] == VCD_NOOP) {
                 // An unusual case where inst1 == NOOP and inst2 == ADD, RUN, or COPY.
                 // This is valid under the standard, but unlikely to be used.
-                // Add it to the first instruction map as if inst1 and inst2 were swapped.
+                // add it to the first instruction map as if inst1 and inst2 were swapped.
                 first_instruction_map_.Add(code_table_data.inst2[opcode],
                         code_table_data.size2[opcode],
                         code_table_data.mode2[opcode],
@@ -74,17 +74,22 @@ public class VCDiffInstructionMap {
 
     /**
      * Finds an opcode that has the given inst, size, and mode for its first
-     * instruction  and NOOP for its second instruction (or vice versa.)
+     * instruction and NOOP for its second instruction (or vice versa.)
      * Returns kNoOpcode if the code table does not have any matching
      * opcode. Otherwise, returns an opcode value between 0 and 255.
      *
-     * If this function returns kNoOpcode for size > 0, the caller will
+     * If this function returns kNoOpcode for size &gt; 0, the caller will
      * usually want to try again with size == 0 to find an opcode that
      * doesn't have a fixed size value.
      *
      * If this function returns kNoOpcode for size == 0, it is an error condition,
      * because any code table that passed the Validate() check should have a way
      * of expressing all combinations of inst and mode with size=0.
+     *
+     * @param inst instruction of the opcode
+     * @param size size of the opcode
+     * @param mode mode of the opcode
+     * @return opcode for the given parameters
      */
     public short LookupFirstOpcode(byte inst, byte size, byte mode) {
         return first_instruction_map_.Lookup(inst, size, mode);
@@ -96,9 +101,15 @@ public class VCDiffInstructionMap {
      * the first opcode, and has the given inst, size, and mode for its second
      * instruction.
      *
-     * If this function returns kNoOpcode for size > 0, the caller will
+     * If this function returns kNoOpcode for size &gt; 0, the caller will
      * usually want to try again with size == 0 to find an opcode that
      * doesn't have a fixed size value.
+     *
+     * @param first_opcode result of {@link #LookupFirstOpcode(byte, byte, byte)}}
+     * @param inst instruction of the opcode
+     * @param size size of the opcode
+     * @param mode mode of the opcode
+     * @return opcode for the given parameters
      */
     public short LookupSecondOpcode(byte first_opcode, byte inst, byte size, byte mode) {
         return second_instruction_map_.Lookup(first_opcode, inst, size, mode);

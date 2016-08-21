@@ -20,7 +20,6 @@ import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
 import java.nio.ByteBuffer;
-import java.util.Arrays;
 
 /**
  * All methods in this class are thread-safe.
@@ -50,7 +49,7 @@ public class VCDiffEngine {
     protected final BlockHash hashed_dictionary_;
 
     public VCDiffEngine(byte[] dictionary) {
-        dictionary_ = Arrays.copyOf(dictionary, dictionary.length);
+        dictionary_ = dictionary;
         hashed_dictionary_ = BlockHash.CreateDictionaryHash(dictionary_);
     }
 
@@ -63,30 +62,31 @@ public class VCDiffEngine {
      * (source) and target data, and uses the coder to write a
      * delta file window into diff.
      *
-     * look_for_target_matches determines whether to look for matches
-     * within the previously encoded target data, or just within the source
-     * (dictionary) data.
-     *
-     * @throws IOException
+     * @param targetData data to encoder
+     * @param lookForTargetMatches whether to look for matches within the previously encoded target data, or just
+     *                             within the source (dictionary) data.
+     * @param diff writer to write diff to
+     * @param coder CodeTableWriter to write encoded data to
+     * @throws IOException if there's an encoding exception or an exception while writing to diff
      */
-    public <OUT> void Encode(ByteBuffer target_data, boolean look_for_target_matches, OUT diff, CodeTableWriterInterface<OUT> coder) throws IOException {
-        if (!target_data.hasRemaining()) {
+    public <OUT> void Encode(ByteBuffer targetData, boolean lookForTargetMatches, OUT diff, CodeTableWriterInterface<OUT> coder) throws IOException {
+        if (!targetData.hasRemaining()) {
             return;  // Do nothing for empty target
         }
 
         // Special case for really small input
-        if (target_data.remaining() < BlockHash.kBlockSize) {
-            int target_size = target_data.remaining();
-            AddUnmatchedRemainder(target_data, coder);
-            coder.Output(diff);
+        if (targetData.remaining() < BlockHash.kBlockSize) {
+            int target_size = targetData.remaining();
+            AddUnmatchedRemainder(targetData, coder);
+            coder.output(diff);
             return;
         }
 
-        final ByteBuffer local_target_data = target_data.slice();
+        final ByteBuffer local_target_data = targetData.slice();
 
         RollingHash hasher = new RollingHash(BlockHash.kBlockSize);
         final BlockHash target_hash;
-        if (look_for_target_matches) {
+        if (lookForTargetMatches) {
             target_hash = BlockHash.CreateTargetHash(local_target_data.slice(), dictionary_size());
         } else {
             target_hash = null;
@@ -98,7 +98,7 @@ public class VCDiffEngine {
 
         int hash_value = (int)hasher.Hash(candidate_pos.array(), candidate_pos.arrayOffset() + candidate_pos.position(), candidate_pos.remaining());
         while (true) {
-            if (EncodeCopyForBestMatch(look_for_target_matches, hash_value, candidate_pos, local_target_data, target_hash, coder)) {
+            if (EncodeCopyForBestMatch(lookForTargetMatches, hash_value, candidate_pos, local_target_data, target_hash, coder)) {
                 candidate_pos.position(local_target_data.position());
                 if (candidate_pos.remaining() < BlockHash.kBlockSize) {
                     break;  // Reached end of target data
@@ -108,7 +108,7 @@ public class VCDiffEngine {
                 hash_value = (int)hasher.Hash(candidate_pos.array(),
                         candidate_pos.arrayOffset() + candidate_pos.position(),
                         candidate_pos.remaining());
-                if (look_for_target_matches) {
+                if (lookForTargetMatches) {
                     // Update the target hash for the ADDed and COPYed data
                     target_hash.AddAllBlocksThroughIndex(candidate_pos.position());
                 }
@@ -119,7 +119,7 @@ public class VCDiffEngine {
                     break;  // Reached end of target data
                 }
 
-                if (look_for_target_matches) {
+                if (lookForTargetMatches) {
                     target_hash.AddOneIndexHash(candidate_pos.position(), hash_value);
                 }
 
@@ -131,9 +131,9 @@ public class VCDiffEngine {
         }
 
         AddUnmatchedRemainder(local_target_data, coder);
-        coder.Output(diff);
+        coder.output(diff);
 
-        target_data.position(target_data.position() + local_target_data.position());
+        targetData.position(targetData.position() + local_target_data.position());
     }
 
     protected static boolean ShouldGenerateCopyInstructionForMatchOfSize(int size) {
@@ -150,7 +150,7 @@ public class VCDiffEngine {
      */
     protected void AddUnmatchedRemainder(ByteBuffer unencoded_target, CodeTableWriterInterface<?> coder) {
         if (unencoded_target.hasRemaining()) {
-            coder.Add(unencoded_target.array(),
+            coder.add(unencoded_target.array(),
                     unencoded_target.arrayOffset() + unencoded_target.position(),
                     unencoded_target.remaining());
 
@@ -168,20 +168,12 @@ public class VCDiffEngine {
      * for all unencoded data that precedes the match,
      * and a COPY instruction for the match itself; then it returns
      * the number of bytes processed by both instructions,
-     * which is guaranteed to be > 0.
+     * which is guaranteed to be &gt; 0.
      * If no appropriate match is found, the function returns 0.
      *
      * The first four parameters are input parameters which are passed
      * directly to BlockHash::FindBestMatch; please see that function
      * for a description of their allowable values.
-     *
-     * @param look_for_target_matches
-     * @param hash_value
-     * @param target_candidate
-     * @param unencoded_target
-     * @param target_hash
-     * @param coder
-     * @return
      */
     protected boolean EncodeCopyForBestMatch(boolean look_for_target_matches, int hash_value,
             ByteBuffer target_candidate, ByteBuffer unencoded_target,
@@ -213,12 +205,12 @@ public class VCDiffEngine {
             // Create an ADD instruction to encode all target bytes
             // from the end of the last COPY match, if any, up to
             // the beginning of this COPY match.
-            coder.Add(unencoded_target.array(),
+            coder.add(unencoded_target.array(),
                     unencoded_target.arrayOffset() + unencoded_target.position(),
                     best_match.target_offset());
         }
 
-        coder.Copy(best_match.source_offset(), best_match.size());
+        coder.copy(best_match.source_offset(), best_match.size());
         unencoded_target.position(unencoded_target.position() + best_match.target_offset() + best_match.size());
         return best_match.target_offset() + best_match.size() > 0;
     }

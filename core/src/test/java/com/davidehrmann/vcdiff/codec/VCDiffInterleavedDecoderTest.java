@@ -16,16 +16,16 @@ public class VCDiffInterleavedDecoderTest extends VCDiffInterleavedDecoderTestBa
 
     @Test
     public void DecodeHeaderOnly() throws Exception {
-        decoder_.StartDecoding(dictionary_);
-        decoder_.DecodeChunk(delta_file_header_, output_);
-        decoder_.FinishDecoding();
+        decoder_.startDecoding(dictionary_);
+        decoder_.decodeChunk(delta_file_header_, output_);
+        decoder_.finishDecoding();
         assertArrayEquals(new byte[0], output_.toByteArray());
     }
 
     @Test
     public void PartialHeaderNotEnough() throws Exception {
-        decoder_.StartDecoding(dictionary_);
-        decoder_.DecodeChunk(
+        decoder_.startDecoding(dictionary_);
+        decoder_.decodeChunk(
                 delta_file_header_,
                 0,
                 delta_file_header_.length - 2,
@@ -33,7 +33,7 @@ public class VCDiffInterleavedDecoderTest extends VCDiffInterleavedDecoderTestBa
         );
         try {
             thrown.expect(IOException.class);
-            decoder_.FinishDecoding();
+            decoder_.finishDecoding();
         } finally {
             assertArrayEquals(new byte[0], output_.toByteArray());
         }
@@ -42,10 +42,10 @@ public class VCDiffInterleavedDecoderTest extends VCDiffInterleavedDecoderTestBa
     @Test
     public void BadMagicNumber() throws Exception {
         delta_file_[1] = (byte) ('Q' | 0x80);
-        decoder_.StartDecoding(dictionary_);
+        decoder_.startDecoding(dictionary_);
         try {
             thrown.expect(IOException.class);
-            decoder_.DecodeChunk(delta_file_, output_);
+            decoder_.decodeChunk(delta_file_, output_);
         } finally {
             assertArrayEquals(new byte[0], output_.toByteArray());
         }
@@ -54,10 +54,10 @@ public class VCDiffInterleavedDecoderTest extends VCDiffInterleavedDecoderTestBa
     @Test
     public void BadVersionNumber() throws Exception {
         delta_file_[3] = 0x01;
-        decoder_.StartDecoding(dictionary_);
+        decoder_.startDecoding(dictionary_);
         try {
             thrown.expect(IOException.class);
-            decoder_.DecodeChunk(delta_file_, output_);
+            decoder_.decodeChunk(delta_file_, output_);
         } finally {
             assertArrayEquals(new byte[0], output_.toByteArray());
         }
@@ -66,10 +66,10 @@ public class VCDiffInterleavedDecoderTest extends VCDiffInterleavedDecoderTestBa
     @Test
     public void SecondaryCompressionNotSupported() throws Exception {
         delta_file_[4] = 0x01;
-        decoder_.StartDecoding(dictionary_);
+        decoder_.startDecoding(dictionary_);
         try {
             thrown.expect(IOException.class);
-            decoder_.DecodeChunk(delta_file_, output_);
+            decoder_.decodeChunk(delta_file_, output_);
         } finally {
             assertArrayEquals(new byte[0], output_.toByteArray());
         }
@@ -77,9 +77,9 @@ public class VCDiffInterleavedDecoderTest extends VCDiffInterleavedDecoderTestBa
 
     @Test
     public void Decode() throws Exception {
-        decoder_.StartDecoding(dictionary_);
-        decoder_.DecodeChunk(delta_file_, output_);
-        decoder_.FinishDecoding();
+        decoder_.startDecoding(dictionary_);
+        decoder_.decodeChunk(delta_file_, output_);
+        decoder_.finishDecoding();
         assertArrayEquals(expected_target_, output_.toByteArray());
     }
 
@@ -87,9 +87,9 @@ public class VCDiffInterleavedDecoderTest extends VCDiffInterleavedDecoderTestBa
     public void DecodeWithChecksum() throws Exception {
         ComputeAndAddChecksum();
         InitializeDeltaFile();
-        decoder_.StartDecoding(dictionary_);
-        decoder_.DecodeChunk(delta_file_, output_);
-        decoder_.FinishDecoding();
+        decoder_.startDecoding(dictionary_);
+        decoder_.decodeChunk(delta_file_, output_);
+        decoder_.finishDecoding();
         assertArrayEquals(expected_target_, output_.toByteArray());
     }
 
@@ -97,10 +97,10 @@ public class VCDiffInterleavedDecoderTest extends VCDiffInterleavedDecoderTestBa
     public void ChecksumDoesNotMatch() throws Exception {
         AddChecksum(0xBADBAD);
         InitializeDeltaFile();
-        decoder_.StartDecoding(dictionary_);
+        decoder_.startDecoding(dictionary_);
         try {
             thrown.expect(IOException.class);
-            decoder_.DecodeChunk(delta_file_, output_);
+            decoder_.decodeChunk(delta_file_, output_);
         } finally {
             assertArrayEquals(new byte[0], output_.toByteArray());
         }
@@ -122,21 +122,21 @@ public class VCDiffInterleavedDecoderTest extends VCDiffInterleavedDecoderTestBa
 
         delta_window_header_ = ArraysExtra.replace(delta_window_header_, 4, 1, size_of_invalid_varint);
         InitializeDeltaFile();
-        decoder_.StartDecoding(dictionary_);
+        decoder_.startDecoding(dictionary_);
         try {
             thrown.expect(IOException.class);
-            decoder_.DecodeChunk(delta_file_, output_);
+            decoder_.decodeChunk(delta_file_, output_);
         } finally {
             assertArrayEquals(new byte[0], output_.toByteArray());
         }
     }
 
     // Remove one byte from the length of the chunk to process, and
-    // verify that an error is returned for FinishDecoding().
+    // verify that an error is returned for finishDecoding().
     @Test
     public void FinishAfterDecodingPartialWindow() throws Exception {
-        decoder_.StartDecoding(dictionary_);
-        decoder_.DecodeChunk(
+        decoder_.startDecoding(dictionary_);
+        decoder_.decodeChunk(
                 delta_file_,
                 0,
                 delta_file_.length - 1,
@@ -144,7 +144,7 @@ public class VCDiffInterleavedDecoderTest extends VCDiffInterleavedDecoderTestBa
         );
         try {
             thrown.expect(IOException.class);
-            decoder_.FinishDecoding();
+            decoder_.finishDecoding();
         } finally {
             // The decoder should not create more target bytes than were expected.
             assertTrue(expected_target_.length >= output_.size());
@@ -153,8 +153,8 @@ public class VCDiffInterleavedDecoderTest extends VCDiffInterleavedDecoderTestBa
 
     @Test
     public void FinishAfterDecodingPartialWindowHeader() throws Exception {
-        decoder_.StartDecoding(dictionary_);
-        decoder_.DecodeChunk(
+        decoder_.startDecoding(dictionary_);
+        decoder_.decodeChunk(
                 delta_file_,
                 0,
                 delta_file_header_.length
@@ -163,7 +163,7 @@ public class VCDiffInterleavedDecoderTest extends VCDiffInterleavedDecoderTestBa
         );
         try {
             thrown.expect(IOException.class);
-            decoder_.FinishDecoding();
+            decoder_.finishDecoding();
         } finally {
             // The decoder should not create more target bytes than were expected.
             assertTrue(expected_target_.length >= output_.size());
@@ -172,29 +172,29 @@ public class VCDiffInterleavedDecoderTest extends VCDiffInterleavedDecoderTestBa
 
     @Test
     public void TargetMatchesWindowSizeLimit() throws Exception {
-        decoder_.SetMaximumTargetWindowSize(expected_target_.length);
-        decoder_.StartDecoding(dictionary_);
-        decoder_.DecodeChunk(delta_file_, output_);
-        decoder_.FinishDecoding();
+        decoder_.setMaximumTargetWindowSize(expected_target_.length);
+        decoder_.startDecoding(dictionary_);
+        decoder_.decodeChunk(delta_file_, output_);
+        decoder_.finishDecoding();
         assertArrayEquals(expected_target_, output_.toByteArray());
     }
 
     @Test
     public void TargetMatchesFileSizeLimit() throws Exception {
-        decoder_.SetMaximumTargetFileSize(expected_target_.length);
-        decoder_.StartDecoding(dictionary_);
-        decoder_.DecodeChunk(delta_file_, output_);
-        decoder_.FinishDecoding();
+        decoder_.setMaximumTargetFileSize(expected_target_.length);
+        decoder_.startDecoding(dictionary_);
+        decoder_.decodeChunk(delta_file_, output_);
+        decoder_.finishDecoding();
         assertArrayEquals(expected_target_, output_.toByteArray());
     }
 
     @Test
     public void TargetExceedsWindowSizeLimit() throws Exception {
-        decoder_.SetMaximumTargetWindowSize(expected_target_.length - 1);
-        decoder_.StartDecoding(dictionary_);
+        decoder_.setMaximumTargetWindowSize(expected_target_.length - 1);
+        decoder_.startDecoding(dictionary_);
         try {
             thrown.expect(IOException.class);
-            decoder_.DecodeChunk(delta_file_, output_);
+            decoder_.decodeChunk(delta_file_, output_);
         } finally {
             assertArrayEquals(new byte[0], output_.toByteArray());
         }
@@ -202,11 +202,11 @@ public class VCDiffInterleavedDecoderTest extends VCDiffInterleavedDecoderTestBa
 
     @Test
     public void TargetExceedsFileSizeLimit() throws Exception {
-        decoder_.SetMaximumTargetFileSize(expected_target_.length - 1);
-        decoder_.StartDecoding(dictionary_);
+        decoder_.setMaximumTargetFileSize(expected_target_.length - 1);
+        decoder_.startDecoding(dictionary_);
         try {
             thrown.expect(IOException.class);
-            decoder_.DecodeChunk(delta_file_, output_);
+            decoder_.decodeChunk(delta_file_, output_);
         } finally {
             assertArrayEquals(new byte[0], output_.toByteArray());
         }
@@ -219,10 +219,10 @@ public class VCDiffInterleavedDecoderTest extends VCDiffInterleavedDecoderTestBa
     @Test
     public void FuzzBits() throws Exception {
         while (FuzzOneByteInDeltaFile()) {
-            decoder_.StartDecoding(dictionary_);
+            decoder_.startDecoding(dictionary_);
             try {
-                decoder_.DecodeChunk(delta_file_, output_);
-                decoder_.FinishDecoding();
+                decoder_.decodeChunk(delta_file_, output_);
+                decoder_.finishDecoding();
             } catch (IOException ignored) { }
 
             InitializeDeltaFile();
@@ -238,10 +238,10 @@ public class VCDiffInterleavedDecoderTest extends VCDiffInterleavedDecoderTestBa
         ComputeAndAddChecksum();
         InitializeDeltaFile();
         while (FuzzOneByteInDeltaFile()) {
-            decoder_.StartDecoding(dictionary_);
+            decoder_.startDecoding(dictionary_);
             try {
-                decoder_.DecodeChunk(delta_file_, output_);
-                decoder_.FinishDecoding();
+                decoder_.decodeChunk(delta_file_, output_);
+                decoder_.finishDecoding();
 
                 // Decoding succeeded.  Make sure the correct target was produced.
                 assertArrayEquals(expected_target_, output_.toByteArray());
@@ -260,10 +260,10 @@ public class VCDiffInterleavedDecoderTest extends VCDiffInterleavedDecoderTestBa
                 FirstByteOfStringLength(kExpectedTarget);
         delta_file_[delta_file_header_.length + 0x0D] =
                 (byte) (SecondByteOfStringLength(kExpectedTarget) + 1);
-        decoder_.StartDecoding(dictionary_);
+        decoder_.startDecoding(dictionary_);
         try {
             thrown.expect(IOException.class);
-            decoder_.DecodeChunk(delta_file_, output_);
+            decoder_.decodeChunk(delta_file_, output_);
         } finally {
             assertArrayEquals(new byte[0], output_.toByteArray());
         }
@@ -272,10 +272,10 @@ public class VCDiffInterleavedDecoderTest extends VCDiffInterleavedDecoderTestBa
     @Test
     public void CopySizeZero() throws Exception {
         delta_file_[delta_file_header_.length + 0x0C] = 0;
-        decoder_.StartDecoding(dictionary_);
+        decoder_.startDecoding(dictionary_);
         try {
             thrown.expect(IOException.class);
-            decoder_.DecodeChunk(delta_file_, output_);
+            decoder_.decodeChunk(delta_file_, output_);
         } finally {
             assertArrayEquals(new byte[0], output_.toByteArray());
         }
@@ -284,10 +284,10 @@ public class VCDiffInterleavedDecoderTest extends VCDiffInterleavedDecoderTestBa
     @Test
     public void CopySizeTooLargeByOne() throws Exception {
         ++delta_file_[delta_file_header_.length + 0x0C];
-        decoder_.StartDecoding(dictionary_);
+        decoder_.startDecoding(dictionary_);
         try {
             thrown.expect(IOException.class);
-            decoder_.DecodeChunk(delta_file_, output_);
+            decoder_.decodeChunk(delta_file_, output_);
         } finally {
             assertArrayEquals(new byte[0], output_.toByteArray());
         }
@@ -296,10 +296,10 @@ public class VCDiffInterleavedDecoderTest extends VCDiffInterleavedDecoderTestBa
     @Test
     public void CopySizeTooSmallByOne() throws Exception {
         --delta_file_[delta_file_header_.length + 0x0C];
-        decoder_.StartDecoding(dictionary_);
+        decoder_.startDecoding(dictionary_);
         try {
             thrown.expect(IOException.class);
-            decoder_.DecodeChunk(delta_file_, output_);
+            decoder_.decodeChunk(delta_file_, output_);
         } finally {
             assertArrayEquals(new byte[0], output_.toByteArray());
         }
@@ -308,10 +308,10 @@ public class VCDiffInterleavedDecoderTest extends VCDiffInterleavedDecoderTestBa
     @Test
     public void CopySizeMaxInt() throws Exception {
         WriteMaxVarintAtOffset(0x0C, 1);
-        decoder_.StartDecoding(dictionary_);
+        decoder_.startDecoding(dictionary_);
         try {
             thrown.expect(IOException.class);
-            decoder_.DecodeChunk(delta_file_, output_);
+            decoder_.decodeChunk(delta_file_, output_);
         } finally {
             assertArrayEquals(new byte[0], output_.toByteArray());
         }
@@ -320,10 +320,10 @@ public class VCDiffInterleavedDecoderTest extends VCDiffInterleavedDecoderTestBa
     @Test
     public void CopySizeNegative() throws Exception {
         WriteNegativeVarintAtOffset(0x0C, 1);
-        decoder_.StartDecoding(dictionary_);
+        decoder_.startDecoding(dictionary_);
         try {
             thrown.expect(IOException.class);
-            decoder_.DecodeChunk(delta_file_, output_);
+            decoder_.decodeChunk(delta_file_, output_);
         } finally {
             assertArrayEquals(new byte[0], output_.toByteArray());
         }
@@ -332,10 +332,10 @@ public class VCDiffInterleavedDecoderTest extends VCDiffInterleavedDecoderTestBa
     @Test
     public void CopySizeInvalid() throws Exception {
         WriteInvalidVarintAtOffset(0x0C, 1);
-        decoder_.StartDecoding(dictionary_);
+        decoder_.startDecoding(dictionary_);
         try {
             thrown.expect(IOException.class);
-            decoder_.DecodeChunk(delta_file_, output_);
+            decoder_.decodeChunk(delta_file_, output_);
         } finally {
             assertArrayEquals(new byte[0], output_.toByteArray());
         }
@@ -347,10 +347,10 @@ public class VCDiffInterleavedDecoderTest extends VCDiffInterleavedDecoderTestBa
                 FirstByteOfStringLength(kDictionary);
         delta_file_[delta_file_header_.length + 0x0E] =
                 SecondByteOfStringLength(kDictionary);
-        decoder_.StartDecoding(dictionary_);
+        decoder_.startDecoding(dictionary_);
         try {
             thrown.expect(IOException.class);
-            decoder_.DecodeChunk(delta_file_, output_);
+            decoder_.decodeChunk(delta_file_, output_);
         } finally {
             assertArrayEquals(new byte[0], output_.toByteArray());
         }
@@ -359,10 +359,10 @@ public class VCDiffInterleavedDecoderTest extends VCDiffInterleavedDecoderTestBa
     @Test
     public void CopyAddressMaxInt() throws Exception {
         WriteMaxVarintAtOffset(0x0D, 1);
-        decoder_.StartDecoding(dictionary_);
+        decoder_.startDecoding(dictionary_);
         try {
             thrown.expect(IOException.class);
-            decoder_.DecodeChunk(delta_file_, output_);
+            decoder_.decodeChunk(delta_file_, output_);
         } finally {
             assertArrayEquals(new byte[0], output_.toByteArray());
         }
@@ -371,10 +371,10 @@ public class VCDiffInterleavedDecoderTest extends VCDiffInterleavedDecoderTestBa
     @Test
     public void CopyAddressNegative() throws Exception {
         WriteNegativeVarintAtOffset(0x0D, 1);
-        decoder_.StartDecoding(dictionary_);
+        decoder_.startDecoding(dictionary_);
         try {
             thrown.expect(IOException.class);
-            decoder_.DecodeChunk(delta_file_, output_);
+            decoder_.decodeChunk(delta_file_, output_);
         } finally {
             assertArrayEquals(new byte[0], output_.toByteArray());
         }
@@ -383,10 +383,10 @@ public class VCDiffInterleavedDecoderTest extends VCDiffInterleavedDecoderTestBa
     @Test
     public void CopyAddressInvalid() throws Exception {
         WriteInvalidVarintAtOffset(0x0D, 1);
-        decoder_.StartDecoding(dictionary_);
+        decoder_.startDecoding(dictionary_);
         try {
             thrown.expect(IOException.class);
-            decoder_.DecodeChunk(delta_file_, output_);
+            decoder_.decodeChunk(delta_file_, output_);
         } finally {
             assertArrayEquals(new byte[0], output_.toByteArray());
         }
@@ -398,10 +398,10 @@ public class VCDiffInterleavedDecoderTest extends VCDiffInterleavedDecoderTestBa
                 FirstByteOfStringLength(kExpectedTarget);
         delta_file_[delta_file_header_.length + 0x10] =
                 (byte) (SecondByteOfStringLength(kExpectedTarget) + 1);
-        decoder_.StartDecoding(dictionary_);
+        decoder_.startDecoding(dictionary_);
         try {
             thrown.expect(IOException.class);
-            decoder_.DecodeChunk(delta_file_, output_);
+            decoder_.decodeChunk(delta_file_, output_);
         } finally {
             assertArrayEquals(new byte[0], output_.toByteArray());
         }
@@ -410,10 +410,10 @@ public class VCDiffInterleavedDecoderTest extends VCDiffInterleavedDecoderTestBa
     @Test
     public void AddSizeZero() throws Exception {
         delta_file_[delta_file_header_.length + 0x0F] = 0;
-        decoder_.StartDecoding(dictionary_);
+        decoder_.startDecoding(dictionary_);
         try {
             thrown.expect(IOException.class);
-            decoder_.DecodeChunk(delta_file_, output_);
+            decoder_.decodeChunk(delta_file_, output_);
         } finally {
             assertArrayEquals(new byte[0], output_.toByteArray());
         }
@@ -422,10 +422,10 @@ public class VCDiffInterleavedDecoderTest extends VCDiffInterleavedDecoderTestBa
     @Test
     public void AddSizeTooLargeByOne() throws Exception {
         ++delta_file_[delta_file_header_.length + 0x0F];
-        decoder_.StartDecoding(dictionary_);
+        decoder_.startDecoding(dictionary_);
         try {
             thrown.expect(IOException.class);
-            decoder_.DecodeChunk(delta_file_, output_);
+            decoder_.decodeChunk(delta_file_, output_);
         } finally {
             assertArrayEquals(new byte[0], output_.toByteArray());
         }
@@ -434,10 +434,10 @@ public class VCDiffInterleavedDecoderTest extends VCDiffInterleavedDecoderTestBa
     @Test
     public void AddSizeTooSmallByOne() throws Exception {
         --delta_file_[delta_file_header_.length + 0x0F];
-        decoder_.StartDecoding(dictionary_);
+        decoder_.startDecoding(dictionary_);
         try {
             thrown.expect(IOException.class);
-            decoder_.DecodeChunk(delta_file_, output_);
+            decoder_.decodeChunk(delta_file_, output_);
         } finally {
             assertArrayEquals(new byte[0], output_.toByteArray());
         }
@@ -446,10 +446,10 @@ public class VCDiffInterleavedDecoderTest extends VCDiffInterleavedDecoderTestBa
     @Test
     public void AddSizeMaxInt() throws Exception {
         WriteMaxVarintAtOffset(0x0F, 1);
-        decoder_.StartDecoding(dictionary_);
+        decoder_.startDecoding(dictionary_);
         try {
             thrown.expect(IOException.class);
-            decoder_.DecodeChunk(delta_file_, output_);
+            decoder_.decodeChunk(delta_file_, output_);
         } finally {
             assertArrayEquals(new byte[0], output_.toByteArray());
         }
@@ -458,10 +458,10 @@ public class VCDiffInterleavedDecoderTest extends VCDiffInterleavedDecoderTestBa
     @Test
     public void AddSizeNegative() throws Exception {
         WriteNegativeVarintAtOffset(0x0F, 1);
-        decoder_.StartDecoding(dictionary_);
+        decoder_.startDecoding(dictionary_);
         try {
             thrown.expect(IOException.class);
-            decoder_.DecodeChunk(delta_file_, output_);
+            decoder_.decodeChunk(delta_file_, output_);
         } finally {
             assertArrayEquals(new byte[0], output_.toByteArray());
         }
@@ -470,10 +470,10 @@ public class VCDiffInterleavedDecoderTest extends VCDiffInterleavedDecoderTestBa
     @Test
     public void AddSizeInvalid() throws Exception {
         WriteInvalidVarintAtOffset(0x0F, 1);
-        decoder_.StartDecoding(dictionary_);
+        decoder_.startDecoding(dictionary_);
         try {
             thrown.expect(IOException.class);
-            decoder_.DecodeChunk(delta_file_, output_);
+            decoder_.decodeChunk(delta_file_, output_);
         } finally {
             assertArrayEquals(new byte[0], output_.toByteArray());
         }
@@ -485,10 +485,10 @@ public class VCDiffInterleavedDecoderTest extends VCDiffInterleavedDecoderTestBa
                 FirstByteOfStringLength(kExpectedTarget);
         delta_file_[delta_file_header_.length + 0x60] =
                 (byte) (SecondByteOfStringLength(kExpectedTarget) + 1);
-        decoder_.StartDecoding(dictionary_);
+        decoder_.startDecoding(dictionary_);
         try {
             thrown.expect(IOException.class);
-            decoder_.DecodeChunk(delta_file_, output_);
+            decoder_.decodeChunk(delta_file_, output_);
         } finally {
             assertArrayEquals(new byte[0], output_.toByteArray());
         }
@@ -497,10 +497,10 @@ public class VCDiffInterleavedDecoderTest extends VCDiffInterleavedDecoderTestBa
     @Test
     public void RunSizeZero() throws Exception {
         delta_file_[delta_file_header_.length + 0x5F] = 0;
-        decoder_.StartDecoding(dictionary_);
+        decoder_.startDecoding(dictionary_);
         try {
             thrown.expect(IOException.class);
-            decoder_.DecodeChunk(delta_file_, output_);
+            decoder_.decodeChunk(delta_file_, output_);
         } finally {
             assertArrayEquals(new byte[0], output_.toByteArray());
         }
@@ -509,10 +509,10 @@ public class VCDiffInterleavedDecoderTest extends VCDiffInterleavedDecoderTestBa
     @Test
     public void RunSizeTooLargeByOne() throws Exception {
         ++delta_file_[delta_file_header_.length + 0x5F];
-        decoder_.StartDecoding(dictionary_);
+        decoder_.startDecoding(dictionary_);
         try {
             thrown.expect(IOException.class);
-            decoder_.DecodeChunk(delta_file_, output_);
+            decoder_.decodeChunk(delta_file_, output_);
         } finally {
             assertArrayEquals(new byte[0], output_.toByteArray());
         }
@@ -521,10 +521,10 @@ public class VCDiffInterleavedDecoderTest extends VCDiffInterleavedDecoderTestBa
     @Test
     public void RunSizeTooSmallByOne() throws Exception {
         --delta_file_[delta_file_header_.length + 0x5F];
-        decoder_.StartDecoding(dictionary_);
+        decoder_.startDecoding(dictionary_);
         try {
             thrown.expect(IOException.class);
-            decoder_.DecodeChunk(delta_file_, output_);
+            decoder_.decodeChunk(delta_file_, output_);
         } finally {
             assertArrayEquals(new byte[0], output_.toByteArray());
         }
@@ -533,10 +533,10 @@ public class VCDiffInterleavedDecoderTest extends VCDiffInterleavedDecoderTestBa
     @Test
     public void RunSizeMaxInt() throws Exception {
         WriteMaxVarintAtOffset(0x5F, 1);
-        decoder_.StartDecoding(dictionary_);
+        decoder_.startDecoding(dictionary_);
         try {
             thrown.expect(IOException.class);
-            decoder_.DecodeChunk(delta_file_, output_);
+            decoder_.decodeChunk(delta_file_, output_);
         } finally {
             assertArrayEquals(new byte[0], output_.toByteArray());
         }
@@ -545,10 +545,10 @@ public class VCDiffInterleavedDecoderTest extends VCDiffInterleavedDecoderTestBa
     @Test
     public void RunSizeNegative() throws Exception {
         WriteNegativeVarintAtOffset(0x5F, 1);
-        decoder_.StartDecoding(dictionary_);
+        decoder_.startDecoding(dictionary_);
         try {
             thrown.expect(IOException.class);
-            decoder_.DecodeChunk(delta_file_, output_);
+            decoder_.decodeChunk(delta_file_, output_);
         } finally {
             assertArrayEquals(new byte[0], output_.toByteArray());
         }
@@ -557,10 +557,10 @@ public class VCDiffInterleavedDecoderTest extends VCDiffInterleavedDecoderTestBa
     @Test
     public void RunSizeInvalid() throws Exception {
         WriteInvalidVarintAtOffset(0x5F, 1);
-        decoder_.StartDecoding(dictionary_);
+        decoder_.startDecoding(dictionary_);
         try {
             thrown.expect(IOException.class);
-            decoder_.DecodeChunk(delta_file_, output_);
+            decoder_.decodeChunk(delta_file_, output_);
         } finally {
             assertArrayEquals(new byte[0], output_.toByteArray());
         }
@@ -592,11 +592,11 @@ public class VCDiffInterleavedDecoderTest extends VCDiffInterleavedDecoderTestBa
 
         // Now perform the decode operation, which will cause a segmentation fault
         // if it reads past the end of the buffer.
-        decoder_.StartDecoding(dictionary_);
-        assertTrue(decoder_.DecodeChunk(delta_with_guard,
+        decoder_.startDecoding(dictionary_);
+        assertTrue(decoder_.decodeChunk(delta_with_guard,
                 delta_file_.length,
                 output_));
-        assertTrue(decoder_.FinishDecoding());
+        assertTrue(decoder_.finishDecoding());
         assertArrayEquals(expected_target_, output_.toByteArray());
 
         // Undo the mprotect.
@@ -626,11 +626,11 @@ public class VCDiffInterleavedDecoderTest extends VCDiffInterleavedDecoderTestBa
 
         // Now perform the decode operation, which will cause a segmentation fault
         // if it reads past the beginning of the buffer.
-        decoder_.StartDecoding(dictionary_);
-        assertTrue(decoder_.DecodeChunk(delta_with_guard,
+        decoder_.startDecoding(dictionary_);
+        assertTrue(decoder_.decodeChunk(delta_with_guard,
                 delta_file_.length,
                 output_));
-        assertTrue(decoder_.FinishDecoding());
+        assertTrue(decoder_.finishDecoding());
         assertArrayEquals(expected_target_, output_.toByteArray());
 
         // Undo the mprotect.

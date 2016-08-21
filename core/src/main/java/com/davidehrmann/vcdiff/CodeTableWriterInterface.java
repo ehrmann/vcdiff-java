@@ -16,7 +16,7 @@
 // Definition of an abstract class that describes the interface between the
 // encoding engine (which finds the best string matches between the source and
 // target data) and the code table writer.  The code table writer is passed a
-// series of Add, Copy, and Run instructions and produces an output file in the
+// series of add, copy, and run instructions and produces an output file in the
 // desired format.
 
 
@@ -32,10 +32,10 @@ import java.util.EnumSet;
  * @author David Ehrmann
  * 
  *  The method calls after construction should follow this pattern:
- *    {{Add|Copy|Run}* Output}*
+ *    {{add|copy|run}* output}*
  *
- * Output() will produce an encoding using the given series of Add, Copy,
- * and/or Run instructions.  One implementation of the interface
+ * output() will produce an encoding using the given series of add, copy,
+ * and/or run instructions.  One implementation of the interface
  * (VCDiffCodeTableWriter) produces a VCDIFF delta window, but other
  * implementations may be used to produce other output formats, or as test
  * mocks, or to gather encoding statistics.
@@ -46,59 +46,65 @@ public interface CodeTableWriterInterface<OUT> {
      * Initializes the constructed object for use. It will return
      * false if there was an error initializing the object, or true if it
      * was successful.  After the object has been initialized and used,
-     * Init() can be called again to restore the initial state of the object.
+     * init() can be called again to restore the initial state of the object.
      *
      * @param dictionary_size size of the dictionary being used
      * @return true if initialization was successful, false otherwise
      */
-    boolean Init(int dictionary_size);
+    boolean init(int dictionary_size);
 
 
     /**
      * Writes the header to the output string.
+     * @param out writer mechanism to write to
      * @param format_extensions Flags for enabling features that are extensions to the format
+     * @throws IOException if there's an exception writing to out
      */
-    void WriteHeader(OUT out, EnumSet<VCDiffFormatExtension> format_extensions) throws IOException;
+    void writeHeader(OUT out, EnumSet<VCDiffFormatExtension> format_extensions) throws IOException;
 
     /**
-     * Encode an ADD opcode with the "size" length starting at offset
+     * encode an ADD opcode with the "size" length starting at offset
      * @param data data to add
      * @param offset offset in data to start from
      * @param length  total bytes to add
      */
-    void Add(byte[] data, int offset, int length);
+    void add(byte[] data, int offset, int length);
 
     /**
-     * Encode a COPY opcode with args "offset" (into dictionary) and "size" bytes.
-     * @param offset
-     * @param size
+     * encode a COPY opcode with args "offset" (into dictionary) and "size" bytes.
+     * @param offset offset into the dictionary to copy data from
+     * @param size number of bytes to copy from dictionary
      */
-    void Copy(int offset, int size);
+    void copy(int offset, int size);
 
     /**
-     * Encode a RUN opcode for "size" copies of the value "byte".
-     * @param size
-     * @param b
+     * encode a RUN opcode for "size" copies of the value "b".
+     * @param size number of copies of the value to write
+     * @param b byte value to write
      */
-    void Run(int size, byte b);
+    void run(int size, byte b);
+
+    /**
+     * add a checksum to the code table
+     *
+     * @param checksum checksum to write to the writer
+     */
+    void addChecksum(int checksum);
 
     /**
      * Appends the encoded delta window to the output
-     * string.  The output string is not null-terminated and may contain embedded
-     * '\0' characters.
-     * @param checksum
+     * string.
+     *
+     * @param out writer mechanism to write to
+     * @throws IOException if there's an exception writing to out
      */
-    void AddChecksum(int checksum);
-
-    /**
-     * Appends the encoded delta window to the output
-     * string.  The output string is not null-terminated and may contain embedded
-     * '\0' characters.
-     */
-    void Output(OUT out) throws IOException;
+    void output(OUT out) throws IOException;
 
     /**
      * Finishes encoding.
+     *
+     * @param out writer mechanism to write to
+     * @throws IOException if there's an exception writing to out
      */
-    void FinishEncoding(OUT out) throws IOException;
+    void finishEncoding(OUT out) throws IOException;
 }

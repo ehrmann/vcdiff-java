@@ -20,73 +20,73 @@ public class JSONCodeTableWriterTest {
     public void init() throws Exception {
         writer = new StringWriter();
         coder_ = new JSONCodeTableWriter();
-        coder_.WriteHeader(writer, EnumSet.noneOf(VCDiffFormatExtension.class));
-        assertTrue(coder_.Init(0));
+        coder_.writeHeader(writer, EnumSet.noneOf(VCDiffFormatExtension.class));
+        assertTrue(coder_.init(0));
     }
 
     @Test
     public void nullTest() throws IOException {
-        coder_.FinishEncoding(writer);
+        coder_.finishEncoding(writer);
         assertEquals("", writer.toString());
     }
 
     @Test
     public void Empty() throws IOException {
-        coder_.Output(writer);
-        coder_.FinishEncoding(writer);
+        coder_.output(writer);
+        coder_.finishEncoding(writer);
         assertEquals("[]", writer.toString());
     }
 
     @Test
     public void Add() throws IOException {
-        coder_.Add("123".getBytes("US-ASCII"), 0, 3);
-        coder_.Output(writer);
-        coder_.FinishEncoding(writer);
+        coder_.add("123".getBytes("US-ASCII"), 0, 3);
+        coder_.output(writer);
+        coder_.finishEncoding(writer);
         assertEquals("[\"123\"]", writer.toString());
     }
 
     @Test
     public void Copy() throws IOException {
-        coder_.Copy(3, 5);
-        coder_.Output(writer);
-        coder_.FinishEncoding(writer);
+        coder_.copy(3, 5);
+        coder_.output(writer);
+        coder_.finishEncoding(writer);
         assertEquals("[3,5]", writer.toString());
     }
 
     @Test
     public void Run() throws IOException {
-        coder_.Run(3, (byte) 'a');
-        coder_.Output(writer);
-        coder_.FinishEncoding(writer);
+        coder_.run(3, (byte) 'a');
+        coder_.output(writer);
+        coder_.finishEncoding(writer);
         assertEquals("[\"aaa\"]", writer.toString());
     }
 
     @Test
     public void AddEscaped() throws IOException {
-        coder_.Add("\n\b\r".getBytes("US-ASCII"), 0, 3);
-        coder_.Output(writer);
-        coder_.FinishEncoding(writer);
+        coder_.add("\n\b\r".getBytes("US-ASCII"), 0, 3);
+        coder_.output(writer);
+        coder_.finishEncoding(writer);
         assertEquals("[\"\\n\\b\\r\"]", writer.toString());
     }
 
     @Test
     public void AddCopyAdd() throws IOException {
-        coder_.Add("abc".getBytes("US-ASCII"), 0, 3);
-        coder_.Copy(3, 5);
-        coder_.Add("defghij".getBytes("US-ASCII"), 0, 7);
-        coder_.Output(writer);
-        coder_.FinishEncoding(writer);
+        coder_.add("abc".getBytes("US-ASCII"), 0, 3);
+        coder_.copy(3, 5);
+        coder_.add("defghij".getBytes("US-ASCII"), 0, 7);
+        coder_.output(writer);
+        coder_.finishEncoding(writer);
         assertEquals("[\"abc\",3,5,\"defghij\"]", writer.toString());
     }
 
     @Test
     public void AddOutputAddOutputToSameString() throws IOException {
-        coder_.Add("abc".getBytes("US-ASCII"), 0, 3);
-        coder_.Output(writer);
+        coder_.add("abc".getBytes("US-ASCII"), 0, 3);
+        coder_.output(writer);
         assertEquals("[\"abc\"", writer.toString());
-        coder_.Add("def".getBytes("US-ASCII"), 0, 3);
-        coder_.Output(writer);
-        coder_.FinishEncoding(writer);
+        coder_.add("def".getBytes("US-ASCII"), 0, 3);
+        coder_.output(writer);
+        coder_.finishEncoding(writer);
         assertEquals("[\"abc\",\"def\"]", writer.toString());
     }
 

@@ -112,7 +112,7 @@ public class VCDiffFileBasedCoderTest {
         InputStream inBackup;
         PrintStream outBackup;
 
-        // Encode
+        // encode
         inBackup = System.in;
         try {
             outBackup = System.out;
@@ -143,7 +143,7 @@ public class VCDiffFileBasedCoderTest {
             System.setIn(inBackup);
         }
 
-        // Decode
+        // decode
         inBackup = System.in;
         try {
             outBackup = System.out;
@@ -179,7 +179,7 @@ public class VCDiffFileBasedCoderTest {
     public void testVCDiffWithStdout() throws Exception {
         // vcdiff with mixed stdin/stdout.
 
-        // Encode
+        // encode
         PrintStream outBackup = System.out;
         try {
             OutputStream deltaOut = new FileOutputStream(deltaFile);
@@ -200,7 +200,7 @@ public class VCDiffFileBasedCoderTest {
             System.setOut(outBackup);
         }
 
-        // Decode
+        // decode
         outBackup = System.out;
         try {
             OutputStream targetOut = new FileOutputStream(outputTargetFile);
@@ -227,7 +227,7 @@ public class VCDiffFileBasedCoderTest {
         // vcdiff using stdin/stdout.  Verify that output file matches target file.
         InputStream inBackup;
 
-        // Encode
+        // encode
         inBackup = System.in;
         try {
             InputStream in = new FileInputStream(targetFile);
@@ -248,7 +248,7 @@ public class VCDiffFileBasedCoderTest {
             System.setIn(inBackup);
         }
 
-        // Decode
+        // decode
         inBackup = System.in;
         try {
             InputStream in = new FileInputStream(deltaFile);
@@ -518,7 +518,7 @@ public class VCDiffFileBasedCoderTest {
         InputStream inBackup;
         PrintStream outBackup;
 
-        // Encode
+        // encode
         inBackup = System.in;
         try {
             outBackup = System.out;
@@ -551,7 +551,7 @@ public class VCDiffFileBasedCoderTest {
             System.setIn(inBackup);
         }
 
-        // Decode
+        // decode
         inBackup = System.in;
         try {
             outBackup = System.out;

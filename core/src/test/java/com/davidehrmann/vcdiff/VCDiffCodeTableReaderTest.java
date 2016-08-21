@@ -125,7 +125,7 @@ public class VCDiffCodeTableReaderTest {
         VarInt.putInt(instructions_and_sizes_ptr_, 257);
         instructions_and_sizes_ptr_.flip();
 
-        reader_.Init(instructions_and_sizes_ptr_);
+        reader_.init(instructions_and_sizes_ptr_);
 
         AtomicInteger size = new AtomicInteger();
         AtomicInteger mode = new AtomicInteger();
@@ -143,7 +143,7 @@ public class VCDiffCodeTableReaderTest {
         VarInt.putInt(instructions_and_sizes_ptr_, 111);
         instructions_and_sizes_ptr_.flip();
 
-        reader_.Init(instructions_and_sizes_ptr_);
+        reader_.init(instructions_and_sizes_ptr_);
 
         AtomicInteger size = new AtomicInteger();
         AtomicInteger mode = new AtomicInteger();
@@ -160,7 +160,7 @@ public class VCDiffCodeTableReaderTest {
         instructions_and_sizes_ptr_.put((byte) 0);
         instructions_and_sizes_ptr_.flip();
 
-        reader_.Init(instructions_and_sizes_ptr_);
+        reader_.init(instructions_and_sizes_ptr_);
 
         AtomicInteger size = new AtomicInteger();
         AtomicInteger mode = new AtomicInteger();
@@ -178,7 +178,7 @@ public class VCDiffCodeTableReaderTest {
         instructions_and_sizes_ptr_.put((byte) 0);
         instructions_and_sizes_ptr_.flip();
 
-        reader_.Init(instructions_and_sizes_ptr_);
+        reader_.init(instructions_and_sizes_ptr_);
 
         AtomicInteger size = new AtomicInteger();
         AtomicInteger mode = new AtomicInteger();
@@ -201,7 +201,7 @@ public class VCDiffCodeTableReaderTest {
         instructions_and_sizes_ptr_.put((byte) 0);
         instructions_and_sizes_ptr_.flip();
 
-        reader_.Init(instructions_and_sizes_ptr_);
+        reader_.init(instructions_and_sizes_ptr_);
 
         AtomicInteger size = new AtomicInteger();
         AtomicInteger mode = new AtomicInteger();
@@ -226,7 +226,7 @@ public class VCDiffCodeTableReaderTest {
         VarInt.putInt(instructions_and_sizes_ptr_, 257);
         instructions_and_sizes_ptr_.flip();
 
-        reader_.Init(instructions_and_sizes_ptr_);
+        reader_.init(instructions_and_sizes_ptr_);
 
         AtomicInteger size = new AtomicInteger();
         AtomicInteger mode = new AtomicInteger();
@@ -253,7 +253,7 @@ public class VCDiffCodeTableReaderTest {
         instructions_and_sizes_ptr_.put((byte) 255);
         instructions_and_sizes_ptr_.flip();
 
-        reader_.Init(instructions_and_sizes_ptr_);
+        reader_.init(instructions_and_sizes_ptr_);
 
         AtomicInteger size = new AtomicInteger();
         AtomicInteger mode = new AtomicInteger();
@@ -281,7 +281,7 @@ public class VCDiffCodeTableReaderTest {
         instructions_and_sizes_ptr_.put((byte) 0);
         instructions_and_sizes_ptr_.flip();
 
-        reader_.Init(instructions_and_sizes_ptr_);
+        reader_.init(instructions_and_sizes_ptr_);
 
         AtomicInteger size = new AtomicInteger();
         AtomicInteger mode = new AtomicInteger();
@@ -318,7 +318,7 @@ public class VCDiffCodeTableReaderTest {
         instructions_and_sizes_ptr_.put((byte) 0);
         instructions_and_sizes_ptr_.flip();
 
-        reader_.Init(instructions_and_sizes_ptr_);
+        reader_.init(instructions_and_sizes_ptr_);
 
         AtomicInteger size = new AtomicInteger();
         AtomicInteger mode = new AtomicInteger();
@@ -357,7 +357,7 @@ public class VCDiffCodeTableReaderTest {
         instructions_and_sizes_ptr_.put((byte) 0);
         instructions_and_sizes_ptr_.flip();
 
-        reader_.Init(instructions_and_sizes_ptr_);
+        reader_.init(instructions_and_sizes_ptr_);
 
         reader_.UnGetInstruction();
 
@@ -377,7 +377,7 @@ public class VCDiffCodeTableReaderTest {
         instructions_and_sizes_ptr_.put((byte) 0);
         instructions_and_sizes_ptr_.flip();
 
-        reader_.Init(instructions_and_sizes_ptr_);
+        reader_.init(instructions_and_sizes_ptr_);
 
         AtomicInteger size = new AtomicInteger();
         AtomicInteger mode = new AtomicInteger();
@@ -405,10 +405,10 @@ public class VCDiffCodeTableReaderTest {
 
     @Test
     public void ReReadIncomplete() throws IOException{
-        instructions_and_sizes_ptr_.put((byte) 175);    // Add(1) + Copy1(4)
-        instructions_and_sizes_ptr_.put((byte) 1);    // Add(0)
+        instructions_and_sizes_ptr_.put((byte) 175);    // add(1) + Copy1(4)
+        instructions_and_sizes_ptr_.put((byte) 1);    // add(0)
         instructions_and_sizes_ptr_.put((byte) 111);    // with size 111
-        instructions_and_sizes_ptr_.put((byte) 255);    // Copy8(4) + Add(1)
+        instructions_and_sizes_ptr_.put((byte) 255);    // Copy8(4) + add(1)
 
         // 0 bytes available
         instructions_and_sizes_ptr_.limit(0);
@@ -416,14 +416,14 @@ public class VCDiffCodeTableReaderTest {
         AtomicInteger size = new AtomicInteger();
         AtomicInteger mode = new AtomicInteger();
 
-        reader_.Init(instructions_and_sizes_ptr_);
+        reader_.init(instructions_and_sizes_ptr_);
 
         assertEquals(VCDiffCodeTableData.VCD_INSTRUCTION_END_OF_DATA, reader_.GetNextInstruction(size, mode));
         assertEquals(0, instructions_and_sizes_ptr_.position());
 
         // 1 more byte available
         instructions_and_sizes_ptr_.limit(1);
-        reader_.Init(instructions_and_sizes_ptr_);
+        reader_.init(instructions_and_sizes_ptr_);
 
         assertEquals(VCDiffCodeTableData.VCD_ADD, reader_.GetNextInstruction(size, mode));
         assertEquals(1, size.get());
@@ -437,7 +437,7 @@ public class VCDiffCodeTableReaderTest {
 
         // 1 more byte available
         instructions_and_sizes_ptr_.limit(instructions_and_sizes_ptr_.position() + 1);
-        reader_.Init(instructions_and_sizes_ptr_);
+        reader_.init(instructions_and_sizes_ptr_);
 
         // The opcode is available, but the separately encoded size is not
         assertEquals(VCDiffCodeTableData.VCD_INSTRUCTION_END_OF_DATA, reader_.GetNextInstruction(size, mode));
@@ -445,7 +445,7 @@ public class VCDiffCodeTableReaderTest {
 
         // 2 more bytes available
         instructions_and_sizes_ptr_.limit(instructions_and_sizes_ptr_.position() + 2);
-        reader_.Init(instructions_and_sizes_ptr_);
+        reader_.init(instructions_and_sizes_ptr_);
 
         assertEquals(VCDiffCodeTableData.VCD_ADD, reader_.GetNextInstruction(size, mode));
         assertEquals(111, size.get());
@@ -455,7 +455,7 @@ public class VCDiffCodeTableReaderTest {
 
         // 1 more byte available
         instructions_and_sizes_ptr_.limit(instructions_and_sizes_ptr_.position() + 1);
-        reader_.Init(instructions_and_sizes_ptr_);
+        reader_.init(instructions_and_sizes_ptr_);
 
         assertEquals(VCDiffCodeTableData.VCD_COPY, reader_.GetNextInstruction(size, mode));
         assertEquals(4, size.get());
@@ -487,7 +487,7 @@ public class VCDiffCodeTableReaderTest {
         instructions_and_sizes_ptr_.flip();
 
         reader_ = new VCDiffCodeTableReader(g_exercise_code_table_, kLastExerciseMode);
-        reader_.Init(instructions_and_sizes_ptr_);
+        reader_.init(instructions_and_sizes_ptr_);
 
         int opcode = 0;
 

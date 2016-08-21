@@ -28,16 +28,11 @@ import com.davidehrmann.vcdiff.VCDiffEngine;
 // caller may free that string, if desired, after the constructor returns.
 //
 public class HashedDictionary {
-    private VCDiffEngine engine_;
+    private final VCDiffEngine engine;
 
-    public HashedDictionary(byte[] dictionary_contents) {
-        // Init() must be called before using the HashedDictionary as an argument
-        // to the VCDiffStreamingEncoder, or for any other purpose except
-        // destruction.  It returns true if initialization succeeded, or false
-        // if an error occurred, in which case the caller should destroy the object
-        // without using it.
-        engine_ = new VCDiffEngine(dictionary_contents);
+    public HashedDictionary(byte[] dictionaryContents) {
+        engine = new VCDiffEngine(dictionaryContents);
     }
 
-    public VCDiffEngine engine() { return engine_; }
+    public VCDiffEngine engine() { return engine; }
 }

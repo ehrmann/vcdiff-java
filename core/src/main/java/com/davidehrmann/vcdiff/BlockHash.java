@@ -80,7 +80,7 @@ public class BlockHash {
     // possible if, for example, all the blocks in the dictionary have
     // the same hash value.  See the unit test SearchStringFindsTooManyMatches
     // for an example of such a case.  The encoder uses a loop in
-    // VCDiffEngine::Encode over each target byte, containing a loop in
+    // VCDiffEngine::encode over each target byte, containing a loop in
     // BlockHash::FindBestMatch over the number of matches (up to a maximum
     // of the number of source blocks), containing two loops that extend
     // the match forwards and backwards up to the number of source bytes.
@@ -145,7 +145,7 @@ public class BlockHash {
     // are considered to be concatenated -- not literally in a single memory
     // buffer, but conceptually as described in the RFC.
     // The first byte of the previously encoded target data
-    // has an offset that is equal to dictionary_size, i.e., just after
+    // has an offset that is equal to dictionarySize, i.e., just after
     // the last byte of source data.
     // For a hash of source (dictionary) data, starting_offset_ will be zero;
     // for a hash of previously encoded target data, starting_offset_ will be
@@ -240,7 +240,7 @@ public class BlockHash {
     //      starting_offset_ to any best_match->source_offset() value it returns,
     //      in order to produce the correct offset value for a target BlockHash.
     //   2. For a dictionary BlockHash, the entire data set is hashed at once
-    //      when Init() is called with the parameter populate_hash_table = true.
+    //      when init() is called with the parameter populate_hash_table = true.
     //      For a target BlockHash, because the previously encoded target data
     //      includes only the data seen up to the current encoding position,
     //      the data blocks are hashed incrementally as the encoding position
@@ -248,7 +248,7 @@ public class BlockHash {
     //
     // The following two factory functions can be used to create BlockHash
     // objects for each of these two purposes.  Each factory function calls
-    // the object constructor and also calls Init().  If an error occurs,
+    // the object constructor and also calls init().  If an error occurs,
     // NULL is returned; otherwise a valid BlockHash object is returned.
     // Since a dictionary BlockHash is not expected to be modified after
     // initialization, a const object is returned.
@@ -296,7 +296,7 @@ public class BlockHash {
     // AddBlock() at all, because block 3 (beginning at index 12) would
     // fall outside the range of source data.
     //
-    // VCDiffEngine::Encode (in vcdiffengine.cc) uses this function to
+    // VCDiffEngine::encode (in vcdiffengine.cc) uses this function to
     // add a whole range of data to a target hash when a COPY instruction
     // is generated.
     public void AddAllBlocksThroughIndex(int end_index) {
@@ -480,7 +480,7 @@ public class BlockHash {
     }
 
     // Internal routine which calculates a hash table size based on kBlockSize and
-    // the dictionary_size.  Will return a power of two if successful, or 0 if an
+    // the dictionarySize.  Will return a power of two if successful, or 0 if an
     // internal error occurs.  Some calculations (such as GetHashTableIndex())
     // depend on the table size being a power of two.
     protected static int CalcTableSize(final int dictionary_size) {
@@ -498,7 +498,7 @@ public class BlockHash {
             // Guard against an infinite loop
             if (table_size <= 0) {
                 throw new IllegalStateException(String.format(
-                        "Internal error: CalcTableSize(dictionary_size = %d): resulting table_size %d is zero or negative",
+                        "Internal error: CalcTableSize(dictionarySize = %d): resulting table_size %d is zero or negative",
                         dictionary_size, table_size
                 ));
             }
@@ -506,16 +506,16 @@ public class BlockHash {
         // Check size sanity
         if ((table_size & (table_size - 1)) != 0) {
             throw new IllegalStateException(String.format(
-                    "Internal error: CalcTableSize(dictionary_size = %d): resulting table_size %d is not a power of 2",
+                    "Internal error: CalcTableSize(dictionarySize = %d): resulting table_size %d is not a power of 2",
                     dictionary_size, table_size
             ));
         }
         // The loop above tries to find the smallest power of 2 that is >= min_size.
         // That value must lie somewhere between min_size and (min_size * 2),
-        // except for the case (dictionary_size == 0, table_size == 1).
+        // except for the case (dictionarySize == 0, table_size == 1).
         if ((dictionary_size > 0) && (table_size > (min_size * 2))) {
             throw new IllegalStateException(String.format(
-                    "Internal error: CalcTableSize(dictionary_size = %d): resulting table_size %d is too large",
+                    "Internal error: CalcTableSize(dictionarySize = %d): resulting table_size %d is too large",
                     dictionary_size, table_size
             ));
         }
@@ -566,7 +566,7 @@ public class BlockHash {
             hash_table[hash_table_index] = block_number;
             last_block_table[block_number] = block_number;
         } else {
-            // Add this entry at the end of the chain of matching blocks
+            // add this entry at the end of the chain of matching blocks
             final int last_matching_block = last_block_table[first_matching_block];
             if (next_block_table[last_matching_block] != -1) {
                 throw new IllegalStateException(String.format(
@@ -583,7 +583,7 @@ public class BlockHash {
     // Calls AddBlock() for each complete kBlockSize-byte block between
     // source_data_ and (source_data_ + source_size_).  It is equivalent
     // to calling AddAllBlocksThroughIndex(source_data + source_size).
-    // This function is called when Init(true) is invoked.
+    // This function is called when init(true) is invoked.
     protected void AddAllBlocks() {
         AddAllBlocksThroughIndex(source_data.limit());
     }
@@ -615,7 +615,7 @@ public class BlockHash {
     // that represents a match for the given hash value.
     // Returns -1 if no match was found.
     //
-    // Init() must have been called and returned true before using
+    // init() must have been called and returned true before using
     // FirstMatchingBlock or NextMatchingBlock.  No check is performed
     // for this condition; the code will crash if this condition is violated.
     //

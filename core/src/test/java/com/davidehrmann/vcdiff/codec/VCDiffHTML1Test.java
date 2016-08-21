@@ -114,10 +114,10 @@ public class VCDiffHTML1Test extends VerifyEncodedBytesTest {
 
     @Test
     public void SimpleEncoderPerformsTargetMatching() throws Exception {
-        simple_encoder_.Encode(kRedundantTarget, delta_);
+        simple_encoder_.encode(kRedundantTarget, delta_);
         assertTrue(kRedundantTarget.length + kFileHeaderSize + kWindowHeaderSize >=
                 delta_.size());
-        simple_decoder_.Decode(kDictionary, delta_.toByteArray(), result_target_);
+        simple_decoder_.decode(kDictionary, delta_.toByteArray(), result_target_);
         assertArrayEquals(kRedundantTarget, result_target_.toByteArray());
 
         EncodedBytesVerifier verifier = new EncodedBytesVerifier(delta_.toByteArray());
@@ -155,10 +155,10 @@ public class VCDiffHTML1Test extends VerifyEncodedBytesTest {
                 .withTargetMatches(false)
                 .buildSimple();
 
-        simple_encoder_.Encode(kRedundantTarget, delta_);
+        simple_encoder_.encode(kRedundantTarget, delta_);
         assertTrue(kRedundantTarget.length + kFileHeaderSize + kWindowHeaderSize >=
                 delta_.size());
-        simple_decoder_.Decode(kDictionary, delta_.toByteArray(), result_target_);
+        simple_decoder_.decode(kDictionary, delta_.toByteArray(), result_target_);
         assertArrayEquals(kRedundantTarget, result_target_.toByteArray());
 
         EncodedBytesVerifier verifier = new EncodedBytesVerifier(delta_.toByteArray());

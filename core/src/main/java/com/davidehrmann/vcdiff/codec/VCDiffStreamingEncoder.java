@@ -19,30 +19,30 @@ import java.io.IOException;
 
 public interface VCDiffStreamingEncoder<OUT> {
     // The client should use these routines as follows:
-    //    HashedDictionary hd(dictionary, dictionary_size);
-    //    if (!hd.Init()) {
+    //    HashedDictionary hd(dictionary, dictionarySize);
+    //    if (!hd.init()) {
     //      HandleError();
     //      return;
     //    }
     //    string output_string;
     //    VCDiffStreamingEncoder v(hd, false, false);
-    //    if (!v.StartEncoding(&output_string)) {
+    //    if (!v.startEncoding(&output_string)) {
     //      HandleError();
-    //      return;  // No need to call FinishEncoding()
+    //      return;  // No need to call finishEncoding()
     //    }
     //    Process(output_string.data(), output_string.size());
     //    output_string.clear();
     //    while (get data_buf) {
-    //      if (!v.EncodeChunk(data_buf, data_len, &output_string)) {
+    //      if (!v.encodeChunk(data_buf, data_len, &output_string)) {
     //        HandleError();
-    //        return;  // No need to call FinishEncoding()
+    //        return;  // No need to call finishEncoding()
     //      }
     //      // The encoding is appended to output_string at each call,
     //      // so clear output_string once its contents have been processed.
     //      Process(output_string.data(), output_string.size());
     //      output_string.clear();
     //    }
-    //    if (!v.FinishEncoding(&output_string)) {
+    //    if (!v.finishEncoding(&output_string)) {
     //      HandleError();
     //      return;
     //    }
@@ -50,7 +50,7 @@ public interface VCDiffStreamingEncoder<OUT> {
     //    output_string.clear();
     //
     // I.e., the allowed pattern of calls is
-    //    StartEncoding EncodeChunk* FinishEncoding
+    //    startEncoding encodeChunk* finishEncoding
     //
     // The size of the encoded output depends on the sizes of the chunks
     // passed in (i.e. the chunking boundary affects compression).
@@ -61,31 +61,31 @@ public interface VCDiffStreamingEncoder<OUT> {
     // to *output_string.
     //
     // Note: we *append*, so the old contents of *output_string stick around.
-    // This convention differs from the non-streaming Encode/Decode
+    // This convention differs from the non-streaming encode/decode
     // interfaces in VCDiffEncoder.
     //
     // If an error occurs, this function returns false; otherwise it returns true.
     // If this function returns false, the caller does not need to call
-    // FinishEncoding or to do any cleanup except destroying the
+    // finishEncoding or to do any cleanup except destroying the
     // VCDiffStreamingEncoder object.
-    void StartEncoding(OUT out) throws IOException;
+    void startEncoding(OUT out) throws IOException;
 
     // Appends compressed encoding for "data" (one complete VCDIFF delta window)
     // to *output_string.
-    // If an error occurs (for example, if StartEncoding was not called
-    // earlier or StartEncoding returned false), this function returns false;
-    // otherwise it returns true.  The caller does not need to call FinishEncoding
+    // If an error occurs (for example, if startEncoding was not called
+    // earlier or startEncoding returned false), this function returns false;
+    // otherwise it returns true.  The caller does not need to call finishEncoding
     // or do any cleanup except destroying the VCDiffStreamingEncoder
     // if this function returns false.
-    void EncodeChunk(byte[] data, int offset, int length, OUT out) throws IOException;
+    void encodeChunk(byte[] data, int offset, int length, OUT out) throws IOException;
 
-    void EncodeChunk(byte[] data, OUT out) throws IOException;
+    void encodeChunk(byte[] data, OUT out) throws IOException;
 
     // Finishes encoding and appends any leftover encoded data to *output_string.
-    // If an error occurs (for example, if StartEncoding was not called
-    // earlier or StartEncoding returned false), this function returns false;
+    // If an error occurs (for example, if startEncoding was not called
+    // earlier or startEncoding returned false), this function returns false;
     // otherwise it returns true.  The caller does not need to
     // do any cleanup except destroying the VCDiffStreamingEncoder
     // if this function returns false.
-    void FinishEncoding(OUT out) throws IOException;
+    void finishEncoding(OUT out) throws IOException;
 }

@@ -57,7 +57,7 @@ public class RollingHash {
     // Given a full hash value for buffer[0] ... buffer[window_size -1], plus the
     // value of the first byte buffer[0], this function returns a *partial* hash
     // value for buffer[1] ... buffer[window_size -1].  See the comments in
-    // Init(), below, for a description of how the contents of remove_table_ are
+    // init(), below, for a description of how the contents of remove_table_ are
     // computed.
     protected long RemoveFirstByteFromHash(long full_hash, byte first_byte) {
         return RollingHashUtil.ModBase(full_hash + remove_table[first_byte & 0xff]);
@@ -132,7 +132,7 @@ public class RollingHash {
             //      the non-const local pointer and then assigned to the global const
             //      pointer once it's ready.
             //   2. No other thread will ever see remove_table_ pointing to a
-            //      partially-initialized table.  If two threads happen to call Init()
+            //      partially-initialized table.  If two threads happen to call init()
             //      at the same time, two tables with the same contents may be created
             //      (causing a memory leak), but the results will be consistent
             //      no matter which of the two tables is used.

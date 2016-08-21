@@ -12,23 +12,23 @@ import static org.junit.Assert.assertEquals;
 public class VCDiffInterleavedWindowDecoderTestByteByByte extends VCDiffInterleavedWindowDecoderTestBase {
     @Test
     public void Decode() throws Exception {
-        decoder_.StartDecoding(dictionary_);
+        decoder_.startDecoding(dictionary_);
         for (int i = 0; i < delta_file_.length; ++i) {
-            decoder_.DecodeChunk(delta_file_, i, 1, output_);
+            decoder_.decodeChunk(delta_file_, i, 1, output_);
         }
-        decoder_.FinishDecoding();
+        decoder_.finishDecoding();
         assertArrayEquals(expected_target_, output_.toByteArray());
     }
 
     // Windows 3 and 4 use the VCD_TARGET flag, so decoder should signal an error.
     @Test 
     public void DecodeNoVcdTarget() throws Exception {
-        decoder_.SetAllowVcdTarget(false);
-        decoder_.StartDecoding(dictionary_);
+        decoder_.setAllowVcdTarget(false);
+        decoder_.startDecoding(dictionary_);
         int i = 0;
         for (; i < delta_file_.length; ++i) {
             try {
-                decoder_.DecodeChunk(delta_file_, i, 1, output_);
+                decoder_.decodeChunk(delta_file_, i, 1, output_);
             } catch (IOException e) {
                 break;
             }
@@ -40,22 +40,22 @@ public class VCDiffInterleavedWindowDecoderTestByteByByte extends VCDiffInterlea
     }
 
     // The original version of VCDiffDecoder did not allow the caller to modify the
-    // contents of output_string between calls to DecodeChunk().  That restriction
+    // contents of output_string between calls to decodeChunk().  That restriction
     // has been removed.  Verify that the same result is still produced if the
-    // output string is cleared after each call to DecodeChunk().  Use the window
+    // output string is cleared after each call to decodeChunk().  Use the window
     // encoding because it refers back to the previously decoded target data, which
     // is the feature that would fail if the restriction still applied.
     //
     @Test
     public void OutputStringCanBeModified() throws Exception {
         ByteArrayOutputStream temp_output = new ByteArrayOutputStream();
-        decoder_.StartDecoding(dictionary_);
+        decoder_.startDecoding(dictionary_);
         for (int i = 0; i < delta_file_.length; ++i) {
-            decoder_.DecodeChunk(delta_file_, i, 1, temp_output);
+            decoder_.decodeChunk(delta_file_, i, 1, temp_output);
             output_.write(temp_output.toByteArray());
             temp_output.reset();
         }
-        decoder_.FinishDecoding();
+        decoder_.finishDecoding();
         assertArrayEquals(expected_target_, output_.toByteArray());
     }
 
@@ -63,11 +63,11 @@ public class VCDiffInterleavedWindowDecoderTestByteByByte extends VCDiffInterlea
     public void OutputStringIsPreserved() throws Exception {
         final byte[] previous_data = "Previous data".getBytes(US_ASCII);
         output_.write(previous_data);
-        decoder_.StartDecoding(dictionary_);
+        decoder_.startDecoding(dictionary_);
         for (int i = 0; i < delta_file_.length; ++i) {
-            decoder_.DecodeChunk(delta_file_, i, 1, output_);
+            decoder_.decodeChunk(delta_file_, i, 1, output_);
         }
-        decoder_.FinishDecoding();
+        decoder_.finishDecoding();
         assertArrayEquals(ArraysExtra.concat(previous_data, expected_target_), output_.toByteArray());
     }
 }

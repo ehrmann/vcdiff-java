@@ -7,9 +7,9 @@ import static org.junit.Assert.assertArrayEquals;
 public class VCDiffInterleavedCrossDecoderTest extends VCDiffInterleavedCrossDecoderTestBase {
     @Test
     public void Decode() throws Exception {
-        decoder_.StartDecoding(dictionary_);
-        decoder_.DecodeChunk(delta_file_, output_);
-        decoder_.FinishDecoding();
+        decoder_.startDecoding(dictionary_);
+        decoder_.decodeChunk(delta_file_, output_);
+        decoder_.finishDecoding();
         assertArrayEquals(expected_target_, output_.toByteArray());
     }
 
@@ -17,9 +17,9 @@ public class VCDiffInterleavedCrossDecoderTest extends VCDiffInterleavedCrossDec
     public void DecodeWithChecksum() throws Exception {
         ComputeAndAddChecksum();
         InitializeDeltaFile();
-        decoder_.StartDecoding(dictionary_);
-        decoder_.DecodeChunk(delta_file_, output_);
-        decoder_.FinishDecoding();
+        decoder_.startDecoding(dictionary_);
+        decoder_.decodeChunk(delta_file_, output_);
+        decoder_.finishDecoding();
         assertArrayEquals(expected_target_, output_.toByteArray());
     }
 }

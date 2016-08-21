@@ -16,7 +16,7 @@
 // Definition of an abstract class that describes the interface between the
 // encoding engine (which finds the best string matches between the source and
 // target data) and the code table writer.  The code table writer is passed a
-// series of Add, Copy, and Run instructions and produces an output file in the
+// series of add, copy, and run instructions and produces an output file in the
 // desired format.
 
 package com.davidehrmann.vcdiff.codec;

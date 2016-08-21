@@ -15,8 +15,7 @@
 
 package com.davidehrmann.vcdiff.codec;
 
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+import com.davidehrmann.vcdiff.util.Objects;
 
 import java.io.IOException;
 
@@ -24,43 +23,40 @@ import java.io.IOException;
  * A simpler (non-streaming) interface to the VCDIFF encoder that can be used
  * if the entire target data string is available.
  *
- * @param <OUT> The output type the {@link ../CodeTableWriterInterface} uses
+ * @param <OUT> The output type the {@link com.davidehrmann.vcdiff.CodeTableWriterInterface} uses
  */
 public class VCDiffEncoder<OUT> {
 
-    private static final Logger LOGGER = LoggerFactory.getLogger(VCDiffEncoder.class);
-
-    protected final VCDiffStreamingEncoder<OUT> encoder_;
-
-    // This state variable is used to ensure that StartEncoding(), EncodeChunk(),
-    // and FinishEncoding() are called in the correct order.  It will be true
-    // if StartEncoding() has been called, followed by zero or more calls to
-    // EncodeChunk(), but FinishEncoding() has not yet been called.  It will
-    // be false initially, and also after FinishEncoding() has been called.
-    // TODO: this is never used
-    protected boolean encode_chunk_allowed_;
+    private final VCDiffStreamingEncoder<OUT> encoder;
 
     public VCDiffEncoder(VCDiffStreamingEncoder<OUT> streamingEncoder) {
-        this.encoder_ = streamingEncoder;
+        this.encoder = Objects.requireNotNull(streamingEncoder, "encoder was null");
     }
 
     /**
      * Replaces old contents of output_string with the encoded form of
      * target_data.
      *
-     * @param data
-     * @param offset
-     * @param length
-     * @param out
-     * @throws IOException
+     * @param data data to encode
+     * @param offset offset into the data array to encode from
+     * @param length number of bytes from the array to encode
+     * @param out writer to write encoded data to
+     * @throws IOException if an exception occurs in the encoder or writing to the output writer
      */
-    public void Encode(byte[] data, int offset, int length, OUT out) throws IOException {
-        encoder_.StartEncoding(out);
-        encoder_.EncodeChunk(data, offset, length, out);
-        encoder_.FinishEncoding(out);
+    public void encode(byte[] data, int offset, int length, OUT out) throws IOException {
+        encoder.startEncoding(out);
+        encoder.encodeChunk(data, offset, length, out);
+        encoder.finishEncoding(out);
     }
 
-    public void Encode(byte[] data, OUT out) throws IOException {
-        Encode(data, 0, data.length, out);
+    /**
+     * This is a convenience method that's equivalent to encode(data, 0, data.length, out)
+     *
+     * @param data data to encode
+     * @param out writer to write encoded data to
+     * @throws IOException if an exception occurs in the encoder or writing to the output writer
+     */
+    public void encode(byte[] data, OUT out) throws IOException {
+        encode(data, 0, data.length, out);
     }
 }

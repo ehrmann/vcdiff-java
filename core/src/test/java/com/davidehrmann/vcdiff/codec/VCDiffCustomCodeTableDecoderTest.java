@@ -19,9 +19,9 @@ public class VCDiffCustomCodeTableDecoderTest extends VCDiffCustomCodeTableDecod
         custom_code_table.size1[34] = 28;
         custom_code_table.size1[50] = 44;
 
-        decoder_.StartDecoding(custom_code_table.getBytes());
-        decoder_.DecodeChunk(kEncodedCustomCodeTable, output_);
-        decoder_.FinishDecoding();
+        decoder_.startDecoding(custom_code_table.getBytes());
+        decoder_.decodeChunk(kEncodedCustomCodeTable, output_);
+        decoder_.finishDecoding();
         assertEquals(custom_code_table.getBytes().length, output_.size());
         final VCDiffCodeTableData decoded_table = new VCDiffCodeTableData(output_.toByteArray());
         assertEquals(VCD_RUN, decoded_table.inst1[0]);
@@ -42,23 +42,23 @@ public class VCDiffCustomCodeTableDecoderTest extends VCDiffCustomCodeTableDecod
 
     @Test
     public void DecodeUsingCustomCodeTable() throws Exception {
-        decoder_.StartDecoding(dictionary_);
-        decoder_.DecodeChunk(delta_file_, output_);
-        decoder_.FinishDecoding();
+        decoder_.startDecoding(dictionary_);
+        decoder_.decodeChunk(delta_file_, output_);
+        decoder_.finishDecoding();
         assertArrayEquals(expected_target_, output_.toByteArray());
     }
 
     @Test
     public void IncompleteCustomCodeTable() throws Exception {
-        decoder_.StartDecoding(dictionary_);
-        decoder_.DecodeChunk(delta_file_header_,
+        decoder_.startDecoding(dictionary_);
+        decoder_.decodeChunk(delta_file_header_,
                 0,
                 delta_file_header_.length - 1,
                 output_
         );
         try {
             thrown.expect(IOException.class);
-            decoder_.FinishDecoding();
+            decoder_.finishDecoding();
         } finally {
             assertArrayEquals(new byte[0], output_.toByteArray());
         }

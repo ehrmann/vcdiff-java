@@ -44,21 +44,21 @@ public class VCDiffHeaderParserTest {
 
     private void VerifyByte(byte expected_value) throws IOException {
         ByteBuffer unparsedData = parser.unparsedData();
-        byte decoded_byte = parser.ParseByte();
+        byte decoded_byte = parser.parseByte();
         assertEquals(expected_value, decoded_byte);
         assertEquals(unparsedData.remaining() - 1, parser.unparsedData().remaining());
     }
 
     private void VerifyInt32(int expected_value) throws IOException {
         ByteBuffer prior_position = parser.unparsedData();
-        int decoded_integer = parser.ParseInt32("decoded int32");
+        int decoded_integer = parser.parseInt32("decoded int32");
         assertEquals(expected_value, decoded_integer);
         Assert.assertEquals(prior_position.remaining(), parser.unparsedData().remaining() + VarInt.calculateIntLength(decoded_integer));
     }
 
     private void VerifyUInt32(int expected_value) throws IOException {
         ByteBuffer prior_position = parser.unparsedData();
-        int decoded_integer = parser.ParseUInt32("decoded uint32");
+        int decoded_integer = parser.parseUInt32("decoded uint32");
         assertEquals(expected_value, decoded_integer);
         assertEquals(prior_position.remaining(), parser.unparsedData().remaining() + VarInt.calculateLongLength(decoded_integer & 0xffffffffL));
 
@@ -66,7 +66,7 @@ public class VCDiffHeaderParserTest {
 
     private void VerifyChecksum(int expected_value) throws IOException {
         ByteBuffer prior_position = parser.unparsedData();
-        int decoded_checksum = parser.ParseChecksum("decoded checksum");
+        int decoded_checksum = parser.parseChecksum("decoded checksum");
         assertEquals(expected_value, decoded_checksum);
         assertEquals(prior_position.remaining(), parser.unparsedData().remaining() + VarInt.calculateLongLength(decoded_checksum & 0xffffffffL));
     }
@@ -88,8 +88,8 @@ public class VCDiffHeaderParserTest {
             VerifyByte(byte_values.get(position));
         }
 
-        assertNull(parser.ParseByte());
-        assertEquals(VCDiffHeaderParser.RESULT_END_OF_DATA, parser.GetResult());
+        assertNull(parser.parseByte());
+        assertEquals(VCDiffHeaderParser.RESULT_END_OF_DATA, parser.getResult());
 
         assertEquals(0, parser.unparsedData().remaining());
     }
@@ -111,8 +111,8 @@ public class VCDiffHeaderParserTest {
             VerifyInt32(integer_values.get(i));
         }
 
-        assertNull(parser.ParseInt32("decoded integer"));
-        assertEquals(VCDiffHeaderParser.RESULT_END_OF_DATA, parser.GetResult());
+        assertNull(parser.parseInt32("decoded integer"));
+        assertEquals(VCDiffHeaderParser.RESULT_END_OF_DATA, parser.getResult());
         assertEquals(0, parser.unparsedData().remaining());
     }
 
@@ -133,8 +133,8 @@ public class VCDiffHeaderParserTest {
             VerifyUInt32(integer_values.get(i));
         }
 
-        assertNull(parser.ParseUInt32("decoded integer"));
-        assertEquals(VCDiffHeaderParser.RESULT_END_OF_DATA, parser.GetResult());
+        assertNull(parser.parseUInt32("decoded integer"));
+        assertEquals(VCDiffHeaderParser.RESULT_END_OF_DATA, parser.getResult());
         assertEquals(0, parser.unparsedData().remaining());
     }
 
@@ -156,8 +156,8 @@ public class VCDiffHeaderParserTest {
             VerifyChecksum(checksum_values.get(i));
         }
 
-        assertNull(parser.ParseChecksum("decoded checksum"));
-        assertEquals(VCDiffHeaderParser.RESULT_END_OF_DATA, parser.GetResult());
+        assertNull(parser.parseChecksum("decoded checksum"));
+        assertEquals(VCDiffHeaderParser.RESULT_END_OF_DATA, parser.getResult());
         assertEquals(0, parser.unparsedData().remaining());
     }
 
@@ -180,8 +180,8 @@ public class VCDiffHeaderParserTest {
         VerifyInt32(0x02020202);
         VerifyChecksum(0xCAFECAFE);
 
-        parser.ParseInt32("incomplete Varint");
-        assertEquals(VCDiffHeaderParser.RESULT_END_OF_DATA, parser.GetResult());
+        parser.parseInt32("incomplete Varint");
+        assertEquals(VCDiffHeaderParser.RESULT_END_OF_DATA, parser.getResult());
         assertEquals(2, parser.unparsedData().remaining());
     }
 
@@ -191,7 +191,7 @@ public class VCDiffHeaderParserTest {
 
         // Start with a byte that has the continuation bit plus a high-order bit set
         buffer.put((byte) 0xC0);
-        // Add too many bytes with continuation bits
+        // add too many bytes with continuation bits
         for (int i = 0; i < 6; i++) {
             buffer.put((byte) 0x80);
         }
@@ -201,7 +201,7 @@ public class VCDiffHeaderParserTest {
         StartParsing(buffer);
 
         try {
-            parser.ParseInt32("invalid Varint");
+            parser.parseInt32("invalid Varint");
             fail();
         } catch (IOException ignored) { }
 
@@ -210,7 +210,7 @@ public class VCDiffHeaderParserTest {
         // After the parse failure, any other call to Parse... should return an error,
         // even though there is still a byte that could be read as valid.
         try {
-            parser.ParseByte();
+            parser.parseByte();
             fail();
         } catch (IOException ignored) { }
 

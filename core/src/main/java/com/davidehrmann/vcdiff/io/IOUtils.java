@@ -52,7 +52,7 @@ public final class IOUtils {
     }
 
     /**
-     * Copy bytes from an <code>InputStream</code> to an
+     * copy bytes from an <code>InputStream</code> to an
      * <code>OutputStream</code>.
      * <p>
      * This method buffers the input internally, so there is no need to use a
@@ -79,7 +79,7 @@ public final class IOUtils {
     }
 
     /**
-     * Copy bytes from a large (over 2GB) <code>InputStream</code> to an
+     * copy bytes from a large (over 2GB) <code>InputStream</code> to an
      * <code>OutputStream</code>.
      * <p>
      * This method buffers the input internally, so there is no need to use a
@@ -100,7 +100,7 @@ public final class IOUtils {
     }
 
     /**
-     * Copy bytes from a large (over 2GB) <code>InputStream</code> to an
+     * copy bytes from a large (over 2GB) <code>InputStream</code> to an
      * <code>OutputStream</code>.
      * <p>
      * This method uses the provided buffer, so there is no need to use a

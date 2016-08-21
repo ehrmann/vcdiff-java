@@ -148,12 +148,12 @@ public class VCDiffInputStream extends InputStream {
             if (read >= 0) {
                 totalBytesRead += read;
                 if (!decodingStarted) {
-                    decoder.StartDecoding(dictionary);
+                    decoder.startDecoding(dictionary);
                     decodingStarted = true;
                 }
 
                 try {
-                    decoder.DecodeChunk(inBuffer, 0, read, tempDecoded);
+                    decoder.decodeChunk(inBuffer, 0, read, tempDecoded);
                 } catch (IOException e) {
                     throw new IOException("Error trying to decode data chunk starting at offset " + (totalBytesRead - read), e);
                 }
@@ -163,7 +163,7 @@ public class VCDiffInputStream extends InputStream {
                     tempDecoded.reset();
                 }
             } else {
-                decoder.FinishDecoding();
+                decoder.finishDecoding();
                 break;
             }
         }

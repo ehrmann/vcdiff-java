@@ -17,13 +17,13 @@ import static com.davidehrmann.vcdiff.VCDiffCodeTableData.*;
  * @author David Ehrmann
  * The method calls after construction *must* conform
  * to the following pattern:
- *    {{Add|Copy|Run}* [AddChecksum] Output}*
+ *    {{add|copy|run}* [addChecksum] output}*
  *
- * When Output has been called in this sequence, a complete target window
+ * When output has been called in this sequence, a complete target window
  * (as defined in RFC 3284 section 4.3) will have been appended to
- * out (unless no calls to Add, Run, or Copy were made, in which
- * case Output will do nothing.)  The output will not be available for use
- * until after each call to Output().
+ * out (unless no calls to add, run, or copy were made, in which
+ * case output will do nothing.)  The output will not be available for use
+ * until after each call to output().
  *
  * NOT threadsafe.
  */
@@ -82,10 +82,10 @@ public class VCDiffCodeTableWriter implements CodeTableWriterInterface<OutputStr
     private int dictionary_size_;
 
     // The number of bytes of target data that has been encoded so far.
-    // Each time Add(), Copy(), or Run() is called, this will be incremented.
+    // Each time add(), copy(), or run() is called, this will be incremented.
     // The target length is used to compute HERE mode addresses
     // for COPY instructions, and is also written into the header
-    // of the delta window when Output() is called.
+    // of the delta window when output() is called.
     //
     private int target_length_;
 
@@ -112,12 +112,12 @@ public class VCDiffCodeTableWriter implements CodeTableWriterInterface<OutputStr
 
     // The checksum to be written to the current target window,
     // if add_checksum_ is true.
-    // This will not be calculated based on the individual calls to Add(), Run(),
-    // and Copy(), which would be unnecessarily expensive.  Instead, the code
+    // This will not be calculated based on the individual calls to add(), run(),
+    // and copy(), which would be unnecessarily expensive.  Instead, the code
     // that uses the VCDiffCodeTableWriter object is expected to calculate
-    // the checksum all at once and to call AddChecksum() with that value.
-    // Must be called sometime before calling Output(), though it can be called
-    // either before or after the calls to Add(), Run(), and Copy().
+    // the checksum all at once and to call addChecksum() with that value.
+    // Must be called sometime before calling output(), though it can be called
+    // either before or after the calls to add(), run(), and copy().
     private long checksum_;
 
     /**
@@ -154,28 +154,30 @@ public class VCDiffCodeTableWriter implements CodeTableWriterInterface<OutputStr
     /**
      *
      * Uses a non-standard code table and non-standard cache sizes.  The caller
-     * must guarantee that code_table_data remains allocated for the lifetime of
+     * must guarantee that codeTableData remains allocated for the lifetime of
      * the VCDiffCodeTableWriter object.  Note that this is different from how
-     * VCDiffCodeTableReader::UseCodeTable works.  It is assumed that a given
+     * VCDiffCodeTableReader::useCodeTable works.  It is assumed that a given
      * encoder will use either the default code table or a statically-defined
      * non-standard code table, whereas the decoder must have the ability to read
      * an arbitrary non-standard code table from a delta file and discard it once
      * the file has been decoded.
      *
-     * @param interleaved
-     * @param near_cache_size
-     * @param same_cache_size
+     * @param interleaved Whether or not to interleave the output data
+     * @param nearCacheSize size of the near cache
+     * @param sameCacheSize size of the same cache
+     * @param codeTableData custom code table data
+     * @param maxMode maximum value for the mode of a COPY instruction.
      */
-    public VCDiffCodeTableWriter(boolean interleaved, short near_cache_size, short same_cache_size, VCDiffCodeTableData code_table_data, short max_mode) {
-        address_cache_ = new VCDiffAddressCacheImpl(near_cache_size, same_cache_size);
+    public VCDiffCodeTableWriter(boolean interleaved, short nearCacheSize, short sameCacheSize, VCDiffCodeTableData codeTableData, short maxMode) {
+        address_cache_ = new VCDiffAddressCacheImpl(nearCacheSize, sameCacheSize);
         dictionary_size_ = 0;
         target_length_ = 0;
-        code_table_data_ = code_table_data;
+        code_table_data_ = codeTableData;
         instruction_map_ = null;
         last_opcode_index_ = -1;
         add_checksum_ = false;
         checksum_ = 0;
-        max_mode_ = max_mode;
+        max_mode_ = maxMode;
         InitSectionPointers(interleaved);
     }
 
@@ -185,9 +187,9 @@ public class VCDiffCodeTableWriter implements CodeTableWriterInterface<OutputStr
      * and before any of its other methods can be called.  It will return
      * false if there was an error initializing the object, or true if it
      *  was successful.  After the object has been initialized and used,
-     * Init() can be called again to restore the initial state of the object.
+     * init() can be called again to restore the initial state of the object.
      */
-    public boolean Init(int dictionary_size) {
+    public boolean init(int dictionary_size) {
         dictionary_size_ = dictionary_size;
         if (instruction_map_ == null) {
             if (code_table_data_ == VCDiffCodeTableData.kDefaultCodeTableData) {
@@ -206,9 +208,9 @@ public class VCDiffCodeTableWriter implements CodeTableWriterInterface<OutputStr
     }
 
     /**
-     *  Encode an ADD opcode with the "size" bytes starting at data
+     *  encode an ADD opcode with the "size" bytes starting at data
      */
-    public void Add(byte[] data, int offset, int length) {
+    public void add(byte[] data, int offset, int length) {
         if (offset + length > data.length || length < 0) {
             throw new IllegalArgumentException();
         }
@@ -218,17 +220,17 @@ public class VCDiffCodeTableWriter implements CodeTableWriterInterface<OutputStr
         target_length_ += length;
     }
 
-    public void AddChecksum(int checksum) {
+    public void addChecksum(int checksum) {
         add_checksum_ = true;
         checksum_ = checksum & 0xffffffffL;
     }
 
     /**
-     *  Encode a COPY opcode with args "offset" (into dictionary) and "size" bytes.
+     *  encode a COPY opcode with args "offset" (into dictionary) and "size" bytes.
      */
-    public void Copy(int offset, int size) {
+    public void copy(int offset, int size) {
         if (instruction_map_ == null) {
-            throw new IllegalStateException("Copy called without calling Init().");
+            throw new IllegalStateException("copy called without calling init().");
         }
 
         // If a single interleaved stream of encoded values is used
@@ -250,10 +252,12 @@ public class VCDiffCodeTableWriter implements CodeTableWriterInterface<OutputStr
 
     /**
      * There should not be any need to output more data
-     * since EncodeChunk() encodes a complete target window
+     * since encodeChunk() encodes a complete target window
      * and there is no end-of-delta-file marker.
+     *
+     * @param out
      */
-    public void FinishEncoding(OutputStream out) throws IOException {
+    public void finishEncoding(OutputStream out) throws IOException {
 
     }
 
@@ -273,13 +277,13 @@ public class VCDiffCodeTableWriter implements CodeTableWriterInterface<OutputStr
      * string.  The output string is not null-terminated and may contain embedded
      * '\0' characters.
      */
-    public void Output(OutputStream out2) throws IOException {
+    public void output(OutputStream out2) throws IOException {
         if (instructions_and_sizes_.position() == 0) {
             LOGGER.warn("Empty input; no delta window produced");
         } else {
             CountingOutputStream out = new CountingOutputStream(out2);
 
-            // Add first element: Win_Indicator
+            // add first element: Win_Indicator
             if (add_checksum_) {
                 out.write(VCD_SOURCE | VCD_CHECKSUM);
             } else {
@@ -333,19 +337,19 @@ public class VCDiffCodeTableWriter implements CodeTableWriterInterface<OutputStr
             }
         }
 
-        // Reset state for next window; assume we are using same code table
-        // and dictionary.  The caller will have to invoke Init() if a different
+        // reset state for next window; assume we are using same code table
+        // and dictionary.  The caller will have to invoke init() if a different
         // dictionary is used.
         //
-        // Notably, Init() calls address_cache_.Init().  This resets the address
+        // Notably, init() calls address_cache_.init().  This resets the address
         // cache between delta windows, as required by RFC section 5.1.
-        Init(dictionary_size_);
+        init(dictionary_size_);
     }
 
     /**
-     *  Encode a RUN opcode for "size" copies of the value "byte".
+     *  encode a RUN opcode for "size" copies of the value "byte".
      */
-    public void Run(int size, byte b) {
+    public void run(int size, byte b) {
         EncodeInstruction(VCDiffCodeTableData.VCD_RUN, size);
         data_for_add_and_run_.put(b);
         target_length_ += size;
@@ -356,7 +360,7 @@ public class VCDiffCodeTableWriter implements CodeTableWriterInterface<OutputStr
      * This includes information that can be gathered
      * before the first chunk of input is available.
      */
-    public void WriteHeader(OutputStream out, EnumSet<VCDiffFormatExtension> formatExtensions) throws IOException {
+    public void writeHeader(OutputStream out, EnumSet<VCDiffFormatExtension> formatExtensions) throws IOException {
         if (formatExtensions.isEmpty()) {
             out.write(kHeaderStandardFormat);
         } else {
@@ -398,7 +402,7 @@ public class VCDiffCodeTableWriter implements CodeTableWriterInterface<OutputStr
     // instructions_and_sizes_ string.
     private void EncodeInstruction(byte inst, int size, byte mode) {
         if (instruction_map_ == null) {
-            throw new IllegalStateException("EncodeInstruction() called without calling Init()");
+            throw new IllegalStateException("EncodeInstruction() called without calling init()");
         }
 
         if (last_opcode_index_ >= 0) {
@@ -410,7 +414,7 @@ public class VCDiffCodeTableWriter implements CodeTableWriterInterface<OutputStr
                 LOGGER.warn("EncodeInstruction() called for two ADD instructions in a row");
             }
 
-            short compound_opcode = kNoOpcode;
+            short compound_opcode;
             if (size <= 255) {
                 compound_opcode = instruction_map_.LookupSecondOpcode(last_opcode, inst, (byte)size, mode);
                 if (compound_opcode != kNoOpcode) {
@@ -431,7 +435,7 @@ public class VCDiffCodeTableWriter implements CodeTableWriterInterface<OutputStr
             }
         }
 
-        short opcode = kNoOpcode;
+        short opcode;
         if (size <= 255) {
             opcode = instruction_map_.LookupFirstOpcode(inst, (byte)size, mode);
             if (opcode != kNoOpcode) {

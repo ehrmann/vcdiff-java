@@ -37,68 +37,15 @@ decoder.Decode(dictionary, compressedData, uncompressedData);
 
 The command line wrapper for java-vcdiff is generally compatble with the open-vcdiff implementation:
 
-```
-Usage: java com.davidehrmann.vcdiff.VCDiffFileBasedCoder encode|decode [command options]
-  Commands:
-    encode(delta)      Create delta file from dictionary and target file
-      Usage: encode(delta) [options]
-        Options:
-          -buffersize, --buffersize
-             Buffer size for reading input file
-             Default: 1048576
-          -checksum, --checksum
-             Include an Adler32 checksum of the target data when encoding
-             Default: false
-          -delta, --delta
-             Encoded delta file (default is stdout for encode, stdin for decode)
-        * -dictionary, --dictionary
-             File containing dictionary data (required)
-          -interleaved, --interleaved
-             Use interleaved format
-             Default: false
-          -json, --json
-             output diff in the JSON format when encoding
-             Default: false
-          -max_target_file_size, --max_target_file_size
-             Maximum target file size allowed by decoder
-             Default: 67108864
-          -max_target_window_size, --max_target_window_size
-             Maximum target window size allowed by decoder
-             Default: 67108864
-          -stats, --stats
-             Report compression percentage
-             Default: false
-          -target, --target
-             Target file (default is stdin for encode, stdout for decode)
-          -target_matches, --target_matches
-             Find duplicate strings in target data as well as dictionary data
-             Default: false
+```sh
+# Compress original with dictionary dict to compressed.vcdiff
+java com.davidehrmann.vcdiff.VCDiffFileBasedCoder encode -dictionary dict -delta compressed.vcdiff -target original
 
-    decode(patch)      Reconstruct target file from dictionary and delta file
-      Usage: decode(patch) [options]
-        Options:
-          -allow_vcd_target, --allow_vcd_target
-             If false, the decoder issues an error when the VCD_TARGET flag is
-             encountered
-             Default: true
-          -buffersize, --buffersize
-             Buffer size for reading input file
-             Default: 1048576
-          -delta, --delta
-             Encoded delta file (default is stdout for encode, stdin for decode)
-        * -dictionary, --dictionary
-             File containing dictionary data (required)
-          -max_target_file_size, --max_target_file_size
-             Maximum target file size allowed by decoder
-             Default: 67108864
-          -max_target_window_size, --max_target_window_size
-             Maximum target window size allowed by decoder
-             Default: 67108864
-          -stats, --stats
-             Report compression percentage
-             Default: false
-          -target, --target
-             Target file (default is stdin for encode, stdout for decode)
+# Decompress compressed.vcdiff with dictionary dict to decompressed
+java com.davidehrmann.vcdiff.VCDiffFileBasedCoder decode -dictionary dict -delta compressed.vcdiff -target decompressed
+
+# Usage details
+java com.davidehrmann.vcdiff.VCDiffFileBasedCoder help
 ```
 
 ## See also

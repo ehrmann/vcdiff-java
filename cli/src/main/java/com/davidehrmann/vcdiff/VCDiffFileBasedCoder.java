@@ -16,8 +16,6 @@
 package com.davidehrmann.vcdiff;
 
 import com.beust.jcommander.*;
-import com.davidehrmann.vcdiff.codec.DecoderBuilder;
-import com.davidehrmann.vcdiff.codec.EncoderBuilder;
 import com.davidehrmann.vcdiff.io.ComparingOutputStream;
 import com.davidehrmann.vcdiff.io.CountingInputStream;
 import com.davidehrmann.vcdiff.io.CountingOutputStream;
@@ -302,7 +300,7 @@ public class VCDiffFileBasedCoder {
             // FIXME: support encodeOptions.json
             /*
             if (encodeOptions.json) {
-                format_flags.add(VCDiffFormatExtensionFlag.VCD_FORMAT_JSON);
+                format_flags.add(VCDiffFormatExtensionFlag.GOOGLE_VCD_FORMAT_JSON);
             }
             */
 

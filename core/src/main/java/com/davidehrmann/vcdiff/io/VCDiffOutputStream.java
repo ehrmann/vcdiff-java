@@ -15,8 +15,8 @@
 
 package com.davidehrmann.vcdiff.io;
 
-import com.davidehrmann.vcdiff.codec.EncoderBuilder;
-import com.davidehrmann.vcdiff.codec.VCDiffStreamingEncoder;
+import com.davidehrmann.vcdiff.EncoderBuilder;
+import com.davidehrmann.vcdiff.VCDiffStreamingEncoder;
 import com.davidehrmann.vcdiff.util.Objects;
 
 import java.io.FilterOutputStream;

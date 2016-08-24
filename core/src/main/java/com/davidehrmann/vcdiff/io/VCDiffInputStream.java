@@ -15,8 +15,8 @@
 
 package com.davidehrmann.vcdiff.io;
 
-import com.davidehrmann.vcdiff.codec.DecoderBuilder;
-import com.davidehrmann.vcdiff.codec.VCDiffStreamingDecoder;
+import com.davidehrmann.vcdiff.DecoderBuilder;
+import com.davidehrmann.vcdiff.VCDiffStreamingDecoder;
 import com.davidehrmann.vcdiff.util.Objects;
 
 import java.io.ByteArrayOutputStream;

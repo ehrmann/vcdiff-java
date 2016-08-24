@@ -23,40 +23,40 @@ package com.davidehrmann.vcdiff;
 
 import com.davidehrmann.vcdiff.engine.HashedDictionary;
 import com.davidehrmann.vcdiff.engine.JSONCodeTableWriter;
-import com.davidehrmann.vcdiff.engine.VCDiffCodeTableWriter;
 import com.davidehrmann.vcdiff.engine.VCDiffStreamingEncoderImpl;
+import com.davidehrmann.vcdiff.engine.VCDiffCodeTableWriterImpl;
 import com.davidehrmann.vcdiff.io.VCDiffOutputStream;
 
 import java.io.OutputStream;
 import java.util.EnumSet;
 
-public class EncoderBuilder {
+public class VCDiffEncoderBuilder {
 
     protected boolean interleaved = false;
     protected boolean checksum = false;
     protected boolean targetMatches = true;
     protected byte[] dictionary = null;
 
-    protected EncoderBuilder() {
+    protected VCDiffEncoderBuilder() {
 
     }
 
-    public synchronized EncoderBuilder withChecksum(boolean checksum) {
+    public synchronized VCDiffEncoderBuilder withChecksum(boolean checksum) {
         this.checksum = checksum;
         return this;
     }
 
-    public synchronized EncoderBuilder withInterleaving(boolean interleaved) {
+    public synchronized VCDiffEncoderBuilder withInterleaving(boolean interleaved) {
         this.interleaved = interleaved;
         return this;
     }
 
-    public synchronized EncoderBuilder withDictionary(byte[] dictionary) {
+    public synchronized VCDiffEncoderBuilder withDictionary(byte[] dictionary) {
         this.dictionary = dictionary;
         return this;
     }
 
-    public synchronized EncoderBuilder withTargetMatches(boolean targetMatches) {
+    public synchronized VCDiffEncoderBuilder withTargetMatches(boolean targetMatches) {
         this.targetMatches = targetMatches;
         return this;
     }
@@ -66,20 +66,20 @@ public class EncoderBuilder {
             throw new IllegalArgumentException("dictionary not set");
         }
 
-        EnumSet<FormatExtension> format_flags = EnumSet.noneOf(FormatExtension.class);
+        EnumSet<VCDiffFormatExtension> formatFlags = EnumSet.noneOf(VCDiffFormatExtension.class);
         if (interleaved) {
-            format_flags.add(FormatExtension.GOOGLE_VCD_FORMAT_INTERLEAVED);
+            formatFlags.add(VCDiffFormatExtension.GOOGLE_INTERLEAVED);
         }
         if (checksum) {
-            format_flags.add(FormatExtension.GOOGLE_VCD_FORMAT_CHECKSUM);
+            formatFlags.add(VCDiffFormatExtension.GOOGLE_CHECKSUM);
         }
 
-        CodeTableWriter<OutputStream> coder = new VCDiffCodeTableWriter(interleaved);
+        VCDiffCodeTableWriter<OutputStream> coder = new VCDiffCodeTableWriterImpl(interleaved);
 
         return new VCDiffStreamingEncoderImpl<OutputStream>(
                 coder,
                 new HashedDictionary(dictionary),
-                format_flags,
+                formatFlags,
                 targetMatches
         );
     }
@@ -99,12 +99,12 @@ public class EncoderBuilder {
             throw new IllegalArgumentException("Checksum not supported with JSON encoder");
         }
 
-        CodeTableWriter<Appendable> coder = new JSONCodeTableWriter();
+        VCDiffCodeTableWriter<Appendable> coder = new JSONCodeTableWriter();
 
         return new VCDiffStreamingEncoderImpl<Appendable>(
                 coder,
                 new HashedDictionary(dictionary),
-                EnumSet.noneOf(FormatExtension.class),
+                EnumSet.noneOf(VCDiffFormatExtension.class),
                 targetMatches
         );
     }
@@ -117,7 +117,7 @@ public class EncoderBuilder {
         return new VCDiffEncoder<Appendable>(buildStreamingJson());
     }
 
-    public static EncoderBuilder builder() {
-        return new EncoderBuilder();
+    public static VCDiffEncoderBuilder builder() {
+        return new VCDiffEncoderBuilder();
     }
 }

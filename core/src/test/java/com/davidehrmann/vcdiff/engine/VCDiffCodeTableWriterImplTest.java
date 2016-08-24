@@ -9,11 +9,11 @@ import java.io.IOException;
 import java.nio.charset.Charset;
 
 import static com.davidehrmann.vcdiff.engine.VCDiffCodeTableData.*;
-import static com.davidehrmann.vcdiff.engine.VCDiffCodeTableWriter.VCD_CHECKSUM;
-import static com.davidehrmann.vcdiff.engine.VCDiffCodeTableWriter.VCD_SOURCE;
+import static com.davidehrmann.vcdiff.engine.VCDiffCodeTableWriterImpl.VCD_CHECKSUM;
+import static com.davidehrmann.vcdiff.engine.VCDiffCodeTableWriterImpl.VCD_SOURCE;
 import static org.junit.Assert.*;
 
-public class VCDiffCodeTableWriterTest {
+public class VCDiffCodeTableWriterImplTest {
 
     // This value is designed so that the total number of inst values and modes
     // will equal 8 (VCD_NOOP, VCD_ADD, VCD_RUN, VCD_COPY modes 0 - 4).
@@ -35,13 +35,13 @@ public class VCDiffCodeTableWriterTest {
     protected final VCDiffCodeTableData g_exercise_code_table_ = new VCDiffCodeTableData();
 
     // The code table writer for standard encoding, default code table.
-    protected final VCDiffCodeTableWriter standard_writer = new VCDiffCodeTableWriter(false);
+    protected final VCDiffCodeTableWriterImpl standard_writer = new VCDiffCodeTableWriterImpl(false);
 
     // The code table writer for interleaved encoding, default code table.
-    protected final VCDiffCodeTableWriter interleaved_writer = new VCDiffCodeTableWriter(true);
+    protected final VCDiffCodeTableWriterImpl interleaved_writer = new VCDiffCodeTableWriterImpl(true);
 
     // The code table writer corresponding to g_exercise_code_table_ (interleaved encoding).
-    protected final VCDiffCodeTableWriter exercise_writer = new VCDiffCodeTableWriter(true, VCDiffAddressCache.kDefaultNearCacheSize, VCDiffAddressCache.kDefaultSameCacheSize, g_exercise_code_table_, kLastExerciseMode);
+    protected final VCDiffCodeTableWriterImpl exercise_writer = new VCDiffCodeTableWriterImpl(true, VCDiffAddressCache.kDefaultNearCacheSize, VCDiffAddressCache.kDefaultSameCacheSize, g_exercise_code_table_, kLastExerciseMode);
 
     static void AddExerciseOpcode(VCDiffCodeTableData codeTable, byte inst1, byte mode1, byte size1, byte inst2, byte mode2, byte size2, int opcode) {
         codeTable.inst1[opcode] = inst1;

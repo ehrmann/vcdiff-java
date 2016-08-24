@@ -1,7 +1,6 @@
 package com.davidehrmann.vcdiff.engine;
 
-import com.davidehrmann.vcdiff.CodeTableWriter;
-import com.davidehrmann.vcdiff.FormatExtension;
+import com.davidehrmann.vcdiff.VCDiffFormatExtension;
 import com.davidehrmann.vcdiff.io.CountingOutputStream;
 import com.davidehrmann.vcdiff.mina_buffer.IoBuffer;
 import com.davidehrmann.vcdiff.util.VarInt;
@@ -27,9 +26,9 @@ import java.util.concurrent.atomic.AtomicInteger;
  *
  * NOT threadsafe.
  */
-public class VCDiffCodeTableWriter implements CodeTableWriter<OutputStream> {
+public class VCDiffCodeTableWriterImpl implements com.davidehrmann.vcdiff.VCDiffCodeTableWriter<OutputStream> {
 
-    private static final Logger LOGGER = LoggerFactory.getLogger(VCDiffCodeTableWriter.class);
+    private static final Logger LOGGER = LoggerFactory.getLogger(VCDiffCodeTableWriterImpl.class);
 
     private static final byte[] HEADER_STANDARD_FORMAT = new byte[] {
         (byte)0xD6, // Header1: "V" | 0x80
@@ -131,7 +130,7 @@ public class VCDiffCodeTableWriter implements CodeTableWriter<OutputStream> {
      *
      * @param interleaved Whether or not to interleave the output data
      */
-    public VCDiffCodeTableWriter(boolean interleaved) {
+    public VCDiffCodeTableWriterImpl(boolean interleaved) {
         maxMode = VCDiffAddressCache.DefaultLastMode();
         dictionarySize = 0;
         targetLength = 0;
@@ -167,7 +166,7 @@ public class VCDiffCodeTableWriter implements CodeTableWriter<OutputStream> {
      * @param codeTableData custom code table data
      * @param maxMode maximum value for the mode of a COPY instruction.
      */
-    VCDiffCodeTableWriter(boolean interleaved, short nearCacheSize, short sameCacheSize, VCDiffCodeTableData codeTableData, short maxMode) {
+    VCDiffCodeTableWriterImpl(boolean interleaved, short nearCacheSize, short sameCacheSize, VCDiffCodeTableData codeTableData, short maxMode) {
         addraddressCachess_cache_ = new VCDiffAddressCacheImpl(nearCacheSize, sameCacheSize);
         dictionarySize = 0;
         targetLength = 0;
@@ -357,7 +356,7 @@ public class VCDiffCodeTableWriter implements CodeTableWriter<OutputStream> {
      * This includes information that can be gathered
      * before the first chunk of input is available.
      */
-    public void writeHeader(OutputStream out, EnumSet<FormatExtension> formatExtensions) throws IOException {
+    public void writeHeader(OutputStream out, EnumSet<VCDiffFormatExtension> formatExtensions) throws IOException {
         if (formatExtensions.isEmpty()) {
             out.write(HEADER_STANDARD_FORMAT);
         } else {

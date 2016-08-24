@@ -14,7 +14,7 @@
 
 package com.davidehrmann.vcdiff;
 
-public enum FormatExtension {
+public enum VCDiffFormatExtension {
 
     /**
      * If this flag is specified, then the encoder writes each delta file
@@ -24,13 +24,13 @@ public enum FormatExtension {
      * decoded results when only a portion of a delta file window is received
      * (e.g. when HTTP over TCP is used as the transmission protocol.)
      */
-    GOOGLE_VCD_FORMAT_INTERLEAVED(0x01),
+    GOOGLE_INTERLEAVED(0x01),
 
     /**
      * If this flag is specified, then an Adler32 checksum
      * of the target window data is included in the delta window.
      */
-    GOOGLE_VCD_FORMAT_CHECKSUM(0x02),
+    GOOGLE_CHECKSUM(0x02),
     
     /**
      *
@@ -42,10 +42,10 @@ public enum FormatExtension {
      * flags have no effect.
      */
     @Deprecated
-    GOOGLE_VCD_FORMAT_JSON(0x04);
+    GOOGLE_JSON(0x04);
 
     public final int flag;
-    FormatExtension(int flag) {
+    VCDiffFormatExtension(int flag) {
         this.flag = flag;
     }
 }

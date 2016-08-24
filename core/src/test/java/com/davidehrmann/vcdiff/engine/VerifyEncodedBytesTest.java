@@ -36,9 +36,9 @@ public abstract class VerifyEncodedBytesTest {
     protected final byte[] target_;
 
     protected VCDiffStreamingEncoder<OutputStream> encoder_;
-    protected VCDiffStreamingDecoder decoder_ = DecoderBuilder.builder().buildStreaming();
+    protected VCDiffStreamingDecoder decoder_ = VCDiffDecoderBuilder.builder().buildStreaming();
     protected VCDiffEncoder<OutputStream> simple_encoder_;
-    protected VCDiffDecoder simple_decoder_ = DecoderBuilder.builder().buildSimple();
+    protected VCDiffDecoder simple_decoder_ = VCDiffDecoderBuilder.builder().buildSimple();
 
     ByteArrayOutputStream result_target_ = new ByteArrayOutputStream();
 
@@ -46,14 +46,14 @@ public abstract class VerifyEncodedBytesTest {
         dictionary_ = dictionary;
         target_ = target;
 
-        encoder_ = EncoderBuilder.builder()
+        encoder_ = VCDiffEncoderBuilder.builder()
                 .withDictionary(dictionary_)
                 .withInterleaving(true)
                 .withChecksum(true)
                 .withTargetMatches(true)
                 .buildStreaming();
 
-        simple_encoder_ = EncoderBuilder.builder()
+        simple_encoder_ = VCDiffEncoderBuilder.builder()
                 .withDictionary(dictionary_)
                 .buildSimple();
     }

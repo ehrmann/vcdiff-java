@@ -29,8 +29,8 @@
 
 package com.davidehrmann.vcdiff.engine;
 
-import com.davidehrmann.vcdiff.CodeTableWriter;
-import com.davidehrmann.vcdiff.FormatExtension;
+import com.davidehrmann.vcdiff.VCDiffCodeTableWriter;
+import com.davidehrmann.vcdiff.VCDiffFormatExtension;
 import com.davidehrmann.vcdiff.VCDiffStreamingEncoder;
 import com.davidehrmann.vcdiff.util.ZeroInitializedAdler32;
 import org.slf4j.Logger;
@@ -41,20 +41,20 @@ import java.nio.ByteBuffer;
 import java.util.EnumSet;
 import java.util.zip.Adler32;
 
-import static com.davidehrmann.vcdiff.FormatExtension.GOOGLE_VCD_FORMAT_CHECKSUM;
+import static com.davidehrmann.vcdiff.VCDiffFormatExtension.GOOGLE_CHECKSUM;
 
 public class VCDiffStreamingEncoderImpl<OUT> implements VCDiffStreamingEncoder<OUT> {
     private static final Logger LOGGER = LoggerFactory.getLogger(VCDiffStreamingEncoderImpl.class);
 
     protected final VCDiffEngine engine;
-    protected final EnumSet<FormatExtension> formatExtensions;
+    protected final EnumSet<VCDiffFormatExtension> formatExtensions;
 
     // Determines whether to look for matches within the previously encoded
     // target data, or just within the source (dictionary) data.  Please see
     // vcencoder.h for a full explanation of this parameter.
     protected final boolean lookForTargetMatches;
 
-    protected final CodeTableWriter<OUT> coder;
+    protected final VCDiffCodeTableWriter<OUT> coder;
 
     // This state variable is used to ensure that startEncoding(), encodeChunk(),
     // and finishEncoding() are called in the correct order.  It will be true
@@ -63,9 +63,9 @@ public class VCDiffStreamingEncoderImpl<OUT> implements VCDiffStreamingEncoder<O
     // be false initially, and also after finishEncoding() has been called.
     protected boolean encodeChunkAllowed;
 
-    public VCDiffStreamingEncoderImpl(CodeTableWriter<OUT> coder,
+    public VCDiffStreamingEncoderImpl(VCDiffCodeTableWriter<OUT> coder,
                                       HashedDictionary dictionary,
-                                      EnumSet<FormatExtension> format_extensions,
+                                      EnumSet<VCDiffFormatExtension> format_extensions,
                                       boolean look_for_target_matches) {
         this.engine = dictionary.engine();
         this.formatExtensions = format_extensions.clone();
@@ -85,7 +85,7 @@ public class VCDiffStreamingEncoderImpl<OUT> implements VCDiffStreamingEncoder<O
         if (!encodeChunkAllowed) {
             throw new IllegalStateException("encodeChunk called before startEncoding");
         }
-        if ((formatExtensions.contains(GOOGLE_VCD_FORMAT_CHECKSUM))) {
+        if ((formatExtensions.contains(GOOGLE_CHECKSUM))) {
             Adler32 adler32 = new ZeroInitializedAdler32();
             adler32.update(data, offset, length);
             coder.addChecksum((int) adler32.getValue());

@@ -12,7 +12,7 @@ import java.util.concurrent.atomic.AtomicInteger;
 import java.util.zip.Adler32;
 
 import static com.davidehrmann.vcdiff.engine.VCDiffCodeTableData.*;
-import static com.davidehrmann.vcdiff.engine.VCDiffCodeTableWriter.*;
+import static com.davidehrmann.vcdiff.engine.VCDiffCodeTableWriterImpl.*;
 
 @SuppressWarnings("UnnecessaryInitCause")
 class VCDiffDeltaFileWindow {

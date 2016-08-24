@@ -15,7 +15,7 @@
 
 package com.davidehrmann.vcdiff.engine;
 
-import com.davidehrmann.vcdiff.DecoderBuilder;
+import com.davidehrmann.vcdiff.VCDiffDecoderBuilder;
 import com.davidehrmann.vcdiff.VCDiffStreamingDecoder;
 import com.davidehrmann.vcdiff.util.VarInt;
 import com.davidehrmann.vcdiff.util.ZeroInitializedAdler32;
@@ -28,8 +28,8 @@ import java.nio.ByteBuffer;
 import java.nio.charset.Charset;
 import java.util.zip.Adler32;
 
-import static com.davidehrmann.vcdiff.engine.VCDiffCodeTableWriter.VCD_CHECKSUM;
-import static com.davidehrmann.vcdiff.engine.VCDiffCodeTableWriter.VCD_SOURCE;
+import static com.davidehrmann.vcdiff.engine.VCDiffCodeTableWriterImpl.VCD_CHECKSUM;
+import static com.davidehrmann.vcdiff.engine.VCDiffCodeTableWriterImpl.VCD_SOURCE;
 
 public abstract class VCDiffDecoderTest {
 
@@ -70,7 +70,7 @@ public abstract class VCDiffDecoderTest {
     private int fuzzer_;
     private int fuzzed_byte_position_;
 
-    protected VCDiffStreamingDecoder decoder_ = DecoderBuilder.builder().buildStreaming();
+    protected VCDiffStreamingDecoder decoder_ = VCDiffDecoderBuilder.builder().buildStreaming();
 
     // delta_file_ will be populated by InitializeDeltaFile() using the components
     // delta_file_header_, delta_window_header_, and delta_window_body_.

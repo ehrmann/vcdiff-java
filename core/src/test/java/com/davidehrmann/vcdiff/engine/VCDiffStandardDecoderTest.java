@@ -5,8 +5,8 @@ import org.junit.Test;
 
 import java.io.IOException;
 
-import static com.davidehrmann.vcdiff.engine.VCDiffCodeTableWriter.VCD_SOURCE;
-import static com.davidehrmann.vcdiff.engine.VCDiffCodeTableWriter.VCD_TARGET;
+import static com.davidehrmann.vcdiff.engine.VCDiffCodeTableWriterImpl.VCD_SOURCE;
+import static com.davidehrmann.vcdiff.engine.VCDiffCodeTableWriterImpl.VCD_TARGET;
 
 public class VCDiffStandardDecoderTest extends VCDiffStandardDecoderTestBase {
     @Test

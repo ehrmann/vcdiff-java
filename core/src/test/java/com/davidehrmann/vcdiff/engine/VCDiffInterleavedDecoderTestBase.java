@@ -1,6 +1,6 @@
 package com.davidehrmann.vcdiff.engine;
 
-import static com.davidehrmann.vcdiff.engine.VCDiffCodeTableWriter.VCD_SOURCE;
+import static com.davidehrmann.vcdiff.engine.VCDiffCodeTableWriterImpl.VCD_SOURCE;
 
 public abstract class VCDiffInterleavedDecoderTestBase extends VCDiffDecoderTest {
     private static final byte[] kWindowHeader = {

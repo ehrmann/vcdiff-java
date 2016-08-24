@@ -7,7 +7,7 @@ import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.util.Arrays;
 
-import static com.davidehrmann.vcdiff.engine.VCDiffCodeTableWriter.VCD_CHECKSUM;
+import static com.davidehrmann.vcdiff.engine.VCDiffCodeTableWriterImpl.VCD_CHECKSUM;
 import static org.junit.Assert.*;
 
 // These are the same tests as for VCDiffInterleavedDecoderTest, with the added

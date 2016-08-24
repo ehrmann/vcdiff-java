@@ -38,7 +38,7 @@ import java.util.EnumSet;
  * implementations may be used to produce other output formats, or as test
  * mocks, or to gather encoding statistics.
  */
-public interface CodeTableWriter<OUT> {
+public interface VCDiffCodeTableWriter<OUT> {
 
     /**
      * Initializes the constructed object for use. It will return
@@ -58,7 +58,7 @@ public interface CodeTableWriter<OUT> {
      * @param formatExtensions Flags for enabling features that are extensions to the format
      * @throws IOException if there's an exception writing to out
      */
-    void writeHeader(OUT out, EnumSet<FormatExtension> formatExtensions) throws IOException;
+    void writeHeader(OUT out, EnumSet<VCDiffFormatExtension> formatExtensions) throws IOException;
 
     /**
      * encode an ADD opcode with the "size" length starting at offset

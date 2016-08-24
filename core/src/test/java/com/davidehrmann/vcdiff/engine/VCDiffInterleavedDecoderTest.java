@@ -6,7 +6,7 @@ import org.junit.Test;
 import java.io.IOException;
 import java.nio.ByteBuffer;
 
-import static com.davidehrmann.vcdiff.engine.VCDiffCodeTableWriter.VCD_CHECKSUM;
+import static com.davidehrmann.vcdiff.engine.VCDiffCodeTableWriterImpl.VCD_CHECKSUM;
 import static org.junit.Assert.assertArrayEquals;
 import static org.junit.Assert.assertTrue;
 

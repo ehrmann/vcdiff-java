@@ -15,7 +15,7 @@
 
 package com.davidehrmann.vcdiff.io;
 
-import com.davidehrmann.vcdiff.EncoderBuilder;
+import com.davidehrmann.vcdiff.VCDiffEncoderBuilder;
 import com.davidehrmann.vcdiff.VCDiffStreamingEncoder;
 import com.davidehrmann.vcdiff.util.Objects;
 
@@ -34,7 +34,7 @@ public class VCDiffOutputStream extends FilterOutputStream {
 
     public VCDiffOutputStream(OutputStream out, byte[] dictionary, boolean targetMatches,  boolean interleaved, boolean checksum) {
         super(out);
-        encoder = EncoderBuilder.builder()
+        encoder = VCDiffEncoderBuilder.builder()
                 .withDictionary(dictionary)
                 .withTargetMatches(targetMatches)
                 .withInterleaving(interleaved)

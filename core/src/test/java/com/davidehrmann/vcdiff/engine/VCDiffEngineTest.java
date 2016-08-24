@@ -75,7 +75,7 @@ public abstract class VCDiffEngineTest {
 
     protected void EncodeNothing(boolean interleaved, boolean target_matching) throws IOException {
         interleaved_ = interleaved;
-        VCDiffCodeTableWriter coder = new VCDiffCodeTableWriter(interleaved);
+        VCDiffCodeTableWriterImpl coder = new VCDiffCodeTableWriterImpl(interleaved);
         coder.init(engine_.dictionary_size());
 
         engine_.Encode(ByteBuffer.allocate(0), target_matching, null, coder);
@@ -84,7 +84,7 @@ public abstract class VCDiffEngineTest {
 
     protected void EncodeText(byte[] bytes, boolean interleaved, boolean target_matching) throws IOException {
         interleaved_ = interleaved;
-        VCDiffCodeTableWriter coder = new VCDiffCodeTableWriter(interleaved);
+        VCDiffCodeTableWriterImpl coder = new VCDiffCodeTableWriterImpl(interleaved);
         coder.init(engine_.dictionary_size());
         engine_.Encode(ByteBuffer.wrap(bytes), target_matching, diff_, coder);
     }

@@ -15,7 +15,7 @@
 
 package com.davidehrmann.vcdiff.io;
 
-import com.davidehrmann.vcdiff.DecoderBuilder;
+import com.davidehrmann.vcdiff.VCDiffDecoderBuilder;
 import com.davidehrmann.vcdiff.VCDiffStreamingDecoder;
 import com.davidehrmann.vcdiff.util.Objects;
 
@@ -52,7 +52,7 @@ public class VCDiffInputStream extends InputStream {
                              long maxTargetFileSize, int maxTargetWindowSize, boolean allowVcdTarget) {
         this.in = Objects.requireNotNull(in, "in was null");
         this.dictionary = Objects.requireNotNull(dictionary, "dictionary was null").clone();
-        decoder = DecoderBuilder.builder()
+        decoder = VCDiffDecoderBuilder.builder()
                 .withMaxTargetFileSize(maxTargetFileSize)
                 .withMaxTargetWindowSize(maxTargetWindowSize)
                 .withAllowTargetMatches(allowVcdTarget)

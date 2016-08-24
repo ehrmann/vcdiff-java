@@ -23,8 +23,8 @@ import org.junit.Test;
 
 import java.util.zip.Adler32;
 
-import static com.davidehrmann.vcdiff.engine.VCDiffCodeTableWriter.VCD_CHECKSUM;
-import static com.davidehrmann.vcdiff.engine.VCDiffCodeTableWriter.VCD_SOURCE;
+import static com.davidehrmann.vcdiff.engine.VCDiffCodeTableWriterImpl.VCD_CHECKSUM;
+import static com.davidehrmann.vcdiff.engine.VCDiffCodeTableWriterImpl.VCD_SOURCE;
 
 public class VCDiffHTML2Test extends VerifyEncodedBytesTest {
     protected static final byte[] kDictionary = "10\nThis is a test\0".getBytes(US_ASCII);

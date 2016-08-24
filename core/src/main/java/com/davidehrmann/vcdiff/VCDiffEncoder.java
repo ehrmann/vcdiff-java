@@ -23,7 +23,7 @@ import java.io.IOException;
  * A simpler (non-streaming) interface to the VCDIFF encoder that can be used
  * if the entire target data string is available.
  *
- * @param <OUT> The output type the {@link CodeTableWriter} uses
+ * @param <OUT> The output type the {@link VCDiffCodeTableWriter} uses
  */
 public class VCDiffEncoder<OUT> {
 

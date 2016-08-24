@@ -15,14 +15,14 @@
 
 package com.davidehrmann.vcdiff.engine;
 
-import com.davidehrmann.vcdiff.CodeTableWriter;
-import com.davidehrmann.vcdiff.FormatExtension;
+import com.davidehrmann.vcdiff.VCDiffCodeTableWriter;
+import com.davidehrmann.vcdiff.VCDiffFormatExtension;
 
 import java.io.IOException;
 import java.util.EnumSet;
 
 
-public class JSONCodeTableWriter implements CodeTableWriter<Appendable> {
+public class JSONCodeTableWriter implements VCDiffCodeTableWriter<Appendable> {
 
     // Stores the JSON data before it is sent to the OutputString.
     private StringBuilder output = new StringBuilder(1024);
@@ -111,9 +111,9 @@ public class JSONCodeTableWriter implements CodeTableWriter<Appendable> {
     }
 
     @SuppressWarnings("deprecation")
-    public void writeHeader(Appendable out, EnumSet<FormatExtension> formatExtensions) throws IOException {
+    public void writeHeader(Appendable out, EnumSet<VCDiffFormatExtension> formatExtensions) throws IOException {
         if (!(formatExtensions.isEmpty() ||
-                EnumSet.of(FormatExtension.GOOGLE_VCD_FORMAT_JSON).equals(formatExtensions))) {
+                EnumSet.of(VCDiffFormatExtension.GOOGLE_JSON).equals(formatExtensions))) {
             throw new IOException("VCDiffFormatExtensions " + formatExtensions + " no compatible with JSONCodeTableWritar");
         }
 

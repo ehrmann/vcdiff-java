@@ -26,17 +26,17 @@ import com.davidehrmann.vcdiff.io.VCDiffInputStream;
 
 import java.io.InputStream;
 
-public class DecoderBuilder {
+public class VCDiffDecoderBuilder {
 
     protected long maximumTargetFileSize = -1;
     protected int maximumTargetWindowSize = -1;
     protected boolean allowTargetMatches = true;
 
-    protected DecoderBuilder() {
+    protected VCDiffDecoderBuilder() {
 
     }
 
-    public synchronized DecoderBuilder withMaxTargetFileSize(long maximumTargetFileSize) {
+    public synchronized VCDiffDecoderBuilder withMaxTargetFileSize(long maximumTargetFileSize) {
         if (maximumTargetFileSize < 0) {
             throw new IllegalArgumentException("maximumTargetFileSize can't be negative");
         }
@@ -44,7 +44,7 @@ public class DecoderBuilder {
         return this;
     }
 
-    public synchronized DecoderBuilder withMaxTargetWindowSize(int maximumTargetWindowSize) {
+    public synchronized VCDiffDecoderBuilder withMaxTargetWindowSize(int maximumTargetWindowSize) {
         if (maximumTargetWindowSize < 0) {
             throw new IllegalArgumentException("maximumTargetWindowSize can't be negative");
         }
@@ -52,7 +52,7 @@ public class DecoderBuilder {
         return this;
     }
 
-    public synchronized DecoderBuilder withAllowTargetMatches(boolean allowTargetMatches) {
+    public synchronized VCDiffDecoderBuilder withAllowTargetMatches(boolean allowTargetMatches) {
         this.allowTargetMatches = allowTargetMatches;
         return this;
     }
@@ -84,7 +84,7 @@ public class DecoderBuilder {
         return new VCDiffDecoder(buildStreaming(decoder));
     }
 
-    public static DecoderBuilder builder() {
-        return new DecoderBuilder();
+    public static VCDiffDecoderBuilder builder() {
+        return new VCDiffDecoderBuilder();
     }
 }

@@ -2,7 +2,7 @@ package com.davidehrmann.vcdiff.engine;
 
 import static com.davidehrmann.vcdiff.engine.VCDiffCodeTableData.VCD_ADD;
 import static com.davidehrmann.vcdiff.engine.VCDiffCodeTableData.VCD_RUN;
-import static com.davidehrmann.vcdiff.engine.VCDiffCodeTableWriter.VCD_SOURCE;
+import static com.davidehrmann.vcdiff.engine.VCDiffCodeTableWriterImpl.VCD_SOURCE;
 
 public abstract class VCDiffCustomCodeTableDecoderTestBase extends VCDiffInterleavedDecoderTestBase {
     protected static final byte[] kFileHeader = {

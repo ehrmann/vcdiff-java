@@ -5,8 +5,8 @@ import org.junit.Test;
 import java.io.IOException;
 import java.util.Arrays;
 
-import static com.davidehrmann.vcdiff.engine.VCDiffCodeTableWriter.VCD_SOURCE;
-import static com.davidehrmann.vcdiff.engine.VCDiffCodeTableWriter.VCD_TARGET;
+import static com.davidehrmann.vcdiff.engine.VCDiffCodeTableWriterImpl.VCD_SOURCE;
+import static com.davidehrmann.vcdiff.engine.VCDiffCodeTableWriterImpl.VCD_TARGET;
 import static org.junit.Assert.*;
 
 public class VCDiffStandardDecoderTestByteByByte extends VCDiffStandardDecoderTestBase {

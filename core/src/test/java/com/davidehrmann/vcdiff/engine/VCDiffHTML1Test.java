@@ -15,10 +15,10 @@
 
 package com.davidehrmann.vcdiff.engine;
 
-import com.davidehrmann.vcdiff.EncoderBuilder;
+import com.davidehrmann.vcdiff.VCDiffEncoderBuilder;
 import org.junit.Test;
 
-import static com.davidehrmann.vcdiff.engine.VCDiffCodeTableWriter.VCD_SOURCE;
+import static com.davidehrmann.vcdiff.engine.VCDiffCodeTableWriterImpl.VCD_SOURCE;
 import static org.junit.Assert.assertArrayEquals;
 import static org.junit.Assert.assertTrue;
 
@@ -150,7 +150,7 @@ public class VCDiffHTML1Test extends VerifyEncodedBytesTest {
 
     @Test
     public void SimpleEncoderWithoutTargetMatching() throws Exception {
-        simple_encoder_ = EncoderBuilder.builder()
+        simple_encoder_ = VCDiffEncoderBuilder.builder()
                 .withDictionary(kDictionary)
                 .withTargetMatches(false)
                 .buildSimple();

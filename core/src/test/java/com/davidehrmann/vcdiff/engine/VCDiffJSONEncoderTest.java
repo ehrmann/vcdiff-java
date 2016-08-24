@@ -15,7 +15,7 @@
 
 package com.davidehrmann.vcdiff.engine;
 
-import com.davidehrmann.vcdiff.EncoderBuilder;
+import com.davidehrmann.vcdiff.VCDiffEncoderBuilder;
 import com.davidehrmann.vcdiff.VCDiffStreamingEncoder;
 import org.junit.Ignore;
 import org.junit.Test;
@@ -63,7 +63,7 @@ public class VCDiffJSONEncoderTest {
     // NonASCII string "foo\x128".
     protected static final byte[] kNonAscii = {102, 111, 111, (byte) 128, 0};
 
-    protected final VCDiffStreamingEncoder<Appendable> json_encoder_ = EncoderBuilder.builder()
+    protected final VCDiffStreamingEncoder<Appendable> json_encoder_ = VCDiffEncoderBuilder.builder()
             .withDictionary(kDictionary)
             .buildStreamingJson();
 
@@ -103,7 +103,7 @@ public class VCDiffJSONEncoderTest {
 
     @Test
     public void EncodeNothingJSON() throws Exception {
-        VCDiffStreamingEncoder<Appendable> nothing_encoder = EncoderBuilder.builder()
+        VCDiffStreamingEncoder<Appendable> nothing_encoder = VCDiffEncoderBuilder.builder()
                 .withDictionary(new byte[0])
                 .withTargetMatches(false)
                 .buildStreamingJson();
@@ -150,7 +150,7 @@ public class VCDiffJSONEncoderTest {
     @Ignore
     @Test
     public void NonasciiDictionaryWithJSON() throws Exception {
-        VCDiffStreamingEncoder<Appendable> json_encoder = EncoderBuilder.builder()
+        VCDiffStreamingEncoder<Appendable> json_encoder = VCDiffEncoderBuilder.builder()
                 .withDictionary(kNonAscii)
                 .buildStreamingJson();
 

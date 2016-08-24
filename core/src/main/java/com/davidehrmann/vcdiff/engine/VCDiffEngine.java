@@ -15,7 +15,7 @@
 
 package com.davidehrmann.vcdiff.engine;
 
-import com.davidehrmann.vcdiff.CodeTableWriter;
+import com.davidehrmann.vcdiff.VCDiffCodeTableWriter;
 
 import java.io.IOException;
 import java.nio.ByteBuffer;
@@ -66,7 +66,7 @@ class VCDiffEngine {
      * @param coder CodeTableWriter to write encoded data to
      * @throws IOException if there's an encoding exception or an exception while writing to diff
      */
-    public <OUT> void Encode(ByteBuffer targetData, boolean lookForTargetMatches, OUT diff, CodeTableWriter<OUT> coder) throws IOException {
+    public <OUT> void Encode(ByteBuffer targetData, boolean lookForTargetMatches, OUT diff, VCDiffCodeTableWriter<OUT> coder) throws IOException {
         if (!targetData.hasRemaining()) {
             return;  // Do nothing for empty target
         }
@@ -145,7 +145,7 @@ class VCDiffEngine {
      * this function will create one big ADD instruction
      * for the entire buffer of target data.
      */
-    protected void AddUnmatchedRemainder(ByteBuffer unencoded_target, CodeTableWriter<?> coder) {
+    protected void AddUnmatchedRemainder(ByteBuffer unencoded_target, VCDiffCodeTableWriter<?> coder) {
         if (unencoded_target.hasRemaining()) {
             coder.add(unencoded_target.array(),
                     unencoded_target.arrayOffset() + unencoded_target.position(),
@@ -174,7 +174,7 @@ class VCDiffEngine {
      */
     protected boolean EncodeCopyForBestMatch(boolean look_for_target_matches, int hash_value,
             ByteBuffer target_candidate, ByteBuffer unencoded_target,
-            BlockHash target_hash, CodeTableWriter<?> coder) {
+            BlockHash target_hash, VCDiffCodeTableWriter<?> coder) {
 
         // When FindBestMatch() comes up with a match for a candidate block,
         // it will populate best_match with the size, source offset,

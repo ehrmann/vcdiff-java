@@ -300,7 +300,7 @@ public class VCDiffFileBasedCoder {
             // FIXME: support encodeOptions.json
             /*
             if (encodeOptions.json) {
-                format_flags.add(VCDiffFormatExtensionFlag.GOOGLE_VCD_FORMAT_JSON);
+                format_flags.add(VCDiffFormatExtensionFlag.GOOGLE_JSON);
             }
             */
 
@@ -315,7 +315,7 @@ public class VCDiffFileBasedCoder {
                     try {
                         CountingOutputStream countingOut = new CountingOutputStream(fileOut);
                         try {
-                            OutputStream vcDiffOut = EncoderBuilder.builder()
+                            OutputStream vcDiffOut = VCDiffEncoderBuilder.builder()
                                     .withDictionary(dictionary)
                                     .withTargetMatches(encodeOptions.targetMatches)
                                     .withChecksum(encodeOptions.checksum)
@@ -369,7 +369,7 @@ public class VCDiffFileBasedCoder {
 
             CountingInputStream countedIn = new CountingInputStream(useStdin ? new InputStreamExceptionMapper(System.in, "delta") : OpenFileForReading(targetAndDeltaFlags.delta, "delta"));
             try {
-                InputStream vcDiffIn = DecoderBuilder.builder()
+                InputStream vcDiffIn = VCDiffDecoderBuilder.builder()
                         .withMaxTargetFileSize(globalOptions.maxTargetFileSize)
                         .withMaxTargetWindowSize(globalOptions.maxTargetWindowSize)
                         .withAllowTargetMatches(decodeOptions.allowVcdTarget)
@@ -422,7 +422,7 @@ public class VCDiffFileBasedCoder {
 
             CountingInputStream countedIn = new CountingInputStream(OpenFileForReading(targetAndDeltaOptions.delta, "delta"));
             try {
-                InputStream in = DecoderBuilder.builder()
+                InputStream in = VCDiffDecoderBuilder.builder()
                         .withMaxTargetFileSize(globalOptions.maxTargetFileSize)
                         .withMaxTargetWindowSize(globalOptions.maxTargetWindowSize)
                         .withAllowTargetMatches(decodeOptions.allowVcdTarget)

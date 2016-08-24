@@ -16,7 +16,7 @@
 
 package com.davidehrmann.vcdiff.engine;
 
-import com.davidehrmann.vcdiff.EncoderBuilder;
+import com.davidehrmann.vcdiff.VCDiffEncoderBuilder;
 import com.davidehrmann.vcdiff.VCDiffEncoder;
 import com.davidehrmann.vcdiff.VCDiffStreamingDecoder;
 import com.davidehrmann.vcdiff.VCDiffStreamingEncoder;
@@ -113,7 +113,7 @@ public class VCDiffEncoderTest extends VerifyEncodedBytesTest {
 
     @Test
     public void EncodeDecodeNothing() throws Exception {
-        VCDiffStreamingEncoder<OutputStream> nothing_encoder = EncoderBuilder.builder()
+        VCDiffStreamingEncoder<OutputStream> nothing_encoder = VCDiffEncoderBuilder.builder()
                 .withDictionary(new byte[0])
                 .withTargetMatches(false)
                 .buildStreaming();
@@ -139,7 +139,7 @@ public class VCDiffEncoderTest extends VerifyEncodedBytesTest {
 
     @Test
     public void EncodeDecodeInterleaved() throws Exception {
-        VCDiffEncoder<OutputStream> encoder = EncoderBuilder.builder()
+        VCDiffEncoder<OutputStream> encoder = VCDiffEncoderBuilder.builder()
                 .withDictionary(dictionary_)
                 .withInterleaving(true)
                 .withTargetMatches(true)
@@ -153,7 +153,7 @@ public class VCDiffEncoderTest extends VerifyEncodedBytesTest {
 
     @Test
     public void EncodeDecodeInterleavedChecksum() throws Exception {
-        VCDiffEncoder<OutputStream> encoder = EncoderBuilder.builder()
+        VCDiffEncoder<OutputStream> encoder = VCDiffEncoderBuilder.builder()
                 .withDictionary(dictionary_)
                 .withChecksum(true)
                 .withTargetMatches(true)
@@ -283,7 +283,7 @@ public class VCDiffEncoderTest extends VerifyEncodedBytesTest {
     @Test
     public void DictionaryBufferOverwritten() throws Exception {
         byte[] dictionary_copy = dictionary_.clone();
-        VCDiffStreamingEncoder<OutputStream> copy_encoder = EncoderBuilder.builder()
+        VCDiffStreamingEncoder<OutputStream> copy_encoder = VCDiffEncoderBuilder.builder()
                 .withInterleaving(true)
                 .withDictionary(dictionary_copy)
                 .withChecksum(true)
@@ -321,7 +321,7 @@ public class VCDiffEncoderTest extends VerifyEncodedBytesTest {
         assertEquals(10, embedded_null_dictionary_text.length);
         assertEquals(8, embedded_null_target.length);
 
-        VCDiffStreamingEncoder<OutputStream> embedded_null_encoder = EncoderBuilder.builder()
+        VCDiffStreamingEncoder<OutputStream> embedded_null_encoder = VCDiffEncoderBuilder.builder()
                 .withDictionary(embedded_null_dictionary_text)
                 .withInterleaving(true)
                 .withTargetMatches(true)
@@ -351,7 +351,7 @@ public class VCDiffEncoderTest extends VerifyEncodedBytesTest {
 
         // FIXME: ok to remove?
         //interleavedCodeTableWriter.init(embedded_null_dictionary_text.length);
-        VCDiffStreamingEncoder<OutputStream> embedded_null_encoder = EncoderBuilder.builder()
+        VCDiffStreamingEncoder<OutputStream> embedded_null_encoder = VCDiffEncoderBuilder.builder()
                 .withDictionary(embedded_null_dictionary_text)
                 .withInterleaving(true)
                 .withChecksum(true)
@@ -381,7 +381,7 @@ public class VCDiffEncoderTest extends VerifyEncodedBytesTest {
                         + "Just the place for a Snark! I have said it thrice:\n"
                         + "What I tell you three times is true.\"\n").getBytes(UTF16BE);
 
-        VCDiffStreamingEncoder<OutputStream> wchar_encoder = EncoderBuilder.builder()
+        VCDiffStreamingEncoder<OutputStream> wchar_encoder = VCDiffEncoderBuilder.builder()
                 .withDictionary(wchar_dictionary_text)
                 .withTargetMatches(false)
                 .withChecksum(true)
@@ -399,7 +399,7 @@ public class VCDiffEncoderTest extends VerifyEncodedBytesTest {
 
     @Test
     public void NonasciiDictionary() throws Exception {
-        VCDiffEncoder<OutputStream> encoder = EncoderBuilder.builder()
+        VCDiffEncoder<OutputStream> encoder = VCDiffEncoderBuilder.builder()
                 .withDictionary(kNonAscii)
                 .withTargetMatches(true)
                 .buildSimple();

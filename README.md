@@ -1,10 +1,26 @@
 [![Build Status](https://travis-ci.org/ehrmann/vcdiff-java.svg?branch=master)](https://travis-ci.org/ehrmann/vcdiff-java)
 [![Coverage Status](https://coveralls.io/repos/github/ehrmann/vcdiff-java/badge.svg?branch=master)](https://coveralls.io/github/ehrmann/vcdiff-java?branch=master)
+[![Maven Central](https://maven-badges.herokuapp.com/maven-central/com.davidehrmann.vcdiff/vcdiff-parent/badge.svg)](https://maven-badges.herokuapp.com/maven-central/com.davidehrmann.vcdiff/vcdiff-parent)
 
 # VCDiff-java
 
 A Java port of Google's [open-vcdiff](https://github.com/google/open-vcdiff) vcdiff (RFC3284) implementation.
 It's currently synced with [open-vcdiff 0.8.4](https://github.com/google/open-vcdiff/releases/tag/openvcdiff-0.8.4).
+
+## Download
+Maven:
+```xml
+<dependency>
+    <groupId>com.davidehrmann.vcdiff</groupId>
+    <artifactId>vcdiff-core</artifactId>
+    <version>0.1.0</version>
+</dependency>
+```
+
+Gradle:
+```
+compile 'com.davidehrmann.vcdiff:vcdiff-core:0.1.0'
+```
 
 ## Usage
 ### Encoding (compressing)
@@ -46,6 +62,22 @@ java com.davidehrmann.vcdiff.VCDiffFileBasedCoder decode -dictionary dict -delta
 
 # Usage details
 java com.davidehrmann.vcdiff.VCDiffFileBasedCoder help
+```
+
+The command line tool is available in the Central Repository
+
+Maven:
+```xml
+<dependency>
+    <groupId>com.davidehrmann.vcdiff</groupId>
+    <artifactId>vcdiff-cli</artifactId>
+    <version>0.1.0</version>
+</dependency>
+```
+
+Gradle:
+```
+compile 'com.davidehrmann.vcdiff:vcdiff-cli:0.1.0'
 ```
 
 ## See also

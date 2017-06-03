@@ -155,7 +155,11 @@ public class VCDiffInputStream extends InputStream {
                 try {
                     decoder.decodeChunk(inBuffer, 0, read, tempDecoded);
                 } catch (IOException e) {
-                    throw new IOException("Error trying to decode data chunk starting at offset " + (totalBytesRead - read), e);
+                    throw new IOException(
+                            String.format("Error trying to decode data chunk starting at offset %d: %s",
+                                    totalBytesRead - read,
+                                    e.getMessage()),
+                            e);
                 }
 
                 if (tempDecoded.size() > 0) {

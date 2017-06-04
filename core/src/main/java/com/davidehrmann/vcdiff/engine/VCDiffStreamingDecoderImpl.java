@@ -462,10 +462,17 @@ public class VCDiffStreamingDecoderImpl implements VCDiffStreamingDecoder {
             }
             if (data_size < DeltaFileHeader.SERIALIZED_SIZE) return RESULT_END_OF_DATA;
         }
+
+        int unrecognizedFlags = header.hdr_indicator & 0xff & ~(VCD_DECOMPRESS | VCD_CODETABLE);
+        if (unrecognizedFlags != 0) {
+            throw new IOException(String.format("Unrecognized hdr_indicator flags: %02x", unrecognizedFlags));
+        }
+
         // Secondary compressor not supported.
         if ((header.hdr_indicator & VCD_DECOMPRESS) != 0) {
             throw new IOException("Secondary compression is not supported");
         }
+
         if ((header.hdr_indicator & VCD_CODETABLE) != 0) {
             int bytes_parsed = InitCustomCodeTable(data.array(), data.arrayOffset() + data.position() + DeltaFileHeader.SERIALIZED_SIZE,
                         data.remaining() - DeltaFileHeader.SERIALIZED_SIZE);
@@ -473,6 +480,7 @@ public class VCDiffStreamingDecoderImpl implements VCDiffStreamingDecoder {
                 return RESULT_END_OF_DATA;
             }
             data.position(data.position() + DeltaFileHeader.SERIALIZED_SIZE + bytes_parsed);
+            // TODO unknown flags on hdr_indicator
         } else {
             addrCache = new VCDiffAddressCacheImpl();
             // addrCache->init() will be called

@@ -197,6 +197,11 @@ class VCDiffHeaderParser {
             return null;
         }
 
+        int unrecognized_flags = win_indicator & 0xff & ~(VCD_SOURCE | VCD_TARGET);
+        if (unrecognized_flags != 0) {
+            LOGGER.warn(String.format("Unrecognized win_indicator flags: 0x%02x", unrecognized_flags));
+        }
+
         int source_target_flags = win_indicator & (VCD_SOURCE | VCD_TARGET);
         switch (source_target_flags) {
             case VCD_SOURCE:

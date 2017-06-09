@@ -80,6 +80,12 @@ Gradle:
 compile 'com.davidehrmann.vcdiff:vcdiff-cli:0.1.0'
 ```
 
+## Compatability
+### xdelta3
+xdelta3 has extensions that aren't currently supported by vcdiff-java: the application header, adler32 checksum,
+and secondary compression. When encoding, passing `-S -A -n` to `xdelta3` will disable these features. 
+
 ## See also
 * [Femtozip](https://github.com/gtoubassi/femtozip) (includes dictionary generator)
 * [Diffable](https://web.archive.org/web/20120301201412/http://code.google.com/p/diffable/)
+* [xdelta](http://xdelta.org/)

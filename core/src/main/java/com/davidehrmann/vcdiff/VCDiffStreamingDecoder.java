@@ -17,9 +17,16 @@ package com.davidehrmann.vcdiff;
 
 import java.io.IOException;
 import java.io.OutputStream;
+import java.nio.ByteBuffer;
 
 
 public interface VCDiffStreamingDecoder {
+
+    /**
+     * @deprecated use {@link #startDecoding(ByteBuffer)}
+     */
+    @Deprecated
+    void startDecoding(byte[] dictionary);
 
     /**
      * Resets the dictionary to dictionary parameter
@@ -29,9 +36,11 @@ public interface VCDiffStreamingDecoder {
      *
      * @param dictionary dictionary the decoder is initialized with
      */
-    void startDecoding(byte[] dictionary);
+    void startDecoding(ByteBuffer dictionary);
 
     /**
+     * @deprecated use {@link #decodeChunk(ByteBuffer, OutputStream)}
+     *
      * Accepts "data[offset,offset+length-1]" as additional data received in the
      * compressed stream.  If any chunks of data can be fully decoded,
      * they are appended to out.
@@ -43,10 +52,23 @@ public interface VCDiffStreamingDecoder {
      * @throws IOException if an error occurred decoding chunk or writing
      * the decoded chunk to out
      */
+    @Deprecated
     void decodeChunk(byte[] data, int offset, int length, OutputStream out) throws IOException;
 
     /**
-     * Convenience method equivilent to decodeChunk(data, 0, data.length, out)
+     * Accepts "data[offset,offset+length-1]" as additional data received in the
+     * compressed stream.  If any chunks of data can be fully decoded,
+     * they are appended to out.
+     *
+     * @param data data to decoder
+     * @param out OutputStream to write decoded data to
+     * @throws IOException if an error occurred decoding chunk or writing
+     * the decoded chunk to out
+     */
+    void decodeChunk(ByteBuffer data, OutputStream out) throws IOException;
+
+    /**
+     * Convenience method equivalent to decodeChunk(data, 0, data.length, out)
      *
      * @param data data to decoder
      * @param out OutputStream to write decoded data to

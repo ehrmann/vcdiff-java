@@ -63,7 +63,7 @@ public class VCDiffStreamingDecoderImpl implements VCDiffStreamingDecoder {
     public static final int UNLIMITED_BYTES = -3;
 
     // Contents and length of the source (dictionary) data.
-    private byte[] dictionary;
+    private ByteBuffer dictionary;
 
     // This string will be used to store any unparsed bytes left over when
     // decodeChunk() reaches the end of its input and returns RESULT_END_OF_DATA.
@@ -157,10 +157,11 @@ public class VCDiffStreamingDecoderImpl implements VCDiffStreamingDecoder {
         decodedTargetOutputPosition = 0;
     }
 
-    // These functions are identical to their counterparts
-    // in VCDiffStreamingDecoder.
-    //
     public void startDecoding(byte[] dictionary) {
+        startDecoding(ByteBuffer.wrap(dictionary));
+    }
+
+    public void startDecoding(ByteBuffer dictionary) {
         if (startDecodingWasCalled) {
             throw new IllegalStateException("startDecoding() called twice without finishDecoding()");
         }
@@ -173,14 +174,18 @@ public class VCDiffStreamingDecoderImpl implements VCDiffStreamingDecoder {
     }
 
     public void decodeChunk(byte[] data, int offset, int len, OutputStream out) throws IOException {
+        decodeChunk(ByteBuffer.wrap(data, offset, len), out);
+    }
+
+    public void decodeChunk(ByteBuffer data, OutputStream out) throws IOException {
         if (!startDecodingWasCalled) {
             reset();
             throw new IOException("decodeChunk() called without startDecoding()");
         }
         // TODO: there's a lot of room for optimization here
-        ByteBuffer parseable_chunk = ByteBuffer.allocate(unparsedBytes.remaining() + len);
+        ByteBuffer parseable_chunk = ByteBuffer.allocate(unparsedBytes.remaining() + data.remaining());
         parseable_chunk.put(unparsedBytes);
-        parseable_chunk.put(data, offset, len);
+        parseable_chunk.put(data);
         parseable_chunk.flip();
         unparsedBytes = parseable_chunk.duplicate();
 
@@ -217,7 +222,7 @@ public class VCDiffStreamingDecoderImpl implements VCDiffStreamingDecoder {
     }
 
     public void decodeChunk(byte[] data, OutputStream out) throws IOException {
-        decodeChunk(data, 0, data.length, out);
+        decodeChunk(ByteBuffer.wrap(data), out);
     }
 
     public void finishDecoding() throws IOException {
@@ -372,9 +377,7 @@ public class VCDiffStreamingDecoderImpl implements VCDiffStreamingDecoder {
         }
     }
 
-    public byte[] dictionary_ptr() { return dictionary; }
-
-    int dictionarySize() { return dictionary.length; }
+    public ByteBuffer dictionary_ptr() { return dictionary; }
 
     VCDiffAddressCache addrCache() { return addrCache; }
 

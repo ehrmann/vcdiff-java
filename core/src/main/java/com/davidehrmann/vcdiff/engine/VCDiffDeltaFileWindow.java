@@ -157,7 +157,7 @@ class VCDiffDeltaFileWindow {
         VCDiffHeaderParser header_parser = new VCDiffHeaderParser(parseableChunk.slice());
 
         VCDiffHeaderParser.DeltaWindowHeader deltaWindowHeader = header_parser.parseWinIndicatorAndSourceSegment(
-                parent.dictionarySize(),
+                parent.dictionary_ptr().limit(),
                 decoded_target.size(),
                 parent.allowVcdTarget()
         );
@@ -191,7 +191,7 @@ class VCDiffDeltaFileWindow {
 
         // Get a pointer to the start of the source segment.
         if ((deltaWindowHeader.win_indicator & VCD_SOURCE) != 0) {
-            sourceSegment = ByteBuffer.wrap(parent.dictionary_ptr());
+            sourceSegment = (ByteBuffer) parent.dictionary_ptr().duplicate().rewind();
             sourceSegment.position(deltaWindowHeader.source_segment_position);
         } else if ((deltaWindowHeader.win_indicator & VCD_TARGET) != 0) {
             // This assignment must happen after the reserve().

@@ -137,7 +137,7 @@ public class VCDiffFileBasedCoder {
     // Opens the dictionary file and reads it into a newly allocated buffer.
     // If successful, returns true and populates dictionary with the dictionary
     // contents; otherwise, returns the buffer.
-    protected static byte[] OpenDictionary(String dictionary) throws IOException {
+    protected static byte[] openDictionary(String dictionary) throws IOException {
         InputStream in = OpenFileForReading(dictionary, "dictionary");
         try {
             return IOUtils.toByteArray(in);
@@ -295,7 +295,7 @@ public class VCDiffFileBasedCoder {
         private OptionalTargetAndDeltaOptions targetAndDeltaOptions = new OptionalTargetAndDeltaOptions();
 
         public void Encode() throws IOException {
-            byte[] dictionary = OpenDictionary(globalOptions.dictionary);
+            byte[] dictionary = openDictionary(globalOptions.dictionary);
 
             // FIXME: support encodeOptions.json
             /*
@@ -362,7 +362,7 @@ public class VCDiffFileBasedCoder {
         private OptionalTargetAndDeltaOptions targetAndDeltaFlags = new OptionalTargetAndDeltaOptions();
 
         public void Decode() throws IOException {
-            byte[] dictionary = OpenDictionary(globalOptions.dictionary);
+            byte[] dictionary = openDictionary(globalOptions.dictionary);
 
             boolean useStdin = (targetAndDeltaFlags.delta == null || targetAndDeltaFlags.delta.isEmpty());
             boolean useStdout = (targetAndDeltaFlags.target == null || targetAndDeltaFlags.target.isEmpty());
@@ -418,7 +418,7 @@ public class VCDiffFileBasedCoder {
         private RequiredTargetAndDeltaOptions targetAndDeltaOptions = new RequiredTargetAndDeltaOptions();
 
         public void DecodeAndCompare() throws IOException {
-            byte[] dictionary = OpenDictionary(globalOptions.dictionary);
+            byte[] dictionary = openDictionary(globalOptions.dictionary);
 
             CountingInputStream countedIn = new CountingInputStream(OpenFileForReading(targetAndDeltaOptions.delta, "delta"));
             try {

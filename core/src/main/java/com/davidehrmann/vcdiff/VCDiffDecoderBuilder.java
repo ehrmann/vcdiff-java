@@ -25,6 +25,7 @@ import com.davidehrmann.vcdiff.engine.VCDiffStreamingDecoderImpl;
 import com.davidehrmann.vcdiff.io.VCDiffInputStream;
 
 import java.io.InputStream;
+import java.nio.ByteBuffer;
 
 public class VCDiffDecoderBuilder {
 
@@ -73,6 +74,10 @@ public class VCDiffDecoderBuilder {
     }
 
     public VCDiffInputStream buildInputStream(InputStream in, byte[] dictionary) {
+        return buildInputStream(in, ByteBuffer.wrap(dictionary));
+    }
+
+    public VCDiffInputStream buildInputStream(InputStream in, ByteBuffer dictionary) {
         return new VCDiffInputStream(in, dictionary, buildStreaming());
     }
 

@@ -18,6 +18,7 @@ package com.davidehrmann.vcdiff;
 import org.junit.*;
 import org.junit.contrib.java.lang.system.ExpectedSystemExit;
 import org.junit.rules.TemporaryFolder;
+import org.junit.rules.TestName;
 
 import java.io.*;
 import java.util.Random;
@@ -56,13 +57,16 @@ public class VCDiffFileBasedCoderTest {
     @Rule
     public final ExpectedSystemExit exit = ExpectedSystemExit.none();
 
+    @Rule
+    public final TestName testName = new TestName();
+
     private File deltaFile;
     private File outputTargetFile;
 
     @Before
     public void setUpTempFiles() throws IOException {
-        deltaFile = tempFolder.newFile("configure.ac.vcdiff");
-        outputTargetFile = tempFolder.newFile("configure.ac.output");
+        deltaFile = tempFolder.newFile(testName.getMethodName() + "-configure.ac.vcdiff");
+        outputTargetFile = tempFolder.newFile(testName.getMethodName() + "-configure.ac.output");
     }
 
     @Test

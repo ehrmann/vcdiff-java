@@ -1,0 +1,2 @@
+configure* -text -diff
+*.vcdiff -text -diff

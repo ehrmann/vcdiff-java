@@ -4,6 +4,7 @@ import com.davidehrmann.vcdiff.util.Objects;
 
 import java.io.IOException;
 import java.io.OutputStream;
+import java.nio.ByteBuffer;
 
 /**
  * A simpler (non-streaming) interface to the VCDIFF decoder that can be used
@@ -17,6 +18,8 @@ public class VCDiffDecoder {
     }
 
     /**
+     * @deprecated use {@link #decode(byte[], byte[], OutputStream)}
+     *
      * decode the contents of encoding using the specified dictionary, writing the decoded data to target
      *
      * @param dictionary dictionary
@@ -26,14 +29,27 @@ public class VCDiffDecoder {
      * @param target output writer for decoded data
      * @throws IOException if there was an exception decoding or writing to the output target
      */
+    @Deprecated
     public void decode(byte[] dictionary, byte[] encoding, int offset, int len, OutputStream target) throws IOException {
+        decode(ByteBuffer.wrap(dictionary), ByteBuffer.wrap(encoding, offset, len), target);
+    }
+
+    /**
+     * decode the contents of encoding using the specified dictionary, writing the decoded data to target
+     *
+     * @param dictionary dictionary
+     * @param encoding data to decode
+     * @param target output writer for decoded data
+     * @throws IOException if there was an exception decoding or writing to the output target
+     */
+    public void decode(ByteBuffer dictionary, ByteBuffer encoding, OutputStream target) throws IOException {
         decoder.startDecoding(dictionary);
-        decoder.decodeChunk(encoding, offset, len, target);
+        decoder.decodeChunk(encoding, target);
         decoder.finishDecoding();
     }
 
     /**
-     * Convenience method equivalent to decode(dictionary, encoding, 0, encoding.length, target)
+     * Convenience method equivalent to decode(ByteBuffer.wrap(dictionary), ByteBuffer.wrap(encoding), target)
      *
      * @param dictionary dictionary
      * @param encoding data to decode
@@ -41,6 +57,6 @@ public class VCDiffDecoder {
      * @throws IOException if there was an exception decoding or writing to the output target
      */
     public void decode(byte[] dictionary, byte[] encoding, OutputStream target) throws IOException {
-        decode(dictionary, encoding, 0, encoding.length, target);
+        decode(ByteBuffer.wrap(dictionary), ByteBuffer.wrap(encoding), target);
     }
 }

@@ -31,7 +31,7 @@ public class VCDiffInputStream extends InputStream {
     public static final boolean DEFAULT_ALLOW_VCD_TARGET = false;
 
     private final VCDiffStreamingDecoder decoder;
-    private final byte[] dictionary;
+    private final ByteBuffer dictionary;
 
     private final InputStream in;
 
@@ -50,19 +50,26 @@ public class VCDiffInputStream extends InputStream {
 
     public VCDiffInputStream(InputStream in, byte[] dictionary,
                              long maxTargetFileSize, int maxTargetWindowSize, boolean allowVcdTarget) {
-        this.in = Objects.requireNotNull(in, "in was null");
-        this.dictionary = Objects.requireNotNull(dictionary, "dictionary was null").clone();
-        decoder = VCDiffDecoderBuilder.builder()
-                .withMaxTargetFileSize(maxTargetFileSize)
-                .withMaxTargetWindowSize(maxTargetWindowSize)
-                .withAllowTargetMatches(allowVcdTarget)
-                .buildStreaming();
+        this(
+                Objects.requireNotNull(in, "in was null"),
+                ByteBuffer.wrap(Objects.requireNotNull(dictionary, "dictionary was null").clone()),
+                VCDiffDecoderBuilder.builder()
+                        .withMaxTargetFileSize(maxTargetFileSize)
+                        .withMaxTargetWindowSize(maxTargetWindowSize)
+                        .withAllowTargetMatches(allowVcdTarget)
+                        .buildStreaming());
     }
 
     public VCDiffInputStream(InputStream in, byte[] dictionary, VCDiffStreamingDecoder decoder) {
+        this(in,
+                ByteBuffer.wrap(Objects.requireNotNull(dictionary, "dictionary was null").clone()),
+                decoder);
+    }
+
+    public VCDiffInputStream(InputStream in, ByteBuffer dictionary, VCDiffStreamingDecoder decoder) {
         this.in = Objects.requireNotNull(in, "in was null");
         this.decoder = Objects.requireNotNull(decoder, "decoder was null");
-        this.dictionary = Objects.requireNotNull(dictionary, "dictionary was null").clone();
+        this.dictionary = Objects.requireNotNull(dictionary, "dictionary was null");
     }
 
     @Override

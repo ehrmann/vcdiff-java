@@ -77,14 +77,14 @@ class VCDiffDeltaFileWindow {
             reader.updatePointers(instructionsAndSizes);
         }
         switch (decodeBody(parseable_chunk)) {
-        case VCDiffHeaderParser.RESULT_END_OF_DATA:
-            if (moreDataExpected()) {
-                return VCDiffHeaderParser.RESULT_END_OF_DATA;
-            } else {
-                throw new IOException("End of data reached while decoding VCDIFF delta file");
-            }
-        default:
-            break;  // decodeBody succeeded
+            case VCDiffHeaderParser.RESULT_END_OF_DATA:
+                if (moreDataExpected()) {
+                    return VCDiffHeaderParser.RESULT_END_OF_DATA;
+                } else {
+                    throw new IOException("End of data reached while decoding VCDIFF delta file");
+                }
+            default:
+                break;  // decodeBody succeeded
         }
         // Get ready to read a new delta window
         Reset();
@@ -157,7 +157,7 @@ class VCDiffDeltaFileWindow {
         VCDiffHeaderParser header_parser = new VCDiffHeaderParser(parseableChunk.slice());
 
         VCDiffHeaderParser.DeltaWindowHeader deltaWindowHeader = header_parser.parseWinIndicatorAndSourceSegment(
-                parent.dictionarySize(),
+                parent.dictionary_ptr().limit(),
                 decoded_target.size(),
                 parent.allowVcdTarget()
         );
@@ -191,7 +191,7 @@ class VCDiffDeltaFileWindow {
 
         // Get a pointer to the start of the source segment.
         if ((deltaWindowHeader.win_indicator & VCD_SOURCE) != 0) {
-            sourceSegment = ByteBuffer.wrap(parent.dictionary_ptr());
+            sourceSegment = (ByteBuffer) parent.dictionary_ptr().duplicate().rewind();
             sourceSegment.position(deltaWindowHeader.source_segment_position);
         } else if ((deltaWindowHeader.win_indicator & VCD_TARGET) != 0) {
             // This assignment must happen after the reserve().
@@ -307,11 +307,11 @@ class VCDiffDeltaFileWindow {
             final AtomicInteger mode = new AtomicInteger(0);
             int instruction = reader.getNextInstruction(decoded_size, mode);
             switch (instruction) {
-            case VCD_INSTRUCTION_END_OF_DATA:
-                updateInstructionPointer(parseable_chunk);
-                return VCDiffHeaderParser.RESULT_END_OF_DATA;
-            default:
-                break;
+                case VCD_INSTRUCTION_END_OF_DATA:
+                    updateInstructionPointer(parseable_chunk);
+                    return VCDiffHeaderParser.RESULT_END_OF_DATA;
+                default:
+                    break;
             }
             final int size = decoded_size.get();
             // The value of "size" itself could be enormous (say, INT32_MAX)
@@ -326,25 +326,25 @@ class VCDiffDeltaFileWindow {
             }
             int result;
             switch (instruction) {
-            case VCD_ADD:
-                result = decodeAdd(size);
-                break;
-            case VCD_RUN:
-                result = decodeRun(size);
-                break;
-            case VCD_COPY:
-                result = decodeCopy(size, (short)mode.get());
-                break;
-            default:
-                throw new IOException("Unexpected instruction type " + instruction + " in opcode stream");
+                case VCD_ADD:
+                    result = decodeAdd(size);
+                    break;
+                case VCD_RUN:
+                    result = decodeRun(size);
+                    break;
+                case VCD_COPY:
+                    result = decodeCopy(size, (short)mode.get());
+                    break;
+                default:
+                    throw new IOException("Unexpected instruction type " + instruction + " in opcode stream");
             }
             switch (result) {
-            case VCDiffHeaderParser.RESULT_END_OF_DATA:
-                reader.unGetInstruction();
-                updateInstructionPointer(parseable_chunk);
-                return VCDiffHeaderParser.RESULT_END_OF_DATA;
-            case VCDiffHeaderParser.RESULT_SUCCESS:
-                break;
+                case VCDiffHeaderParser.RESULT_END_OF_DATA:
+                    reader.unGetInstruction();
+                    updateInstructionPointer(parseable_chunk);
+                    return VCDiffHeaderParser.RESULT_END_OF_DATA;
+                case VCDiffHeaderParser.RESULT_SUCCESS:
+                    break;
             }
         }
         if (targetBytesDecoded() != targetWindowLength) {

@@ -13,13 +13,13 @@ Maven:
 <dependency>
     <groupId>com.davidehrmann.vcdiff</groupId>
     <artifactId>vcdiff-core</artifactId>
-    <version>0.1.0</version>
+    <version>0.1.1</version>
 </dependency>
 ```
 
 Gradle:
 ```
-compile 'com.davidehrmann.vcdiff:vcdiff-core:0.1.0'
+compile 'com.davidehrmann.vcdiff:vcdiff-core:0.1.1'
 ```
 
 ## Usage
@@ -71,13 +71,13 @@ Maven:
 <dependency>
     <groupId>com.davidehrmann.vcdiff</groupId>
     <artifactId>vcdiff-cli</artifactId>
-    <version>0.1.0</version>
+    <version>0.1.1</version>
 </dependency>
 ```
 
 Gradle:
 ```
-compile 'com.davidehrmann.vcdiff:vcdiff-cli:0.1.0'
+compile 'com.davidehrmann.vcdiff:vcdiff-cli:0.1.1'
 ```
 
 ## Compatability

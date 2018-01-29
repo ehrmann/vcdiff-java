@@ -197,7 +197,8 @@ class VCDiffHeaderParser {
             return null;
         }
 
-        int unrecognized_flags = win_indicator & 0xff & ~(VCD_SOURCE | VCD_TARGET);
+        // VCD_CHECKSUM is a Google open-vcdiff extension
+        int unrecognized_flags = win_indicator & 0xff & ~(VCD_SOURCE | VCD_TARGET | VCD_CHECKSUM);
         if (unrecognized_flags != 0) {
             LOGGER.warn(String.format("Unrecognized win_indicator flags: 0x%02x", unrecognized_flags));
         }

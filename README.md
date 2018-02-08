@@ -31,11 +31,11 @@ OutputStream compressedData = ...;
 
 // OutputStream (like GZIPOutputStream) and stream-based encoders are
 // also available from the builder.
-VCDiffEncoder<OutputStream> encoder = EncoderBuilder.builder()
+VCDiffEncoder<OutputStream> encoder = VCDiffEncoderBuilder.builder()
     .withDictionary(dictionary)
     .buildSimple();
 
-encoder.Encode(uncompressedData, compressedData);
+encoder.encode(uncompressedData, compressedData);
 ```
 ### Decoding (decompressing)
 ```java
@@ -45,8 +45,8 @@ OutputStream uncompressedData = ...;
 
 // InputStream (like GZIPInputStream) and stream-based decoders are
 // also available from the builder.
-VCDiffDecoder decoder = DecoderBuilder.builder().buildSimple();
-decoder.Decode(dictionary, compressedData, uncompressedData);
+VCDiffDecoder decoder = VCDiffDecoderBuilder.builder().buildSimple();
+decoder.decode(dictionary, compressedData, uncompressedData);
 ```
 
 ## Command line usage

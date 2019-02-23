@@ -37,7 +37,10 @@ import java.io.IOException;
 import java.io.OutputStream;
 import java.nio.ByteBuffer;
 
-import static com.davidehrmann.vcdiff.engine.VCDiffHeaderParser.*;
+import static com.davidehrmann.vcdiff.engine.VCDiffHeaderParser.RESULT_END_OF_DATA;
+import static com.davidehrmann.vcdiff.engine.VCDiffHeaderParser.RESULT_SUCCESS;
+import static com.davidehrmann.vcdiff.engine.VCDiffHeaderParser.VCD_CODETABLE;
+import static com.davidehrmann.vcdiff.engine.VCDiffHeaderParser.VCD_DECOMPRESS;
 
 @SuppressWarnings("ALL")
 public class VCDiffStreamingDecoderImpl implements VCDiffStreamingDecoder {

@@ -6,6 +6,7 @@ import org.junit.Test;
 
 import java.io.IOException;
 import java.io.StringWriter;
+import java.nio.charset.StandardCharsets;
 import java.util.EnumSet;
 
 import static org.junit.Assert.assertEquals;
@@ -38,7 +39,7 @@ public class JSONCodeTableWriterTest {
 
     @Test
     public void Add() throws IOException {
-        coder_.add("123".getBytes("US-ASCII"), 0, 3);
+        coder_.add("123".getBytes(StandardCharsets.US_ASCII), 0, 3);
         coder_.output(writer);
         coder_.finishEncoding(writer);
         assertEquals("[\"123\"]", writer.toString());
@@ -62,7 +63,7 @@ public class JSONCodeTableWriterTest {
 
     @Test
     public void AddEscaped() throws IOException {
-        coder_.add("\n\b\r".getBytes("US-ASCII"), 0, 3);
+        coder_.add("\n\b\r".getBytes(StandardCharsets.US_ASCII), 0, 3);
         coder_.output(writer);
         coder_.finishEncoding(writer);
         assertEquals("[\"\\n\\b\\r\"]", writer.toString());
@@ -70,9 +71,9 @@ public class JSONCodeTableWriterTest {
 
     @Test
     public void AddCopyAdd() throws IOException {
-        coder_.add("abc".getBytes("US-ASCII"), 0, 3);
+        coder_.add("abc".getBytes(StandardCharsets.US_ASCII), 0, 3);
         coder_.copy(3, 5);
-        coder_.add("defghij".getBytes("US-ASCII"), 0, 7);
+        coder_.add("defghij".getBytes(StandardCharsets.US_ASCII), 0, 7);
         coder_.output(writer);
         coder_.finishEncoding(writer);
         assertEquals("[\"abc\",3,5,\"defghij\"]", writer.toString());
@@ -80,10 +81,10 @@ public class JSONCodeTableWriterTest {
 
     @Test
     public void AddOutputAddOutputToSameString() throws IOException {
-        coder_.add("abc".getBytes("US-ASCII"), 0, 3);
+        coder_.add("abc".getBytes(StandardCharsets.US_ASCII), 0, 3);
         coder_.output(writer);
         assertEquals("[\"abc\"", writer.toString());
-        coder_.add("def".getBytes("US-ASCII"), 0, 3);
+        coder_.add("def".getBytes(StandardCharsets.US_ASCII), 0, 3);
         coder_.output(writer);
         coder_.finishEncoding(writer);
         assertEquals("[\"abc\",\"def\"]", writer.toString());

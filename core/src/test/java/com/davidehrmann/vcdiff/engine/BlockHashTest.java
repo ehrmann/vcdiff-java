@@ -20,6 +20,7 @@ import org.junit.Test;
 
 import java.io.UnsupportedEncodingException;
 import java.nio.ByteBuffer;
+import java.nio.charset.StandardCharsets;
 import java.util.Arrays;
 
 public class BlockHashTest {
@@ -155,12 +156,7 @@ public class BlockHashTest {
 
     private static byte[] MakeEachLetterABlock(String string_without_spaces, int block_size, boolean no_initial_padding) {
         byte[] bytes_without_spaces;
-        try {
-            bytes_without_spaces = string_without_spaces.getBytes("US-ASCII");
-        } catch (UnsupportedEncodingException e) {
-            Assert.fail(e.toString());
-            return null;
-        }
+        bytes_without_spaces = string_without_spaces.getBytes(StandardCharsets.US_ASCII);
 
         byte[] padded_text = new byte[block_size * bytes_without_spaces.length - (no_initial_padding ? block_size - 1 : 0)];
         Arrays.fill(padded_text, (byte) ' ');
@@ -242,7 +238,7 @@ public class BlockHashTest {
     public void LeftLimitedByMaxBytes() throws UnsupportedEncodingException {
         // The number of bytes that match between the original "we hear is fearsome"
         // and the altered "ve hear is fearsome".
-        final int expected_length = kBlockSize * "e hear is ".getBytes("US-ASCII").length;
+        final int expected_length = kBlockSize * "e hear is ".getBytes(StandardCharsets.US_ASCII).length;
         final int max_bytes = expected_length - 1;
         Assert.assertEquals(max_bytes, BlockHash.MatchingBytesToLeft(
                 search_string, index_of_f_in_fearsome,
@@ -254,7 +250,7 @@ public class BlockHashTest {
     public void LeftNotLimited() throws UnsupportedEncodingException {
         // The number of bytes that match between the original "we hear is fearsome"
         // and the altered "ve hear is fearsome".
-        final int expected_length = kBlockSize * "e hear is ".getBytes("US-ASCII").length;
+        final int expected_length = kBlockSize * "e hear is ".getBytes(StandardCharsets.US_ASCII).length;
         final int max_bytes = expected_length + 1;
         Assert.assertEquals(expected_length, BlockHash.MatchingBytesToLeft(
                 search_string, index_of_f_in_fearsome,
@@ -270,7 +266,7 @@ public class BlockHashTest {
     public void RightLimitedByMaxBytes() throws UnsupportedEncodingException {
         // The number of bytes that match between the original "fearsome"
         // and the altered "fearsomm".
-        final int expected_length = (kBlockSize * "fearsom".getBytes("US-ASCII").length) + (kBlockSize - 1);  // spacing between letters
+        final int expected_length = (kBlockSize * "fearsom".getBytes(StandardCharsets.US_ASCII).length) + (kBlockSize - 1);  // spacing between letters
         final int max_bytes = expected_length - 1;
         Assert.assertEquals(max_bytes, BlockHash.MatchingBytesToRight(
                 search_string, index_of_f_in_fearsome,
@@ -282,7 +278,7 @@ public class BlockHashTest {
     public void RightNotLimited() throws UnsupportedEncodingException {
         // The number of bytes that match between the original "we hear is fearsome"
         // and the altered "ve hear is fearsome".
-        final int expected_length = (kBlockSize * "fearsom".getBytes("US-ASCII").length) + (kBlockSize - 1);  // spacing between letters
+        final int expected_length = (kBlockSize * "fearsom".getBytes(StandardCharsets.US_ASCII).length) + (kBlockSize - 1);  // spacing between letters
         final int max_bytes = expected_length + 1;
         Assert.assertEquals(expected_length, BlockHash.MatchingBytesToRight(
                 search_string, index_of_f_in_fearsome,
@@ -512,7 +508,7 @@ public class BlockHashTest {
     @Test(expected = ArrayIndexOutOfBoundsException.class)
     public void BadNextMatchingBlockReturnsNoMatch() throws UnsupportedEncodingException {
         BlockHash dh_ = BlockHash.CreateDictionaryHash(sample_text);
-        dh_.NextMatchingBlock(0xFFFFFFFE, "    ".getBytes("US-ASCII"), 0);
+        dh_.NextMatchingBlock(0xFFFFFFFE, "    ".getBytes(StandardCharsets.US_ASCII), 0);
     }
 
     @Test(expected = IllegalArgumentException.class)
@@ -522,13 +518,13 @@ public class BlockHashTest {
     }
 
     @Test
-    public void UnknownFingerprintReturnsNoMatch() throws UnsupportedEncodingException {
+    public void UnknownFingerprintReturnsNoMatch() {
         BlockHash dh_ = BlockHash.CreateDictionaryHash(sample_text);
-        Assert.assertEquals(-1, dh_.FirstMatchingBlock(0xFAFAFAFA, "FAFA".getBytes("US-ASCII"), 0));
+        Assert.assertEquals(-1, dh_.FirstMatchingBlock(0xFAFAFAFA, "FAFA".getBytes(StandardCharsets.US_ASCII), 0));
     }
 
     @Test
-    public void FindBestMatch() throws UnsupportedEncodingException {
+    public void FindBestMatch() {
         BlockHash dh_ = BlockHash.CreateDictionaryHash(sample_text);
 
         BlockHash.Match best_match = new BlockHash.Match();
@@ -543,7 +539,7 @@ public class BlockHashTest {
         // The match includes the spaces after the final character,
 
         // which is why (kBlockSize - 1) is added to the expected best size.
-        Assert.assertEquals(("ear is fear".getBytes("US-ASCII").length * kBlockSize) + (kBlockSize - 1), best_match.size());
+        Assert.assertEquals(("ear is fear".getBytes(StandardCharsets.US_ASCII).length * kBlockSize) + (kBlockSize - 1), best_match.size());
     }
 
     @Test
@@ -561,11 +557,11 @@ public class BlockHashTest {
         Assert.assertEquals(index_of_second_e_in_what_we_hear, best_match.target_offset());
         // The match includes the spaces after the final character,
         // which is why (kBlockSize - 1) is added to the expected best size.
-        Assert.assertEquals(("ear is fear".getBytes("US-ASCII").length * kBlockSize) + (kBlockSize - 1), best_match.size());
+        Assert.assertEquals(("ear is fear".getBytes(StandardCharsets.US_ASCII).length * kBlockSize) + (kBlockSize - 1), best_match.size());
     }
 
     @Test
-    public void BestMatchReachesEndOfDictionary() throws UnsupportedEncodingException {
+    public void BestMatchReachesEndOfDictionary() {
         BlockHash dh_ = BlockHash.CreateDictionaryHash(sample_text);
         RollingHash rollingHash = new RollingHash(kBlockSize);
 
@@ -580,11 +576,11 @@ public class BlockHashTest {
 
         Assert.assertEquals(index_of_space_before_itself, best_match.source_offset());
         Assert.assertEquals(index_of_space_in_eat_itself, best_match.target_offset());
-        Assert.assertEquals(" itself".getBytes("US-ASCII").length * kBlockSize, best_match.size());
+        Assert.assertEquals(" itself".getBytes(StandardCharsets.US_ASCII).length * kBlockSize, best_match.size());
     }
 
     @Test
-    public void BestMatchReachesStartOfDictionary() throws UnsupportedEncodingException {
+    public void BestMatchReachesStartOfDictionary() {
         BlockHash dh_ = BlockHash.CreateDictionaryHash(sample_text);
         RollingHash rollingHash = new RollingHash(kBlockSize);
         BlockHash.Match best_match = new BlockHash.Match();
@@ -600,7 +596,7 @@ public class BlockHashTest {
         Assert.assertEquals(index_of_t_in_use_the, best_match.target_offset());
         // The match includes the spaces after the final character,
         // which is why (kBlockSize - 1) is added to the expected best size.
-        Assert.assertEquals(("The onl".getBytes("US-ASCII").length * kBlockSize) + (kBlockSize - 1), best_match.size());
+        Assert.assertEquals(("The onl".getBytes(StandardCharsets.US_ASCII).length * kBlockSize) + (kBlockSize - 1), best_match.size());
     }
 
     @Test

@@ -19,6 +19,7 @@ import com.davidehrmann.vcdiff.VCDiffEncoderBuilder;
 import org.junit.Test;
 
 import static com.davidehrmann.vcdiff.engine.VCDiffCodeTableWriterImpl.VCD_SOURCE;
+import static java.nio.charset.StandardCharsets.US_ASCII;
 import static org.junit.Assert.assertArrayEquals;
 import static org.junit.Assert.assertTrue;
 

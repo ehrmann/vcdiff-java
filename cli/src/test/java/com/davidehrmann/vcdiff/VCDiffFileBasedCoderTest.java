@@ -15,17 +15,27 @@
 
 package com.davidehrmann.vcdiff;
 
-import org.junit.*;
+import org.junit.Before;
+import org.junit.BeforeClass;
+import org.junit.ClassRule;
+import org.junit.Rule;
+import org.junit.Test;
 import org.junit.contrib.java.lang.system.ExpectedSystemExit;
 import org.junit.rules.TemporaryFolder;
 
-import java.io.*;
+import java.io.BufferedInputStream;
+import java.io.File;
+import java.io.FileInputStream;
+import java.io.FileOutputStream;
+import java.io.IOException;
+import java.io.InputStream;
+import java.io.OutputStream;
+import java.io.PrintStream;
 import java.util.Random;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assume.assumeTrue;
 
-@SuppressWarnings("ThrowFromFinallyBlock")
 public class VCDiffFileBasedCoderTest {
 
     private static File dictionaryFile;
@@ -116,26 +126,17 @@ public class VCDiffFileBasedCoderTest {
         inBackup = System.in;
         try {
             outBackup = System.out;
-            try {
-                InputStream in = new FileInputStream(targetFile);
-                try {
-                    OutputStream out = new FileOutputStream(deltaFile);
-                    try {
-                        System.setIn(in);
-                        System.setOut(new PrintStream(out));
+            try (InputStream in = new FileInputStream(targetFile);
+                 OutputStream out = new FileOutputStream(deltaFile)) {
+                System.setIn(in);
+                System.setOut(new PrintStream(out));
 
-                        VCDiffFileBasedCoder.main(new String[] {
-                                "encode",
-                                "-interleaved",
-                                "-checksum",
-                                "-dictionary", dictionaryFile.getCanonicalPath(),
-                        });
-                    } finally {
-                        out.close();
-                    }
-                } finally {
-                    in.close();
-                }
+                VCDiffFileBasedCoder.main(new String[] {
+                        "encode",
+                        "-interleaved",
+                        "-checksum",
+                        "-dictionary", dictionaryFile.getCanonicalPath(),
+                });
             } finally {
                 System.setOut(outBackup);
             }
@@ -147,24 +148,15 @@ public class VCDiffFileBasedCoderTest {
         inBackup = System.in;
         try {
             outBackup = System.out;
-            try {
-                InputStream in = new FileInputStream(deltaFile);
-                try {
-                    OutputStream out = new FileOutputStream(outputTargetFile);
-                    try {
-                        System.setIn(in);
-                        System.setOut(new PrintStream(out));
+            try (InputStream in = new FileInputStream(deltaFile);
+                 OutputStream out = new FileOutputStream(outputTargetFile)) {
+                System.setIn(in);
+                System.setOut(new PrintStream(out));
 
-                        VCDiffFileBasedCoder.main(new String[] {
-                                "decode",
-                                "-dictionary", dictionaryFile.getCanonicalPath(),
-                        });
-                    } finally {
-                        out.close();
-                    }
-                } finally {
-                    in.close();
-                }
+                VCDiffFileBasedCoder.main(new String[] {
+                        "decode",
+                        "-dictionary", dictionaryFile.getCanonicalPath(),
+                });
             } finally {
                 System.setOut(outBackup);
             }
@@ -182,19 +174,16 @@ public class VCDiffFileBasedCoderTest {
         // encode
         PrintStream outBackup = System.out;
         try {
-            OutputStream deltaOut = new FileOutputStream(deltaFile);
-            try {
+            try (OutputStream deltaOut = new FileOutputStream(deltaFile)) {
                 System.setOut(new PrintStream(deltaOut));
 
-                VCDiffFileBasedCoder.main(new String[] {
+                VCDiffFileBasedCoder.main(new String[]{
                         "encode",
                         "-interleaved",
                         "-checksum",
                         "-target", targetFile.getCanonicalPath(),
                         "-dictionary", dictionaryFile.getCanonicalPath(),
                 });
-            } finally {
-                deltaOut.close();
             }
         } finally {
             System.setOut(outBackup);
@@ -203,17 +192,14 @@ public class VCDiffFileBasedCoderTest {
         // decode
         outBackup = System.out;
         try {
-            OutputStream targetOut = new FileOutputStream(outputTargetFile);
-            try {
+            try (OutputStream targetOut = new FileOutputStream(outputTargetFile)) {
                 System.setOut(new PrintStream(targetOut));
 
-                VCDiffFileBasedCoder.main(new String[] {
+                VCDiffFileBasedCoder.main(new String[]{
                         "decode",
                         "-delta", deltaFile.getCanonicalPath(),
                         "-dictionary", dictionaryFile.getCanonicalPath(),
                 });
-            }  finally {
-                targetOut.close();
             }
         } finally {
             System.setOut(outBackup);
@@ -230,19 +216,16 @@ public class VCDiffFileBasedCoderTest {
         // encode
         inBackup = System.in;
         try {
-            InputStream in = new FileInputStream(targetFile);
-            try {
+            try (InputStream in = new FileInputStream(targetFile)) {
                 System.setIn(in);
 
-                VCDiffFileBasedCoder.main(new String[] {
+                VCDiffFileBasedCoder.main(new String[]{
                         "encode",
                         "-interleaved",
                         "-checksum",
                         "-delta", deltaFile.getCanonicalPath(),
                         "-dictionary", dictionaryFile.getCanonicalPath(),
                 });
-            } finally {
-                in.close();
             }
         } finally {
             System.setIn(inBackup);
@@ -251,17 +234,14 @@ public class VCDiffFileBasedCoderTest {
         // decode
         inBackup = System.in;
         try {
-            InputStream in = new FileInputStream(deltaFile);
-            try {
+            try (InputStream in = new FileInputStream(deltaFile)) {
                 System.setIn(in);
 
-                VCDiffFileBasedCoder.main(new String[] {
+                VCDiffFileBasedCoder.main(new String[]{
                         "decode",
                         "-target", outputTargetFile.getCanonicalPath(),
                         "-dictionary", dictionaryFile.getCanonicalPath(),
                 });
-            } finally {
-                in.close();
             }
         } finally {
             System.setIn(inBackup);
@@ -354,7 +334,7 @@ public class VCDiffFileBasedCoderTest {
                 "-dictionary", dictionaryFile.getCanonicalPath(),
                 "-target", targetFile.getCanonicalPath(),
                 "-delta", deltaFile.getCanonicalPath()
-    });
+        });
 
         VCDiffFileBasedCoder.main(new String[] {
                 "decode",
@@ -428,13 +408,10 @@ public class VCDiffFileBasedCoderTest {
         File invalidDeltaFile = tempFolder.newFile("invalid_delta");
 
         Random random = new Random(42);
-        FileOutputStream out = new FileOutputStream(invalidDeltaFile);
-        try {
+        try (FileOutputStream out = new FileOutputStream(invalidDeltaFile)) {
             for (int i = 0; i < 97; i++) {
                 out.write(random.nextInt());
             }
-        } finally {
-            out.close();
         }
 
         VCDiffFileBasedCoder.main(new String[] {
@@ -522,28 +499,19 @@ public class VCDiffFileBasedCoderTest {
         inBackup = System.in;
         try {
             outBackup = System.out;
-            try {
-                InputStream in = new FileInputStream(targetFile);
-                try {
-                    OutputStream out = new FileOutputStream(deltaFile);
-                    try {
-                        System.setIn(in);
-                        System.setOut(new PrintStream(out));
+            try (InputStream in = new FileInputStream(targetFile);
+                 OutputStream out = new FileOutputStream(deltaFile)) {
+                System.setIn(in);
+                System.setOut(new PrintStream(out));
 
-                        VCDiffFileBasedCoder.main(new String[] {
-                                "encode",
-                                "-interleaved",
-                                "-checksum",
-                                "-buffersize", "1",
-                                "-stats",
-                                "-dictionary", dictionaryFile.getCanonicalPath(),
-                        });
-                    } finally {
-                        out.close();
-                    }
-                } finally {
-                    in.close();
-                }
+                VCDiffFileBasedCoder.main(new String[] {
+                        "encode",
+                        "-interleaved",
+                        "-checksum",
+                        "-buffersize", "1",
+                        "-stats",
+                        "-dictionary", dictionaryFile.getCanonicalPath(),
+                });
             } finally {
                 System.setOut(outBackup);
             }
@@ -555,26 +523,17 @@ public class VCDiffFileBasedCoderTest {
         inBackup = System.in;
         try {
             outBackup = System.out;
-            try {
-                InputStream in = new FileInputStream(deltaFile);
-                try {
-                    OutputStream out = new FileOutputStream(outputTargetFile);
-                    try {
-                        System.setIn(in);
-                        System.setOut(new PrintStream(out));
+            try (InputStream in = new FileInputStream(deltaFile);
+                 OutputStream out = new FileOutputStream(outputTargetFile)) {
+                System.setIn(in);
+                System.setOut(new PrintStream(out));
 
-                        VCDiffFileBasedCoder.main(new String[] {
-                                "decode",
-                                "-buffersize", "1",
-                                "-stats",
-                                "-dictionary", dictionaryFile.getCanonicalPath(),
-                        });
-                    } finally {
-                        out.close();
-                    }
-                } finally {
-                    in.close();
-                }
+                VCDiffFileBasedCoder.main(new String[] {
+                        "decode",
+                        "-buffersize", "1",
+                        "-stats",
+                        "-dictionary", dictionaryFile.getCanonicalPath(),
+                });
             } finally {
                 System.setOut(outBackup);
             }
@@ -887,34 +846,20 @@ public class VCDiffFileBasedCoderTest {
     }
 
     private static void copyResourceToFile(File dest, String resource) throws IOException {
-        InputStream in = VCDiffFileBasedCoderTest.class.getResource(resource).openStream();
-        try {
-            OutputStream out = new FileOutputStream(dest);
-            try {
-                byte[] buffer = new byte[4096];
-                int read;
-                while ((read = in.read(buffer)) >= 0) {
-                    out.write(buffer, 0, read);
-                }
-            } finally {
-                out.close();
+        try (InputStream in = VCDiffFileBasedCoderTest.class.getResource(resource).openStream();
+             OutputStream out = new FileOutputStream(dest)) {
+            byte[] buffer = new byte[4096];
+            int read;
+            while ((read = in.read(buffer)) >= 0) {
+                out.write(buffer, 0, read);
             }
-        } finally {
-            in.close();
         }
     }
 
     private static void assertFileEquals(File expected, File actual) throws IOException {
-        InputStream eIn = new BufferedInputStream(new FileInputStream(expected));
-        try {
-            InputStream aIn = new BufferedInputStream(new FileInputStream(actual));
-            try {
-                assertInputStreamEquals(eIn, aIn);
-            } finally {
-                aIn.close();
-            }
-        } finally {
-            eIn.close();
+        try (InputStream eIn = new BufferedInputStream(new FileInputStream(expected));
+             InputStream aIn = new BufferedInputStream(new FileInputStream(actual))) {
+            assertInputStreamEquals(eIn, aIn);
         }
     }
 

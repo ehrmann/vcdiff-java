@@ -11,8 +11,13 @@ import java.nio.ByteBuffer;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.zip.Adler32;
 
-import static com.davidehrmann.vcdiff.engine.VCDiffCodeTableData.*;
-import static com.davidehrmann.vcdiff.engine.VCDiffCodeTableWriterImpl.*;
+import static com.davidehrmann.vcdiff.engine.VCDiffCodeTableData.VCD_ADD;
+import static com.davidehrmann.vcdiff.engine.VCDiffCodeTableData.VCD_COPY;
+import static com.davidehrmann.vcdiff.engine.VCDiffCodeTableData.VCD_INSTRUCTION_END_OF_DATA;
+import static com.davidehrmann.vcdiff.engine.VCDiffCodeTableData.VCD_RUN;
+import static com.davidehrmann.vcdiff.engine.VCDiffCodeTableWriterImpl.VCD_CHECKSUM;
+import static com.davidehrmann.vcdiff.engine.VCDiffCodeTableWriterImpl.VCD_SOURCE;
+import static com.davidehrmann.vcdiff.engine.VCDiffCodeTableWriterImpl.VCD_TARGET;
 
 @SuppressWarnings("UnnecessaryInitCause")
 class VCDiffDeltaFileWindow {
@@ -431,7 +436,7 @@ class VCDiffDeltaFileWindow {
         } catch (IOException e) {
             IOException rethrown = new IOException("Unable to decode address for COPY");
             rethrown.initCause(e);
-            throw e;
+            throw rethrown;
         }
 
         if (decodedAddress == VCDiffHeaderParser.RESULT_END_OF_DATA) {

@@ -3,7 +3,12 @@ package com.davidehrmann.vcdiff.engine;
 import org.junit.Assert;
 import org.junit.Test;
 
-import static com.davidehrmann.vcdiff.engine.VCDiffCodeTableData.*;
+import static com.davidehrmann.vcdiff.engine.VCDiffCodeTableData.VCD_ADD;
+import static com.davidehrmann.vcdiff.engine.VCDiffCodeTableData.VCD_COPY;
+import static com.davidehrmann.vcdiff.engine.VCDiffCodeTableData.VCD_LAST_INSTRUCTION_TYPE;
+import static com.davidehrmann.vcdiff.engine.VCDiffCodeTableData.VCD_NOOP;
+import static com.davidehrmann.vcdiff.engine.VCDiffCodeTableData.VCD_RUN;
+import static com.davidehrmann.vcdiff.engine.VCDiffCodeTableData.kNoOpcode;
 import static org.junit.Assert.assertEquals;
 
 

@@ -21,7 +21,9 @@ import java.io.IOException;
 import java.io.OutputStream;
 import java.util.concurrent.atomic.AtomicLong;
 
-import static org.junit.Assert.*;
+import static org.junit.Assert.assertArrayEquals;
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.fail;
 
 public class VCDiffLargeTargetTest extends VCDiffDecoderTest {
     protected final byte[] kLargeRunWindow = {

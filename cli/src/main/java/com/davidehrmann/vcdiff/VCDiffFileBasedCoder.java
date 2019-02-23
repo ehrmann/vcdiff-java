@@ -15,13 +15,25 @@
 
 package com.davidehrmann.vcdiff;
 
-import com.beust.jcommander.*;
+import com.beust.jcommander.IParameterValidator;
+import com.beust.jcommander.JCommander;
+import com.beust.jcommander.Parameter;
+import com.beust.jcommander.ParameterException;
+import com.beust.jcommander.Parameters;
+import com.beust.jcommander.ParametersDelegate;
 import com.davidehrmann.vcdiff.io.ComparingOutputStream;
 import com.davidehrmann.vcdiff.io.CountingInputStream;
 import com.davidehrmann.vcdiff.io.CountingOutputStream;
 import com.davidehrmann.vcdiff.io.IOUtils;
 
-import java.io.*;
+import java.io.FileInputStream;
+import java.io.FileNotFoundException;
+import java.io.FileOutputStream;
+import java.io.FilterInputStream;
+import java.io.FilterOutputStream;
+import java.io.IOException;
+import java.io.InputStream;
+import java.io.OutputStream;
 import java.util.Arrays;
 import java.util.LinkedList;
 import java.util.List;
@@ -150,7 +162,7 @@ public class VCDiffFileBasedCoder {
 
         private final String type;
 
-        protected InputStreamExceptionMapper(InputStream in, String type) {
+        InputStreamExceptionMapper(InputStream in, String type) {
             super(in);
             this.type = type;
         }
@@ -224,7 +236,7 @@ public class VCDiffFileBasedCoder {
     protected static class OutputStreamExceptionMapper extends FilterOutputStream {
         private final String type;
 
-        public OutputStreamExceptionMapper(OutputStream out, String type) {
+        OutputStreamExceptionMapper(OutputStream out, String type) {
             super(out);
             this.type = type;
         }
@@ -361,7 +373,7 @@ public class VCDiffFileBasedCoder {
         @ParametersDelegate
         private OptionalTargetAndDeltaOptions targetAndDeltaFlags = new OptionalTargetAndDeltaOptions();
 
-        public void Decode() throws IOException {
+        void Decode() throws IOException {
             byte[] dictionary = OpenDictionary(globalOptions.dictionary);
 
             boolean useStdin = (targetAndDeltaFlags.delta == null || targetAndDeltaFlags.delta.isEmpty());
@@ -417,11 +429,10 @@ public class VCDiffFileBasedCoder {
         @ParametersDelegate
         private RequiredTargetAndDeltaOptions targetAndDeltaOptions = new RequiredTargetAndDeltaOptions();
 
-        public void DecodeAndCompare() throws IOException {
+        void DecodeAndCompare() throws IOException {
             byte[] dictionary = OpenDictionary(globalOptions.dictionary);
 
-            CountingInputStream countedIn = new CountingInputStream(OpenFileForReading(targetAndDeltaOptions.delta, "delta"));
-            try {
+            try (CountingInputStream countedIn = new CountingInputStream(OpenFileForReading(targetAndDeltaOptions.delta, "delta"))) {
                 InputStream in = VCDiffDecoderBuilder.builder()
                         .withMaxTargetFileSize(globalOptions.maxTargetFileSize)
                         .withMaxTargetWindowSize(globalOptions.maxTargetWindowSize)
@@ -455,8 +466,6 @@ public class VCDiffFileBasedCoder {
                 } finally {
                     closeQuietly(in);
                 }
-            } finally {
-                countedIn.close();
             }
         }
     }

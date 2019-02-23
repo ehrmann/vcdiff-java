@@ -8,7 +8,10 @@ import java.nio.ByteBuffer;
 import java.util.Arrays;
 
 import static com.davidehrmann.vcdiff.engine.VCDiffCodeTableWriterImpl.VCD_CHECKSUM;
-import static org.junit.Assert.*;
+import static org.junit.Assert.assertArrayEquals;
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertTrue;
+import static org.junit.Assert.fail;
 
 // These are the same tests as for VCDiffInterleavedDecoderTest, with the added
 // complication that instead of calling decodeChunk() once with the entire data

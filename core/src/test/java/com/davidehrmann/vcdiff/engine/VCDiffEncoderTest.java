@@ -16,8 +16,8 @@
 
 package com.davidehrmann.vcdiff.engine;
 
-import com.davidehrmann.vcdiff.VCDiffEncoderBuilder;
 import com.davidehrmann.vcdiff.VCDiffEncoder;
+import com.davidehrmann.vcdiff.VCDiffEncoderBuilder;
 import com.davidehrmann.vcdiff.VCDiffStreamingDecoder;
 import com.davidehrmann.vcdiff.VCDiffStreamingEncoder;
 import org.junit.Test;
@@ -29,7 +29,11 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 
-import static org.junit.Assert.*;
+import static java.nio.charset.StandardCharsets.US_ASCII;
+import static java.nio.charset.StandardCharsets.UTF_16BE;
+import static org.junit.Assert.assertArrayEquals;
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertTrue;
 
 public class VCDiffEncoderTest extends VerifyEncodedBytesTest {
     protected static final byte[] kDictionary = (
@@ -373,13 +377,13 @@ public class VCDiffEncoderTest extends VerifyEncodedBytesTest {
                 "\"Just the place for a Snark!\" the Bellman cried,\n"
                         + "As he landed his crew with care;\n"
                         + "Supporting each man on the top of the tide\n"
-                        + "By a finger entwined in his hair.\n").getBytes(UTF16BE);
+                        + "By a finger entwined in his hair.\n").getBytes(UTF_16BE);
 
         final byte[] wchar_target = (
                 "\"Just the place for a Snark! I have said it twice:\n"
                         + "That alone should encourage the crew.\n"
                         + "Just the place for a Snark! I have said it thrice:\n"
-                        + "What I tell you three times is true.\"\n").getBytes(UTF16BE);
+                        + "What I tell you three times is true.\"\n").getBytes(UTF_16BE);
 
         VCDiffStreamingEncoder<OutputStream> wchar_encoder = VCDiffEncoderBuilder.builder()
                 .withDictionary(wchar_dictionary_text)
@@ -394,7 +398,7 @@ public class VCDiffEncoderTest extends VerifyEncodedBytesTest {
         decoder_.startDecoding(wchar_dictionary_text);
         decoder_.decodeChunk(delta_.toByteArray(), result_target_);
         decoder_.finishDecoding();
-        assertEquals(new String(wchar_target, UTF16BE), new String(result_target_.toByteArray(), UTF16BE));
+        assertEquals(new String(wchar_target, UTF_16BE), new String(result_target_.toByteArray(), UTF_16BE));
     }
 
     @Test

@@ -25,15 +25,13 @@ import org.junit.rules.ExpectedException;
 
 import java.io.ByteArrayOutputStream;
 import java.nio.ByteBuffer;
-import java.nio.charset.Charset;
 import java.util.zip.Adler32;
 
 import static com.davidehrmann.vcdiff.engine.VCDiffCodeTableWriterImpl.VCD_CHECKSUM;
 import static com.davidehrmann.vcdiff.engine.VCDiffCodeTableWriterImpl.VCD_SOURCE;
+import static java.nio.charset.StandardCharsets.US_ASCII;
 
 public abstract class VCDiffDecoderTest {
-
-    protected static final Charset US_ASCII = Charset.forName("US-ASCII");
 
     private static final byte[] kStandardFileHeader = {
             (byte) 0xD6,  // 'V' | 0x80

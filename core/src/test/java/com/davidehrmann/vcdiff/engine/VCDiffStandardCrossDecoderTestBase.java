@@ -1,6 +1,7 @@
 package com.davidehrmann.vcdiff.engine;
 
 import static com.davidehrmann.vcdiff.engine.VCDiffCodeTableWriterImpl.VCD_SOURCE;
+import static java.nio.charset.StandardCharsets.US_ASCII;
 
 public abstract class VCDiffStandardCrossDecoderTestBase extends VCDiffDecoderTest {
     protected static final byte[] kExpectedTarget = "Spiders in his hair.\nSpiders in the air.\n".getBytes(US_ASCII);

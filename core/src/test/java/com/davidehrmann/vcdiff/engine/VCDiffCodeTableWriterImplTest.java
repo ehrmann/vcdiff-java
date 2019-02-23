@@ -6,12 +6,16 @@ import org.junit.Test;
 
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
-import java.nio.charset.Charset;
 
-import static com.davidehrmann.vcdiff.engine.VCDiffCodeTableData.*;
+import static com.davidehrmann.vcdiff.engine.VCDiffCodeTableData.VCD_COPY;
+import static com.davidehrmann.vcdiff.engine.VCDiffCodeTableData.VCD_LAST_INSTRUCTION_TYPE;
+import static com.davidehrmann.vcdiff.engine.VCDiffCodeTableData.VCD_NOOP;
 import static com.davidehrmann.vcdiff.engine.VCDiffCodeTableWriterImpl.VCD_CHECKSUM;
 import static com.davidehrmann.vcdiff.engine.VCDiffCodeTableWriterImpl.VCD_SOURCE;
-import static org.junit.Assert.*;
+import static java.nio.charset.StandardCharsets.US_ASCII;
+import static org.junit.Assert.assertArrayEquals;
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertTrue;
 
 public class VCDiffCodeTableWriterImplTest {
 
@@ -22,8 +26,6 @@ public class VCDiffCodeTableWriterImplTest {
     // exactly 256 possible instruction combinations, which fits kCodeTableSize
     // (the number of opcodes in the table.)
     protected static final short kLastExerciseMode = 4;
-
-    protected static final Charset US_ASCII = Charset.forName("US-ASCII");
 
     // Destination for VCDiffCodeTableWriter::output()
     protected final ByteArrayOutputStream out = new ByteArrayOutputStream(4096);

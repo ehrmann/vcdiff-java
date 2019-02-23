@@ -9,10 +9,12 @@ import org.junit.runners.Suite.SuiteClasses;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.nio.ByteBuffer;
-import java.nio.charset.Charset;
+import java.nio.charset.StandardCharsets;
 import java.util.Arrays;
 
-import static org.junit.Assert.*;
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertTrue;
 
 @SuiteClasses({VCDiffEngineTest.VCDiffEngineTestImpl.class, VCDiffEngineTest.WeaselsToMoonpiesTest.class})
 public abstract class VCDiffEngineTest {
@@ -20,8 +22,6 @@ public abstract class VCDiffEngineTest {
     // Some common definitions and helper functions used in the various tests
     // for VCDiffEngine.
 
-
-    protected static final Charset US_ASCII = Charset.forName("US-ASCII");
     protected final VCDiffAddressCache default_cache_ = new VCDiffAddressCacheImpl();
     protected final byte[] dictionary_;
     protected final byte[] target_;
@@ -56,7 +56,7 @@ public abstract class VCDiffEngineTest {
     // If no_initial_padding is true, then the first letter will not have
     // spaces added in front of it.
     protected static byte[] MakeEachLetterABlock(String string_without_spaces, int block_size, boolean no_initial_padding) {
-        byte[] bytes_without_spaces = string_without_spaces.getBytes(US_ASCII);
+        byte[] bytes_without_spaces = string_without_spaces.getBytes(StandardCharsets.US_ASCII);
         byte[] padded_text = new byte[block_size * bytes_without_spaces.length - (no_initial_padding ? block_size - 1 : 0)];
         Arrays.fill(padded_text, (byte) ' ');
 
@@ -320,7 +320,7 @@ public abstract class VCDiffEngineTest {
 
         @Test
         public void EngineEncodeSmallerThanOneBlock() throws IOException, VarInt.VarIntParseException, VarInt.VarIntEndOfBufferException {
-            final byte[] small_text = "  ".getBytes(US_ASCII);
+            final byte[] small_text = "  ".getBytes(StandardCharsets.US_ASCII);
             EncodeText(small_text, /* interleaved = */ false, /* target matching = */ false);
 
             ByteBuffer actual = ByteBuffer.wrap(diff_.toByteArray());
@@ -337,7 +337,7 @@ public abstract class VCDiffEngineTest {
 
         @Test
         public void EngineEncodeSmallerThanOneBlockInterleaved() throws IOException, VarInt.VarIntParseException, VarInt.VarIntEndOfBufferException {
-            byte[] small_text = "  ".getBytes(US_ASCII);
+            byte[] small_text = "  ".getBytes(StandardCharsets.US_ASCII);
             EncodeText(small_text, /* interleaved = */ true, /* target matching = */ false);
 
             ByteBuffer actual = ByteBuffer.wrap(diff_.toByteArray());
@@ -356,7 +356,7 @@ public abstract class VCDiffEngineTest {
             VerifyHeaderForDictionaryAndTargetText(dictionary_, target_, actual);
 
             // Data for ADDs
-            ExpectDataStringWithBlockSpacing("W".getBytes(US_ASCII), kBlockSize, false, actual);
+            ExpectDataStringWithBlockSpacing("W".getBytes(StandardCharsets.US_ASCII), kBlockSize, false, actual);
             ExpectDataByte((byte) 't', actual);
             ExpectDataByte((byte) 's', actual);
             ExpectDataByte((byte) 'm', actual);
@@ -392,10 +392,10 @@ public abstract class VCDiffEngineTest {
 
             // Interleaved section
             if (!ExpectAddCopyInstruction(kBlockSize, (3 * kBlockSize) - 1, VCDiffAddressCache.VCD_SELF_MODE, actual)) {
-                ExpectDataStringWithBlockSpacing("W".getBytes(US_ASCII), kBlockSize, false, actual);
+                ExpectDataStringWithBlockSpacing("W".getBytes(StandardCharsets.US_ASCII), kBlockSize, false, actual);
                 ExpectCopyInstruction((3 * kBlockSize) - 1, VCDiffAddressCache.VCD_SELF_MODE, actual);
             } else {
-                ExpectDataStringWithBlockSpacing("W".getBytes(US_ASCII), kBlockSize, false, actual);
+                ExpectDataStringWithBlockSpacing("W".getBytes(StandardCharsets.US_ASCII), kBlockSize, false, actual);
             }
 
             ExpectAddressVarint(18 * kBlockSize, actual);  // "ha"
@@ -434,7 +434,7 @@ public abstract class VCDiffEngineTest {
             VerifyHeaderForDictionaryAndTargetText(dictionary_, target_, actual);
 
             // Data for ADDs
-            ExpectDataStringWithBlockSpacing("W".getBytes(US_ASCII), kBlockSize, false, actual);
+            ExpectDataStringWithBlockSpacing("W".getBytes(StandardCharsets.US_ASCII), kBlockSize, false, actual);
             ExpectDataByte((byte) 't', actual);
             ExpectDataByte((byte) 's', actual);
             ExpectDataByte((byte) 'm', actual);
@@ -477,10 +477,10 @@ public abstract class VCDiffEngineTest {
 
             // Interleaved section
             if (!ExpectAddCopyInstruction(kBlockSize, (3 * kBlockSize) - 1, VCDiffAddressCache.VCD_SELF_MODE, actual)) {
-                ExpectDataStringWithBlockSpacing("W".getBytes(US_ASCII), kBlockSize, false, actual);
+                ExpectDataStringWithBlockSpacing("W".getBytes(StandardCharsets.US_ASCII), kBlockSize, false, actual);
                 ExpectCopyInstruction((3 * kBlockSize) - 1, VCDiffAddressCache.VCD_SELF_MODE, actual);
             } else {
-                ExpectDataStringWithBlockSpacing("W".getBytes(US_ASCII), kBlockSize, false, actual);
+                ExpectDataStringWithBlockSpacing("W".getBytes(StandardCharsets.US_ASCII), kBlockSize, false, actual);
             }
             ExpectAddressVarint(18 * kBlockSize, actual);  // "ha"
             ExpectAddInstruction(1, actual);

@@ -23,8 +23,8 @@ package com.davidehrmann.vcdiff;
 
 import com.davidehrmann.vcdiff.engine.HashedDictionary;
 import com.davidehrmann.vcdiff.engine.JSONCodeTableWriter;
-import com.davidehrmann.vcdiff.engine.VCDiffStreamingEncoderImpl;
 import com.davidehrmann.vcdiff.engine.VCDiffCodeTableWriterImpl;
+import com.davidehrmann.vcdiff.engine.VCDiffStreamingEncoderImpl;
 import com.davidehrmann.vcdiff.io.VCDiffOutputStream;
 
 import java.io.OutputStream;

@@ -4,7 +4,9 @@ import org.junit.Test;
 
 import java.io.IOException;
 
-import static org.junit.Assert.*;
+import static org.junit.Assert.assertArrayEquals;
+import static org.junit.Assert.assertTrue;
+import static org.junit.Assert.fail;
 
 public class VCDiffDecoderInterleavedUsedButNotSupported extends VCDiffInterleavedDecoderTestBase {
     public VCDiffDecoderInterleavedUsedButNotSupported() {

@@ -1,6 +1,11 @@
 package com.davidehrmann.vcdiff.engine;
 
-import com.davidehrmann.vcdiff.*;
+import com.davidehrmann.vcdiff.VCDiffDecoder;
+import com.davidehrmann.vcdiff.VCDiffDecoderBuilder;
+import com.davidehrmann.vcdiff.VCDiffEncoder;
+import com.davidehrmann.vcdiff.VCDiffEncoderBuilder;
+import com.davidehrmann.vcdiff.VCDiffStreamingDecoder;
+import com.davidehrmann.vcdiff.VCDiffStreamingEncoder;
 import com.davidehrmann.vcdiff.util.VarInt;
 import org.junit.Assert;
 
@@ -8,15 +13,14 @@ import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.OutputStream;
 import java.nio.ByteBuffer;
-import java.nio.charset.Charset;
 import java.util.Arrays;
 
-import static org.junit.Assert.*;
+import static org.junit.Assert.assertArrayEquals;
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertTrue;
 
 public abstract class VerifyEncodedBytesTest {
 
-    protected static final Charset US_ASCII = Charset.forName("US-ASCII");
-    protected static final Charset UTF16BE = Charset.forName("UTF-16BE");
     protected static final int kFileHeaderSize = DeltaFileHeader.SERIALIZED_SIZE;
 
     // This is to check the maximum possible encoding size

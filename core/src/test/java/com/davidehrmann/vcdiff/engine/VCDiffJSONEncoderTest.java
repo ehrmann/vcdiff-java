@@ -21,14 +21,13 @@ import org.junit.Ignore;
 import org.junit.Test;
 
 import java.io.ByteArrayOutputStream;
-import java.nio.charset.Charset;
 
+import static java.nio.charset.StandardCharsets.US_ASCII;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
 
 public class VCDiffJSONEncoderTest {
 
-    protected static final Charset US_ASCII = Charset.forName("US-ASCII");
     protected static final int kFileHeaderSize = DeltaFileHeader.SERIALIZED_SIZE;
 
     // This is to check the maximum possible encoding size

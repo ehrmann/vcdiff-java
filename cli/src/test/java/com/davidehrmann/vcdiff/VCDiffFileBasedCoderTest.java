@@ -20,7 +20,6 @@ import org.junit.BeforeClass;
 import org.junit.ClassRule;
 import org.junit.Rule;
 import org.junit.Test;
-import org.junit.contrib.java.lang.system.ExpectedSystemExit;
 import org.junit.rules.TemporaryFolder;
 
 import java.io.BufferedInputStream;
@@ -34,6 +33,7 @@ import java.io.PrintStream;
 import java.util.Random;
 
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertNotEquals;
 import static org.junit.Assume.assumeTrue;
 
 public class VCDiffFileBasedCoderTest {
@@ -63,9 +63,6 @@ public class VCDiffFileBasedCoderTest {
     @Rule
     public final TemporaryFolder tempFolder = new TemporaryFolder();
 
-    @Rule
-    public final ExpectedSystemExit exit = ExpectedSystemExit.none();
-
     private File deltaFile;
     private File outputTargetFile;
 
@@ -77,41 +74,36 @@ public class VCDiffFileBasedCoderTest {
 
     @Test
     public void testNoArguments() throws Exception {
-        // vcdiff with no arguments shows usage information & error result
-        exit.expectSystemExit();
-        VCDiffFileBasedCoder.main(new String[0]);
+        assertNotEquals(0, VCDiffFileBasedCoder.run(new String[0]));
     }
 
     @Test
     public void testNoCommand() throws Exception {
-        // vcdiff with three arguments but without "encode" or "decode"
-        // shows usage information & error result
-        exit.expectSystemExit();
-        VCDiffFileBasedCoder.main(new String[]{
+        assertNotEquals(0, VCDiffFileBasedCoder.run(new String[]{
                 "-dictionary", dictionaryFile.getCanonicalPath(),
                 "-target", targetFile.getCanonicalPath(),
                 "-delta", deltaFile.getCanonicalPath()
-        });
+        }));
     }
 
     @Test
     public void testVCDiff() throws Exception {
         // vcdiff with all three arguments.  Verify that output file matches target file.
-        VCDiffFileBasedCoder.main(new String[] {
+        assertEquals(0, VCDiffFileBasedCoder.run(new String[] {
                 "encode",
                 "-interleaved",
                 "-checksum",
                 "-dictionary", dictionaryFile.getCanonicalPath(),
                 "-target", targetFile.getCanonicalPath(),
                 "-delta", deltaFile.getCanonicalPath()
-        });
+        }));
 
-        VCDiffFileBasedCoder.main(new String[] {
+        assertEquals(0, VCDiffFileBasedCoder.run(new String[] {
                 "decode",
                 "-dictionary", dictionaryFile.getCanonicalPath(),
                 "-delta", deltaFile.getCanonicalPath(),
                 "-target", outputTargetFile.getCanonicalPath(),
-        });
+        }));
 
         assertFileEquals(targetFile, outputTargetFile);
     }
@@ -131,12 +123,12 @@ public class VCDiffFileBasedCoderTest {
                 System.setIn(in);
                 System.setOut(new PrintStream(out));
 
-                VCDiffFileBasedCoder.main(new String[] {
+                assertEquals(0, VCDiffFileBasedCoder.run(new String[] {
                         "encode",
                         "-interleaved",
                         "-checksum",
                         "-dictionary", dictionaryFile.getCanonicalPath(),
-                });
+                }));
             } finally {
                 System.setOut(outBackup);
             }
@@ -153,10 +145,10 @@ public class VCDiffFileBasedCoderTest {
                 System.setIn(in);
                 System.setOut(new PrintStream(out));
 
-                VCDiffFileBasedCoder.main(new String[] {
+                assertEquals(0, VCDiffFileBasedCoder.run(new String[] {
                         "decode",
                         "-dictionary", dictionaryFile.getCanonicalPath(),
-                });
+                }));
             } finally {
                 System.setOut(outBackup);
             }
@@ -177,13 +169,13 @@ public class VCDiffFileBasedCoderTest {
             try (OutputStream deltaOut = new FileOutputStream(deltaFile)) {
                 System.setOut(new PrintStream(deltaOut));
 
-                VCDiffFileBasedCoder.main(new String[]{
+                assertEquals(0, VCDiffFileBasedCoder.run(new String[]{
                         "encode",
                         "-interleaved",
                         "-checksum",
                         "-target", targetFile.getCanonicalPath(),
                         "-dictionary", dictionaryFile.getCanonicalPath(),
-                });
+                }));
             }
         } finally {
             System.setOut(outBackup);
@@ -195,11 +187,11 @@ public class VCDiffFileBasedCoderTest {
             try (OutputStream targetOut = new FileOutputStream(outputTargetFile)) {
                 System.setOut(new PrintStream(targetOut));
 
-                VCDiffFileBasedCoder.main(new String[]{
+                assertEquals(0, VCDiffFileBasedCoder.run(new String[]{
                         "decode",
                         "-delta", deltaFile.getCanonicalPath(),
                         "-dictionary", dictionaryFile.getCanonicalPath(),
-                });
+                }));
             }
         } finally {
             System.setOut(outBackup);
@@ -219,13 +211,13 @@ public class VCDiffFileBasedCoderTest {
             try (InputStream in = new FileInputStream(targetFile)) {
                 System.setIn(in);
 
-                VCDiffFileBasedCoder.main(new String[]{
+                assertEquals(0, VCDiffFileBasedCoder.run(new String[]{
                         "encode",
                         "-interleaved",
                         "-checksum",
                         "-delta", deltaFile.getCanonicalPath(),
                         "-dictionary", dictionaryFile.getCanonicalPath(),
-                });
+                }));
             }
         } finally {
             System.setIn(inBackup);
@@ -237,11 +229,11 @@ public class VCDiffFileBasedCoderTest {
             try (InputStream in = new FileInputStream(deltaFile)) {
                 System.setIn(in);
 
-                VCDiffFileBasedCoder.main(new String[]{
+                assertEquals(0, VCDiffFileBasedCoder.run(new String[]{
                         "decode",
                         "-target", outputTargetFile.getCanonicalPath(),
                         "-dictionary", dictionaryFile.getCanonicalPath(),
-                });
+                }));
             }
         } finally {
             System.setIn(inBackup);
@@ -255,78 +247,73 @@ public class VCDiffFileBasedCoderTest {
         // If using the wrong dictionary, and dictionary is smaller than the original
         // dictionary, vcdiff will spot the mistake and return an error.  (It can't
         // detect the case where the wrong dictionary is larger than the right one.)
-        exit.expectSystemExit();
-
-        VCDiffFileBasedCoder.main(new String[] {
+        assertEquals(0, VCDiffFileBasedCoder.run(new String[] {
                 "encode",
                 "-interleaved",
                 "-checksum",
                 "-dictionary", dictionaryFile.getCanonicalPath(),
                 "-target", targetFile.getCanonicalPath(),
                 "-delta", deltaFile.getCanonicalPath()
-        });
+        }));
 
-        VCDiffFileBasedCoder.main(new String[] {
+        assertNotEquals(0, VCDiffFileBasedCoder.run(new String[] {
                 "decode",
                 "-dictionary", targetFile.getCanonicalPath(),
                 "-target", outputTargetFile.getCanonicalPath(),
                 "-delta", deltaFile.getCanonicalPath()
-        });
+        }));
     }
 
     @Test
     public void testVCDiffTest() throws Exception {
         // "vcdiff test" with all three arguments.
-        VCDiffFileBasedCoder.main(new String[] {
+        assertEquals(0, VCDiffFileBasedCoder.run(new String[] {
                 "test",
                 "-interleaved",
                 "-checksum",
                 "-dictionary", dictionaryFile.getCanonicalPath(),
                 "-delta", deltaFile.getCanonicalPath(),
                 "-target", targetFile.getCanonicalPath()
-        });
+        }));
     }
 
     @Test
     public void testDictionaryNotFound() throws Exception {
-        exit.expectSystemExit();
-        VCDiffFileBasedCoder.main(new String[] {
+        assertNotEquals(0, VCDiffFileBasedCoder.run(new String[] {
                 "encode",
                 "-interleaved",
                 "-checksum",
                 "-dictionary", tempFolder.getRoot().getCanonicalPath() + File.separator + "nonexistent_file",
                 "-target", targetFile.getCanonicalPath(),
                 "-delta", deltaFile.getCanonicalPath()
-        });
+        }));
     }
 
     @Test
     public void testTargetNotFound() throws Exception {
-        exit.expectSystemExit();
-        VCDiffFileBasedCoder.main(new String[] {
+        assertNotEquals(0, VCDiffFileBasedCoder.run(new String[] {
                 "encode",
                 "-interleaved",
                 "-checksum",
                 "-dictionary", dictionaryFile.getCanonicalPath(),
                 "-target", tempFolder.getRoot().getCanonicalPath() + File.separator + "nonexistent_file",
                 "-delta", deltaFile.getCanonicalPath()
-        });
+        }));
     }
 
     @Test
     public void testDeltaNotFound() throws Exception {
-        exit.expectSystemExit();
-        VCDiffFileBasedCoder.main(new String[] {
+        assertNotEquals(0, VCDiffFileBasedCoder.run(new String[] {
                 "decode",
                 "-dictionary", dictionaryFile.getCanonicalPath(),
                 "-delta", tempFolder.getRoot().getCanonicalPath() + File.separator + "nonexistent_file",
                 "-target", outputTargetFile.getCanonicalPath()
-        });
+        }));
     }
 
     @Test
     public void testStats() throws Exception {
-        VCDiffFileBasedCoder.main(new String[] {
+        assertEquals(0, VCDiffFileBasedCoder.run(new String[] {
                 "encode",
                 "-interleaved",
                 "-checksum",
@@ -334,15 +321,15 @@ public class VCDiffFileBasedCoderTest {
                 "-dictionary", dictionaryFile.getCanonicalPath(),
                 "-target", targetFile.getCanonicalPath(),
                 "-delta", deltaFile.getCanonicalPath()
-        });
+        }));
 
-        VCDiffFileBasedCoder.main(new String[] {
+        assertEquals(0, VCDiffFileBasedCoder.run(new String[] {
                 "decode",
                 "-stats",
                 "-dictionary", dictionaryFile.getCanonicalPath(),
                 "-delta", deltaFile.getCanonicalPath(),
                 "-target", outputTargetFile.getCanonicalPath(),
-        });
+        }));
 
         assertFileEquals(targetFile, outputTargetFile);
     }
@@ -354,7 +341,7 @@ public class VCDiffFileBasedCoderTest {
         File emptyDictionary = tempFolder.newFile("empty_dictionary");
 
         // "vcdiff test" with all three arguments.
-        VCDiffFileBasedCoder.main(new String[] {
+        assertEquals(0, VCDiffFileBasedCoder.run(new String[] {
                 "test",
                 "-interleaved",
                 "-checksum",
@@ -362,49 +349,41 @@ public class VCDiffFileBasedCoderTest {
                 "-dictionary", emptyDictionary.getCanonicalPath(),
                 "-delta", deltaFile.getCanonicalPath(),
                 "-target", targetFile.getCanonicalPath()
-        });
+        }));
     }
 
     @Test
     public void testEmptyUnreadableDictionary() throws Exception {
-        exit.expectSystemExit();
-
         File writeOnlyDictionary = tempFolder.newFile("write_only_dictionary");
         assumeTrue("Couldn't create a read-only file", writeOnlyDictionary.setReadable(false));
 
-        // "vcdiff test" with all three arguments.
-        VCDiffFileBasedCoder.main(new String[] {
+        assertNotEquals(0, VCDiffFileBasedCoder.run(new String[] {
                 "encode",
                 "-interleaved",
                 "-checksum",
                 "-dictionary", writeOnlyDictionary.getCanonicalPath(),
                 "-delta", deltaFile.getCanonicalPath(),
                 "-target", targetFile.getCanonicalPath()
-        });
+        }));
     }
 
     @Test
     public void testEmptyUnreadableTarget() throws Exception {
-        exit.expectSystemExit();
-
         File writeOnlyTarget = tempFolder.newFile("write_only_target");
         assumeTrue("Couldn't create a read-only file", writeOnlyTarget.setReadable(false));
 
-        // "vcdiff test" with all three arguments.
-        VCDiffFileBasedCoder.main(new String[] {
+        assertNotEquals(0, VCDiffFileBasedCoder.run(new String[] {
                 "encode",
                 "-interleaved",
                 "-checksum",
                 "-dictionary", dictionaryFile.getCanonicalPath(),
                 "-delta", deltaFile.getCanonicalPath(),
                 "-target", writeOnlyTarget.getCanonicalPath()
-        });
+        }));
     }
 
     @Test
     public void testInvalidDelta() throws Exception {
-        exit.expectSystemExit();
-
         File invalidDeltaFile = tempFolder.newFile("invalid_delta");
 
         Random random = new Random(42);
@@ -414,58 +393,53 @@ public class VCDiffFileBasedCoderTest {
             }
         }
 
-        VCDiffFileBasedCoder.main(new String[] {
+        assertNotEquals(0, VCDiffFileBasedCoder.run(new String[] {
                 "decode",
                 "-dictionary", targetFile.getCanonicalPath(),
                 "-target", outputTargetFile.getCanonicalPath(),
                 "-delta", invalidDeltaFile.getCanonicalPath()
-        });
+        }));
     }
 
     @Test
     public void missingDictionary() throws Exception {
-        exit.expectSystemExit();
-        VCDiffFileBasedCoder.main(new String[] {
+        assertNotEquals(0, VCDiffFileBasedCoder.run(new String[] {
                 "encode",
                 "-interleaved",
                 "-checksum",
                 "-delta", deltaFile.getCanonicalPath(),
                 "-target", targetFile.getCanonicalPath(),
                 "-dictionary"
-        });
+        }));
     }
 
     @Test
     public void testMissingTarget() throws Exception {
-        exit.expectSystemExit();
-        VCDiffFileBasedCoder.main(new String[] {
+        assertNotEquals(0, VCDiffFileBasedCoder.run(new String[] {
                 "encode",
                 "-interleaved",
                 "-checksum",
                 "-delta", deltaFile.getCanonicalPath(),
                 "-dictionary", dictionaryFile.getCanonicalPath(),
                 "-target"
-        });
+        }));
     }
 
     @Test
     public void testMissingDelta() throws Exception {
-        exit.expectSystemExit();
-
-        VCDiffFileBasedCoder.main(new String[] {
+        assertNotEquals(0, VCDiffFileBasedCoder.run(new String[] {
                 "encode",
                 "-interleaved",
                 "-checksum",
                 "-target", targetFile.getCanonicalPath(),
                 "-dictionary", dictionaryFile.getCanonicalPath(),
                 "-delta"
-        });
+        }));
     }
 
     @Test
     public void testMissingBufferSize() throws Exception {
-        exit.expectSystemExit();
-        VCDiffFileBasedCoder.main(new String[] {
+        assertNotEquals(0, VCDiffFileBasedCoder.run(new String[] {
                 "encode",
                 "-interleaved",
                 "-checksum",
@@ -473,12 +447,12 @@ public class VCDiffFileBasedCoderTest {
                 "-dictionary", dictionaryFile.getCanonicalPath(),
                 "-delta", deltaFile.getCanonicalPath(),
                 "-buffersize"
-        });
+        }));
     }
 
     @Test
     public void testBufferSize() throws Exception {
-        VCDiffFileBasedCoder.main(new String[] {
+        assertEquals(0, VCDiffFileBasedCoder.run(new String[] {
                 "test",
                 "-interleaved",
                 "-checksum",
@@ -487,7 +461,7 @@ public class VCDiffFileBasedCoderTest {
                 "-delta", deltaFile.getCanonicalPath(),
                 "-buffersize", "1",
                 "-stats"
-        });
+        }));
     }
 
     @Test
@@ -504,14 +478,14 @@ public class VCDiffFileBasedCoderTest {
                 System.setIn(in);
                 System.setOut(new PrintStream(out));
 
-                VCDiffFileBasedCoder.main(new String[] {
+                assertEquals(0, VCDiffFileBasedCoder.run(new String[] {
                         "encode",
                         "-interleaved",
                         "-checksum",
                         "-buffersize", "1",
                         "-stats",
                         "-dictionary", dictionaryFile.getCanonicalPath(),
-                });
+                }));
             } finally {
                 System.setOut(outBackup);
             }
@@ -528,12 +502,12 @@ public class VCDiffFileBasedCoderTest {
                 System.setIn(in);
                 System.setOut(new PrintStream(out));
 
-                VCDiffFileBasedCoder.main(new String[] {
+                assertEquals(0, VCDiffFileBasedCoder.run(new String[] {
                         "decode",
                         "-buffersize", "1",
                         "-stats",
                         "-dictionary", dictionaryFile.getCanonicalPath(),
-                });
+                }));
             } finally {
                 System.setOut(outBackup);
             }
@@ -546,8 +520,7 @@ public class VCDiffFileBasedCoderTest {
 
     @Test
     public void testBufferSizeZero() throws Exception {
-        exit.expectSystemExit();
-        VCDiffFileBasedCoder.main(new String[] {
+        assertNotEquals(0, VCDiffFileBasedCoder.run(new String[] {
                 "test",
                 "-interleaved",
                 "-checksum",
@@ -555,13 +528,13 @@ public class VCDiffFileBasedCoderTest {
                 "-dictionary", dictionaryFile.getCanonicalPath(),
                 "-delta", deltaFile.getCanonicalPath(),
                 "-buffersize", "0",
-        });
+        }));
     }
 
     @Test
     public void testLargeBufferSize() throws Exception {
         // Using -buffersize=128M (larger than default maximum) should still work.
-        VCDiffFileBasedCoder.main(new String[] {
+        assertEquals(0, VCDiffFileBasedCoder.run(new String[] {
                 "test",
                 "-interleaved",
                 "-checksum",
@@ -569,14 +542,12 @@ public class VCDiffFileBasedCoderTest {
                 "-dictionary", dictionaryFile.getCanonicalPath(),
                 "-delta", deltaFile.getCanonicalPath(),
                 "-buffersize", "134217728",
-        });
+        }));
     }
 
     @Test
     public void testUnrecognizedOption() throws Exception {
-        exit.expectSystemExit();
-
-        VCDiffFileBasedCoder.main(new String[] {
+        assertNotEquals(0, VCDiffFileBasedCoder.run(new String[] {
                 "test",
                 "-interleaved",
                 "-checksum",
@@ -584,139 +555,128 @@ public class VCDiffFileBasedCoderTest {
                 "-dictionary", dictionaryFile.getCanonicalPath(),
                 "-delta", deltaFile.getCanonicalPath(),
                 "-froobish"
-        });
+        }));
     }
 
     @Test
     public void testEncodeMissingDictionary() throws Exception {
-        exit.expectSystemExit();
-
-        VCDiffFileBasedCoder.main(new String[] {
+        assertNotEquals(0, VCDiffFileBasedCoder.run(new String[] {
                 "encode",
                 "-interleaved",
                 "-checksum",
                 "-target", targetFile.getCanonicalPath(),
                 "-delta", deltaFile.getCanonicalPath()
-        });
+        }));
     }
 
     @Test
     public void testDecodeMissingDictionary() throws Exception {
-        exit.expectSystemExit();
-        VCDiffFileBasedCoder.main(new String[] {
+        assertNotEquals(0, VCDiffFileBasedCoder.run(new String[] {
                 "decode",
                 "-target", targetFile.getCanonicalPath(),
                 "-delta", deltaFile.getCanonicalPath()
-        });
+        }));
     }
 
     @Test
     public void testVCDiffNoInterleavedAndChecksum() throws Exception {
         // vcdiff with all three arguments.  Verify that output file matches target file.
-        VCDiffFileBasedCoder.main(new String[] {
+        assertEquals(0, VCDiffFileBasedCoder.run(new String[] {
                 "encode",
                 "-dictionary", dictionaryFile.getCanonicalPath(),
                 "-target", targetFile.getCanonicalPath(),
                 "-delta", deltaFile.getCanonicalPath()
-        });
+        }));
 
-        VCDiffFileBasedCoder.main(new String[] {
+        assertEquals(0, VCDiffFileBasedCoder.run(new String[] {
                 "decode",
                 "-dictionary", dictionaryFile.getCanonicalPath(),
                 "-delta", deltaFile.getCanonicalPath(),
                 "-target", outputTargetFile.getCanonicalPath(),
-        });
+        }));
 
         assertFileEquals(targetFile, outputTargetFile);
     }
 
     @Test
     public void testVCDiffTargetMatches() throws Exception {
-        VCDiffFileBasedCoder.main(new String[] {
+        assertEquals(0, VCDiffFileBasedCoder.run(new String[] {
                 "encode",
                 "-target_matches",
                 "-stats",
                 "-dictionary", dictionaryFile.getCanonicalPath(),
                 "-target", targetFile.getCanonicalPath(),
                 "-delta", deltaFile.getCanonicalPath()
-        });
+        }));
 
-        VCDiffFileBasedCoder.main(new String[] {
+        assertEquals(0, VCDiffFileBasedCoder.run(new String[] {
                 "decode",
                 "-dictionary", dictionaryFile.getCanonicalPath(),
                 "-delta", deltaFile.getCanonicalPath(),
                 "-target", outputTargetFile.getCanonicalPath(),
-        });
+        }));
 
         assertFileEquals(targetFile, outputTargetFile);
     }
 
     @Test
     public void testUnrecognizedCommand() throws Exception {
-        exit.expectSystemExit();
-
-        VCDiffFileBasedCoder.main(new String[] {
+        assertNotEquals(0, VCDiffFileBasedCoder.run(new String[] {
                 "dencode",
                 "-target_matches",
                 "-stats",
                 "-dictionary", dictionaryFile.getCanonicalPath(),
                 "-target", targetFile.getCanonicalPath(),
                 "-delta", deltaFile.getCanonicalPath()
-        });
+        }));
     }
 
     @Test
     public void testTestWithoutDelta() throws Exception {
-        exit.expectSystemExit();
-        VCDiffFileBasedCoder.main(new String[] {
+        assertNotEquals(0, VCDiffFileBasedCoder.run(new String[] {
                 "test",
                 "-target_matches",
                 "-stats",
                 "-dictionary", dictionaryFile.getCanonicalPath(),
                 "-target", targetFile.getCanonicalPath(),
-        });
+        }));
     }
 
     @Test
     public void testTestWithoutTarget() throws Exception {
-        exit.expectSystemExit();
-        VCDiffFileBasedCoder.main(new String[] {
+        assertNotEquals(0, VCDiffFileBasedCoder.run(new String[] {
                 "test",
                 "-target_matches",
                 "-stats",
                 "-delta", deltaFile.getCanonicalPath(),
                 "-dictionary", dictionaryFile.getCanonicalPath(),
-        });
+        }));
     }
 
     @Test
     public void testTestWithoutDictionary() throws Exception {
-        exit.expectSystemExit();
-        VCDiffFileBasedCoder.main(new String[] {
+        assertNotEquals(0, VCDiffFileBasedCoder.run(new String[] {
                 "test",
                 "-target_matches",
                 "-delta", deltaFile.getCanonicalPath(),
                 "-target", targetFile.getCanonicalPath()
-        });
+        }));
     }
 
     @Test
     public void testMaliciousEncodingWithMaxTargetFileSize() throws Exception {
         // A malicious encoding that tries to produce a 4GB target file made up of 64
         // windows, each window having a size of 64MB.
-
-        exit.expectSystemExit();
-
         PrintStream outBackup = System.out;
         try {
             System.setOut(new PrintStream(nopOutputStream()));
 
-            VCDiffFileBasedCoder.main(new String[] {
+            assertNotEquals(0, VCDiffFileBasedCoder.run(new String[] {
                     "decode",
                     "-dictionary", dictionaryFile.getCanonicalPath(),
                     "-delta", maliciousEncoding.getCanonicalPath(),
                     "-max_target_file_size", "65536"
-            });
+            }));
         } finally {
             System.setOut(outBackup);
         }
@@ -724,18 +684,16 @@ public class VCDiffFileBasedCoderTest {
 
     @Test
     public void testMaliciousEncodingWithMaxTargetWindowSize() throws Exception {
-        exit.expectSystemExit();
-
         PrintStream outBackup = System.out;
         try {
             System.setOut(new PrintStream(nopOutputStream()));
 
-            VCDiffFileBasedCoder.main(new String[] {
+            assertNotEquals(0, VCDiffFileBasedCoder.run(new String[] {
                     "decode",
                     "-dictionary", dictionaryFile.getCanonicalPath(),
                     "-delta", maliciousEncoding.getCanonicalPath(),
                     "-max_target_window_size", "65536"
-            });
+            }));
         } finally {
             System.setOut(outBackup);
         }
@@ -744,67 +702,67 @@ public class VCDiffFileBasedCoderTest {
     @Test
     public void testWithMaxTargetFileSize() throws Exception {
         // Decoding a small target with the -max_target_file_size option should succeed.
-        VCDiffFileBasedCoder.main(new String[] {
+        assertEquals(0, VCDiffFileBasedCoder.run(new String[] {
                 "test",
                 "-dictionary", dictionaryFile.getCanonicalPath(),
                 "-target", targetFile.getCanonicalPath(),
                 "-delta", deltaFile.getCanonicalPath(),
                 "-max_target_file_size", "65536"
-        });
+        }));
     }
 
     @Test
     public void testWithMaxTargetWindowSize() throws Exception {
         // Decoding a small target with -max_target_window_size option should succeed.
-        VCDiffFileBasedCoder.main(new String[] {
+        assertEquals(0, VCDiffFileBasedCoder.run(new String[] {
                 "test",
                 "-dictionary", dictionaryFile.getCanonicalPath(),
                 "-target", targetFile.getCanonicalPath(),
                 "-delta", deltaFile.getCanonicalPath(),
                 "-max_target_window_size", "65536"
-        });
+        }));
     }
 
     @Test
     public void testDisallowVCDTarget() throws Exception {
-        VCDiffFileBasedCoder.main(new String[] {
+        assertEquals(0, VCDiffFileBasedCoder.run(new String[] {
                 "encode",
                 "-interleaved",
                 "-checksum",
                 "-dictionary", dictionaryFile.getCanonicalPath(),
                 "-target", targetFile.getCanonicalPath(),
                 "-delta", deltaFile.getCanonicalPath()
-        });
+        }));
 
-        VCDiffFileBasedCoder.main(new String[] {
+        assertEquals(0, VCDiffFileBasedCoder.run(new String[] {
                 "decode",
                 "-allow_vcd_target=false",
                 "-dictionary", dictionaryFile.getCanonicalPath(),
                 "-delta", deltaFile.getCanonicalPath(),
                 "-target", outputTargetFile.getCanonicalPath(),
-        });
+        }));
 
         assertFileEquals(targetFile, outputTargetFile);
     }
 
     @Test
     public void testAllowVCDTarget() throws Exception {
-        VCDiffFileBasedCoder.main(new String[] {
+        assertEquals(0, VCDiffFileBasedCoder.run(new String[] {
                 "encode",
                 "-interleaved",
                 "-checksum",
                 "-dictionary", dictionaryFile.getCanonicalPath(),
                 "-target", targetFile.getCanonicalPath(),
                 "-delta", deltaFile.getCanonicalPath()
-        });
+        }));
 
-        VCDiffFileBasedCoder.main(new String[] {
+        assertEquals(0, VCDiffFileBasedCoder.run(new String[] {
                 "decode",
                 "-allow_vcd_target=true",
                 "-dictionary", dictionaryFile.getCanonicalPath(),
                 "-delta", deltaFile.getCanonicalPath(),
                 "-target", outputTargetFile.getCanonicalPath(),
-        });
+        }));
 
         assertFileEquals(targetFile, outputTargetFile);
     }
@@ -816,13 +774,13 @@ public class VCDiffFileBasedCoderTest {
             String filename = String.format("configure.ac.vcdiff.%d", i);
             copyResourceToFile(deltaFile, filename);
 
-            VCDiffFileBasedCoder.main(new String[] {
+            assertEquals(0, VCDiffFileBasedCoder.run(new String[] {
                     "decode",
                     "-allow_vcd_target=true",
                     "-dictionary", dictionaryFile.getCanonicalPath(),
                     "-delta", deltaFile.getCanonicalPath(),
                     "-target", outputTargetFile.getCanonicalPath(),
-            });
+            }));
 
             assertFileEquals(targetFile, outputTargetFile);
         }
@@ -834,13 +792,13 @@ public class VCDiffFileBasedCoderTest {
         // xdelta3 -e -S -A -n -s configure.ac.v0.1 configure.ac.v0.2 xdelta3.vcdiff
         copyResourceToFile(deltaFile, "xdelta3.vcdiff");
 
-        VCDiffFileBasedCoder.main(new String[] {
+        assertEquals(0, VCDiffFileBasedCoder.run(new String[] {
                 "decode",
                 "-allow_vcd_target=true",
                 "-dictionary", dictionaryFile.getCanonicalPath(),
                 "-delta", deltaFile.getCanonicalPath(),
                 "-target", outputTargetFile.getCanonicalPath(),
-        });
+        }));
 
         assertFileEquals(targetFile, outputTargetFile);
     }

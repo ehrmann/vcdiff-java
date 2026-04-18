@@ -461,6 +461,10 @@ public class VCDiffFileBasedCoder {
     }
 
     public static void main(String[] argv) throws Exception {
+        System.exit(run(argv));
+    }
+
+    static int run(String[] argv) throws Exception {
 
         // TODO: JCommander has an issue with boolean arity. Rewrite allow_vcd_target.
         List<String> newArgv = new LinkedList<String>(Arrays.asList(argv));
@@ -503,7 +507,7 @@ public class VCDiffFileBasedCoder {
             jCommander.parse(argv);
         } catch (ParameterException e) {
             System.err.println(e.getMessage());
-            System.exit(1);
+            return 1;
         }
 
         String command_name = VCDiffFileBasedCoder.class.getCanonicalName();
@@ -533,11 +537,12 @@ public class VCDiffFileBasedCoder {
             } else {
                 System.err.printf("%s: Unrecognized command option %s%n", command_name, command_option);
                 jCommander.usage();
-                System.exit(1);
+                return 1;
             }
         } catch (IOException e) {
             System.err.println(e.getMessage());
-            System.exit(1);
+            return 1;
         }
+        return 0;
     }
 }

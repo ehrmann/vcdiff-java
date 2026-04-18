@@ -591,7 +591,7 @@ class VCDiffDeltaFileWindow {
     private boolean hasChecksum;
     private final AtomicInteger expectedChecksum = new AtomicInteger(0);
 
-    private final Adler32 adler32 = new ZeroInitializedAdler32();
+    private final ZeroInitializedAdler32 adler32 = new ZeroInitializedAdler32();
 
     private VCDiffCodeTableReader reader = new VCDiffCodeTableReader();
 }

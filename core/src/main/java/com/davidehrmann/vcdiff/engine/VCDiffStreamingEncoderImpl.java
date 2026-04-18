@@ -86,7 +86,7 @@ public class VCDiffStreamingEncoderImpl<OUT> implements VCDiffStreamingEncoder<O
             throw new IllegalStateException("encodeChunk called before startEncoding");
         }
         if ((formatExtensions.contains(GOOGLE_CHECKSUM))) {
-            Adler32 adler32 = new ZeroInitializedAdler32();
+            ZeroInitializedAdler32 adler32 = new ZeroInitializedAdler32();
             adler32.update(data, offset, length);
             coder.addChecksum((int) adler32.getValue());
         }

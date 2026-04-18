@@ -173,7 +173,7 @@ public abstract class VCDiffDecoderTest {
     // This function computes the Adler32 checksum for the expected target
     // and adds it to the delta window header.
     protected void ComputeAndAddChecksum() {
-        Adler32 adler32 = new ZeroInitializedAdler32();
+        ZeroInitializedAdler32 adler32 = new ZeroInitializedAdler32();
         adler32.update(expected_target_);
         AddChecksum((int) adler32.getValue());
     }

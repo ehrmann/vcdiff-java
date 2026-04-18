@@ -85,7 +85,7 @@ public class VCDiffHTML2Test extends VerifyEncodedBytesTest {
     public void VerifyOutputWithChecksum() throws Exception {
         StreamingEncode();
 
-        Adler32 adler32 = new ZeroInitializedAdler32();
+        ZeroInitializedAdler32 adler32 = new ZeroInitializedAdler32();
         adler32.update(target_);
         final int html2_checksum = (int) adler32.getValue();
 

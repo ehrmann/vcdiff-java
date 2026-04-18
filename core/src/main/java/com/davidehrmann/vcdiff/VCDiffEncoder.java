@@ -15,7 +15,7 @@
 
 package com.davidehrmann.vcdiff;
 
-import com.davidehrmann.vcdiff.util.Objects;
+import java.util.Objects;
 
 import java.io.IOException;
 
@@ -30,7 +30,7 @@ public class VCDiffEncoder<OUT> {
     private final VCDiffStreamingEncoder<OUT> encoder;
 
     public VCDiffEncoder(VCDiffStreamingEncoder<OUT> streamingEncoder) {
-        this.encoder = Objects.requireNotNull(streamingEncoder, "encoder was null");
+        this.encoder = Objects.requireNonNull(streamingEncoder, "encoder was null");
     }
 
     /**

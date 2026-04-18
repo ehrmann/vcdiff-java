@@ -17,7 +17,7 @@ package com.davidehrmann.vcdiff.io;
 
 import com.davidehrmann.vcdiff.VCDiffDecoderBuilder;
 import com.davidehrmann.vcdiff.VCDiffStreamingDecoder;
-import com.davidehrmann.vcdiff.util.Objects;
+import java.util.Objects;
 
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
@@ -51,8 +51,8 @@ public class VCDiffInputStream extends InputStream {
     public VCDiffInputStream(InputStream in, byte[] dictionary,
                              long maxTargetFileSize, int maxTargetWindowSize, boolean allowVcdTarget) {
         this(
-                Objects.requireNotNull(in, "in was null"),
-                ByteBuffer.wrap(Objects.requireNotNull(dictionary, "dictionary was null").clone()),
+                Objects.requireNonNull(in, "in was null"),
+                ByteBuffer.wrap(Objects.requireNonNull(dictionary, "dictionary was null").clone()),
                 VCDiffDecoderBuilder.builder()
                         .withMaxTargetFileSize(maxTargetFileSize)
                         .withMaxTargetWindowSize(maxTargetWindowSize)
@@ -62,14 +62,14 @@ public class VCDiffInputStream extends InputStream {
 
     public VCDiffInputStream(InputStream in, byte[] dictionary, VCDiffStreamingDecoder decoder) {
         this(in,
-                ByteBuffer.wrap(Objects.requireNotNull(dictionary, "dictionary was null").clone()),
+                ByteBuffer.wrap(Objects.requireNonNull(dictionary, "dictionary was null").clone()),
                 decoder);
     }
 
     public VCDiffInputStream(InputStream in, ByteBuffer dictionary, VCDiffStreamingDecoder decoder) {
-        this.in = Objects.requireNotNull(in, "in was null");
-        this.decoder = Objects.requireNotNull(decoder, "decoder was null");
-        this.dictionary = Objects.requireNotNull(dictionary, "dictionary was null");
+        this.in = Objects.requireNonNull(in, "in was null");
+        this.decoder = Objects.requireNonNull(decoder, "decoder was null");
+        this.dictionary = Objects.requireNonNull(dictionary, "dictionary was null");
     }
 
     @Override

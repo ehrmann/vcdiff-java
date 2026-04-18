@@ -1,6 +1,6 @@
 package com.davidehrmann.vcdiff;
 
-import com.davidehrmann.vcdiff.util.Objects;
+import java.util.Objects;
 
 import java.io.IOException;
 import java.io.OutputStream;
@@ -14,7 +14,7 @@ public class VCDiffDecoder {
     private final VCDiffStreamingDecoder decoder;
 
     public VCDiffDecoder(VCDiffStreamingDecoder decoder) {
-        this.decoder = Objects.requireNotNull(decoder, "decoder was null");
+        this.decoder = Objects.requireNonNull(decoder, "decoder was null");
     }
 
     /**

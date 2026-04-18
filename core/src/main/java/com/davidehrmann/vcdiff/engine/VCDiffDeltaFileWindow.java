@@ -1,6 +1,6 @@
 package com.davidehrmann.vcdiff.engine;
 
-import com.davidehrmann.vcdiff.util.Objects;
+import java.util.Objects;
 import com.davidehrmann.vcdiff.util.VarInt;
 import com.davidehrmann.vcdiff.util.ZeroInitializedAdler32;
 import org.slf4j.Logger;
@@ -24,7 +24,7 @@ class VCDiffDeltaFileWindow {
     private static final Logger LOGGER = LoggerFactory.getLogger(VCDiffDeltaFileWindow.class);
 
     public VCDiffDeltaFileWindow(VCDiffStreamingDecoderImpl parent) {
-        this.parent = Objects.requireNotNull(parent, "parent was null");
+        this.parent = Objects.requireNonNull(parent, "parent was null");
         Reset();
     }
 

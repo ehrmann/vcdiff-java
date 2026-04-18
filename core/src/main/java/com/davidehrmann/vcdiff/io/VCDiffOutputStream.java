@@ -17,7 +17,7 @@ package com.davidehrmann.vcdiff.io;
 
 import com.davidehrmann.vcdiff.VCDiffEncoderBuilder;
 import com.davidehrmann.vcdiff.VCDiffStreamingEncoder;
-import com.davidehrmann.vcdiff.util.Objects;
+import java.util.Objects;
 
 import java.io.FilterOutputStream;
 import java.io.IOException;
@@ -44,7 +44,7 @@ public class VCDiffOutputStream extends FilterOutputStream {
 
     public VCDiffOutputStream(OutputStream out, VCDiffStreamingEncoder<OutputStream> encoder) {
         super(out);
-        this.encoder = Objects.requireNotNull(encoder, "encoder was null");
+        this.encoder = Objects.requireNonNull(encoder, "encoder was null");
     }
 
     @Override

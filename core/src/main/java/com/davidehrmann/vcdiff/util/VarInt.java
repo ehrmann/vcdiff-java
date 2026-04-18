@@ -6,6 +6,7 @@ import org.slf4j.LoggerFactory;
 import java.io.IOException;
 import java.io.OutputStream;
 import java.nio.ByteBuffer;
+import java.util.Objects;
 
 public final class VarInt {
 
@@ -57,9 +58,6 @@ public final class VarInt {
             result += b & 0x7F;
 
             if ((b & 0x80) == 0) {
-                if (result < 0) {
-                    new Exception().printStackTrace();
-                }
                 return result;
             }
             if (result > (Long.MAX_VALUE >> 7)) {
@@ -158,7 +156,7 @@ public final class VarInt {
         private static final long serialVersionUID = 2648357489942607161L;
 
         protected VarIntParseException(String message) {
-            super(Objects.requireNotNull(message));
+            super(Objects.requireNonNull(message));
         }
     }
 

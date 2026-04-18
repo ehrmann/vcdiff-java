@@ -1,6 +1,6 @@
 package com.davidehrmann.vcdiff.engine;
 
-import com.davidehrmann.vcdiff.util.Objects;
+import java.util.Objects;
 import com.davidehrmann.vcdiff.util.VarInt;
 import org.junit.Assert;
 import org.junit.Test;
@@ -36,8 +36,8 @@ public abstract class VCDiffEngineTest {
     private int address_bytes_ = 0;
 
     public VCDiffEngineTest(byte[] dictionary, byte[] target) {
-        target_ = Objects.requireNotNull(target, "target was null");
-        dictionary_ = Objects.requireNotNull(dictionary, "dictionary was null");
+        target_ = Objects.requireNonNull(target, "target was null");
+        dictionary_ = Objects.requireNonNull(dictionary, "dictionary was null");
         engine_ = new VCDiffEngine(dictionary_);
     }
 

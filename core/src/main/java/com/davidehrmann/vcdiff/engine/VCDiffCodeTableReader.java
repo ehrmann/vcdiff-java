@@ -1,6 +1,6 @@
 package com.davidehrmann.vcdiff.engine;
 
-import com.davidehrmann.vcdiff.util.Objects;
+import java.util.Objects;
 import com.davidehrmann.vcdiff.util.VarInt;
 import com.davidehrmann.vcdiff.util.VarInt.VarIntEndOfBufferException;
 import com.davidehrmann.vcdiff.util.VarInt.VarIntParseException;
@@ -39,7 +39,7 @@ public class VCDiffCodeTableReader {
         if (!codeTableData.Validate(maxMode)) {
             throw new IllegalArgumentException("Invalid code table data.");
         }
-        this.codeTableData = Objects.requireNotNull(codeTableData, "codeTableData was null");
+        this.codeTableData = Objects.requireNonNull(codeTableData, "codeTableData was null");
     }
 
     // Defines the buffer containing the instructions and sizes.

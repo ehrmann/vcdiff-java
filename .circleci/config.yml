@@ -22,12 +22,14 @@ jobs:
             # fallback to using the latest cache if no exact match is found
             - v1-dependencies-
 
-      # Reenable when https://github.com/apache/maven-dependency-plugin/pull/2 is merged or MDEP-568 is resolved
-      # - run: mvn dependency:go-offline -DexcludeGroupIds=com.davidehrmann.vcdiff
-
       - save_cache:
           paths:
             - ~/.m2
           key: v1-dependencies-{{ checksum "pom.xml" }}
 
-      - run: mvn install test
+      - run:
+          name: Build and test
+          command: mvn verify
+      - run:
+          name: Upload coverage
+          command: mvn jacoco:report coveralls:report

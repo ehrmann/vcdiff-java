@@ -128,7 +128,7 @@ class VCDiffHeaderParser {
             if ((parsedValue & 0xffffffff00000000L) != 0) {
                 buffer.reset();
                 exception = new IOException(String.format(
-                        "Value of {} ({}) is too large for unsigned 32-bit integer",
+                        "Value of %s (%d) is too large for unsigned 32-bit integer",
                         variable_description, parsedValue
                 ));
                 throw exception;
@@ -141,7 +141,7 @@ class VCDiffHeaderParser {
         } catch (VarInt.VarIntParseException e) {
             buffer.reset();
             exception = new IOException(String.format(
-                    "Expected {}; found invalid variable-length integer", variable_description
+                    "Expected %s; found invalid variable-length integer", variable_description
             ));
             throw exception;
         }
@@ -388,7 +388,7 @@ class VCDiffHeaderParser {
         int source_segment_end = source_segment_position + source_segment_length;
         if (source_segment_end > from_size) {
             exception = new IOException(String.format(
-                    "Source segment end position ({}) is past {} ({})",
+                    "Source segment end position (%d) is past %s (%d)",
                     source_segment_end, from_boundary_name, from_size
             ));
             throw exception;

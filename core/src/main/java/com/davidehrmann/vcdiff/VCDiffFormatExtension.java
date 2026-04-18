@@ -32,17 +32,7 @@ public enum VCDiffFormatExtension {
      */
     GOOGLE_CHECKSUM(0x02),
     
-    /**
-     *
-     * Deprecated. This exists in open-vcdiff, but is implemented here with
-     * a separate class for encoding as JSON.
-     *
-     * If this flag is specified, the encoder will output a JSON string
-     * instead of the VCDIFF file format. If this flag is set, all other
-     * flags have no effect.
-     */
-    @Deprecated
-    GOOGLE_JSON(0x04);
+    ;
 
     public final int flag;
     VCDiffFormatExtension(int flag) {

@@ -22,7 +22,6 @@
 package com.davidehrmann.vcdiff;
 
 import com.davidehrmann.vcdiff.engine.HashedDictionary;
-import com.davidehrmann.vcdiff.engine.JSONCodeTableWriter;
 import com.davidehrmann.vcdiff.engine.VCDiffCodeTableWriterImpl;
 import com.davidehrmann.vcdiff.engine.VCDiffStreamingEncoderImpl;
 import com.davidehrmann.vcdiff.io.VCDiffOutputStream;
@@ -88,33 +87,8 @@ public class VCDiffEncoderBuilder {
         return new VCDiffOutputStream(out, buildStreaming());
     }
 
-    public synchronized VCDiffStreamingEncoder<Appendable> buildStreamingJson() {
-        if (dictionary == null) {
-            throw new IllegalArgumentException("dictionary not set");
-        }
-        if (interleaved) {
-            throw new IllegalArgumentException("Interleaved not supported with JSON encoder");
-        }
-        if (checksum) {
-            throw new IllegalArgumentException("Checksum not supported with JSON encoder");
-        }
-
-        VCDiffCodeTableWriter<Appendable> coder = new JSONCodeTableWriter();
-
-        return new VCDiffStreamingEncoderImpl<Appendable>(
-                coder,
-                new HashedDictionary(dictionary),
-                EnumSet.noneOf(VCDiffFormatExtension.class),
-                targetMatches
-        );
-    }
-
     public VCDiffEncoder<OutputStream> buildSimple() {
         return new VCDiffEncoder<OutputStream>(buildStreaming());
-    }
-
-    public VCDiffEncoder<Appendable> buildSimpleJson() {
-        return new VCDiffEncoder<Appendable>(buildStreamingJson());
     }
 
     public static VCDiffEncoderBuilder builder() {

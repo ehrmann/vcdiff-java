@@ -80,9 +80,6 @@ public class VCDiffFileBasedCoder {
         @Parameter(names = {"-interleaved", "--interleaved"}, description = "Use interleaved format")
         protected boolean interleaved = false;
 
-        @Parameter(names = {"-json", "--json"}, description = "output diff in the JSON format when encoding")
-        protected boolean json = false;
-
         @Parameter(names = {"-target_matches", "--target_matches"}, description = "Find duplicate strings in target data as well as dictionary data")
         protected boolean targetMatches = false;
     }
@@ -308,13 +305,6 @@ public class VCDiffFileBasedCoder {
 
         public void Encode() throws IOException {
             byte[] dictionary = OpenDictionary(globalOptions.dictionary);
-
-            // FIXME: support encodeOptions.json
-            /*
-            if (encodeOptions.json) {
-                format_flags.add(VCDiffFormatExtensionFlag.GOOGLE_JSON);
-            }
-            */
 
             boolean useStdin = (targetAndDeltaOptions.target == null || targetAndDeltaOptions.target.isEmpty());
             boolean useStdout = (targetAndDeltaOptions.delta == null || targetAndDeltaOptions.delta.isEmpty());

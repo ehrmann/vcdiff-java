@@ -6,7 +6,7 @@
 
     <groupId>com.davidehrmann.vcdiff</groupId>
     <artifactId>vcdiff-parent</artifactId>
-    <version>0.1.2-SNAPSHOT</version>
+    <version>0.2.0</version>
     <packaging>pom</packaging>
 
     <name>vcdiff-java</name>

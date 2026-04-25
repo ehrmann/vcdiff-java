@@ -1,6 +1,6 @@
 [![CircleCI](https://circleci.com/gh/ehrmann/vcdiff-java/tree/master.svg?style=svg)](https://circleci.com/gh/ehrmann/vcdiff-java/tree/master)
 [![Coverage Status](https://coveralls.io/repos/github/ehrmann/vcdiff-java/badge.svg?branch=master)](https://coveralls.io/github/ehrmann/vcdiff-java?branch=master)
-[![Maven Central](https://maven-badges.herokuapp.com/maven-central/com.davidehrmann.vcdiff/vcdiff-parent/badge.svg)](https://maven-badges.herokuapp.com/maven-central/com.davidehrmann.vcdiff/vcdiff-parent)
+[![Maven Central Version](https://img.shields.io/maven-central/v/com.davidehrmann.vcdiff/vcdiff-core)](https://central.sonatype.com/artifact/com.davidehrmann.vcdiff/vcdiff-parent)
 
 # VCDiff-java
 
